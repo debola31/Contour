@@ -1,0 +1,1859 @@
+[
+  {
+    "id": "own-0000",
+    "firstName": "John",
+    "lastName": "Smith",
+    "email": "john.smith@contour.com",
+    "role": "owner"
+  },
+  {
+    "id": "own-0001",
+    "firstName": "Sarah",
+    "lastName": "Johnson",
+    "email": "sarah.johnson@contour.com",
+    "role": "owner"
+  },
+  {
+    "id": "own-0002",
+    "firstName": "Michael",
+    "lastName": "Williams",
+    "email": "michael.williams@contour.com",
+    "role": "owner"
+  },
+  {
+    "id": "sp-0000",
+    "firstName": "Emma",
+    "lastName": "Brown",
+    "email": "emma.brown@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0001",
+    "firstName": "Liam",
+    "lastName": "Davis",
+    "email": "liam.davis@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0002",
+    "firstName": "Olivia",
+    "lastName": "Miller",
+    "email": "olivia.miller@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0003",
+    "firstName": "Noah",
+    "lastName": "Wilson",
+    "email": "noah.wilson@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0004",
+    "firstName": "Ava",
+    "lastName": "Moore",
+    "email": "ava.moore@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0005",
+    "firstName": "Ethan",
+    "lastName": "Taylor",
+    "email": "ethan.taylor@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0006",
+    "firstName": "Sophia",
+    "lastName": "Anderson",
+    "email": "sophia.anderson@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0007",
+    "firstName": "Mason",
+    "lastName": "Thomas",
+    "email": "mason.thomas@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0008",
+    "firstName": "Isabella",
+    "lastName": "Jackson",
+    "email": "isabella.jackson@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0009",
+    "firstName": "William",
+    "lastName": "White",
+    "email": "william.white@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0010",
+    "firstName": "Mia",
+    "lastName": "Harris",
+    "email": "mia.harris@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0011",
+    "firstName": "James",
+    "lastName": "Martin",
+    "email": "james.martin@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0012",
+    "firstName": "Charlotte",
+    "lastName": "Thompson",
+    "email": "charlotte.thompson@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0013",
+    "firstName": "Benjamin",
+    "lastName": "Garcia",
+    "email": "benjamin.garcia@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0014",
+    "firstName": "Amelia",
+    "lastName": "Martinez",
+    "email": "amelia.martinez@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0015",
+    "firstName": "Lucas",
+    "lastName": "Robinson",
+    "email": "lucas.robinson@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0016",
+    "firstName": "Harper",
+    "lastName": "Clark",
+    "email": "harper.clark@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0017",
+    "firstName": "Henry",
+    "lastName": "Rodriguez",
+    "email": "henry.rodriguez@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0018",
+    "firstName": "Evelyn",
+    "lastName": "Lewis",
+    "email": "evelyn.lewis@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "sp-0019",
+    "firstName": "Alexander",
+    "lastName": "Lee",
+    "email": "alexander.lee@contour.com",
+    "role": "salesperson"
+  },
+  {
+    "id": "op-0000",
+    "firstName": "Carlos",
+    "lastName": "Baker",
+    "email": "carlos.baker@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0000",
+    "currentStation": "st-0000",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T16:41:38.433Z",
+    "stats": {
+      "totalOrders": 469,
+      "accuracy": 97,
+      "avgTimePerOrder": 72,
+      "currentStreak": 1,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0001",
+    "firstName": "David",
+    "lastName": "Carter",
+    "email": "david.carter@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0001",
+    "currentStation": "st-0001",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T14:50:40.927Z",
+    "stats": {
+      "totalOrders": 477,
+      "accuracy": 80,
+      "avgTimePerOrder": 39,
+      "currentStreak": 28,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0002",
+    "firstName": "Frank",
+    "lastName": "Cooper",
+    "email": "frank.cooper@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0002",
+    "currentStation": "st-0002",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T19:00:42.371Z",
+    "stats": {
+      "totalOrders": 524,
+      "accuracy": 94,
+      "avgTimePerOrder": 66,
+      "currentStreak": 25,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-04-03T16:18:04.640Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2024-08-05T20:15:13.898Z"
+        },
+        {
+          "id": "badge-003",
+          "name": "Century Club",
+          "description": "Completed 100 orders",
+          "icon": "💯",
+          "earnedAt": "2025-07-31T06:23:05.228Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0003",
+    "firstName": "George",
+    "lastName": "Evans",
+    "email": "george.evans@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0003",
+    "currentStation": "st-0003",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T16:29:19.257Z",
+    "stats": {
+      "totalOrders": 56,
+      "accuracy": 90,
+      "avgTimePerOrder": 72,
+      "currentStreak": 5,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-09-08T04:00:21.375Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0004",
+    "firstName": "Ivan",
+    "lastName": "Fisher",
+    "email": "ivan.fisher@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0004",
+    "currentStation": "st-0004",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T16:54:59.222Z",
+    "stats": {
+      "totalOrders": 241,
+      "accuracy": 91,
+      "avgTimePerOrder": 77,
+      "currentStreak": 20,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-01-01T13:10:13.087Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2024-02-05T06:26:06.246Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0005",
+    "firstName": "Jack",
+    "lastName": "Gray",
+    "email": "jack.gray@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0005",
+    "currentStation": "st-0005",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T17:25:54.639Z",
+    "stats": {
+      "totalOrders": 396,
+      "accuracy": 82,
+      "avgTimePerOrder": 36,
+      "currentStreak": 14,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-08-14T07:22:07.770Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0006",
+    "firstName": "Kevin",
+    "lastName": "Hayes",
+    "email": "kevin.hayes@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0006",
+    "currentStation": "st-0006",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T14:37:37.358Z",
+    "stats": {
+      "totalOrders": 78,
+      "accuracy": 81,
+      "avgTimePerOrder": 45,
+      "currentStreak": 10,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-01-19T09:11:52.940Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0007",
+    "firstName": "Larry",
+    "lastName": "Hughes",
+    "email": "larry.hughes@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0007",
+    "currentStation": "st-0007",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T15:27:03.865Z",
+    "stats": {
+      "totalOrders": 60,
+      "accuracy": 84,
+      "avgTimePerOrder": 31,
+      "currentStreak": 1,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-08-06T18:06:12.498Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0008",
+    "firstName": "Mike",
+    "lastName": "King",
+    "email": "mike.king@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0008",
+    "currentStation": "st-0008",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T14:57:00.342Z",
+    "stats": {
+      "totalOrders": 435,
+      "accuracy": 82,
+      "avgTimePerOrder": 84,
+      "currentStreak": 7,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-04-08T00:45:35.858Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0009",
+    "firstName": "Nathan",
+    "lastName": "Morris",
+    "email": "nathan.morris@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0009",
+    "currentStation": "st-0009",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T14:42:22.083Z",
+    "stats": {
+      "totalOrders": 154,
+      "accuracy": 88,
+      "avgTimePerOrder": 61,
+      "currentStreak": 27,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-04-28T21:09:46.355Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2024-07-15T08:38:33.490Z"
+        },
+        {
+          "id": "badge-003",
+          "name": "Century Club",
+          "description": "Completed 100 orders",
+          "icon": "💯",
+          "earnedAt": "2025-07-26T19:38:06.093Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0010",
+    "firstName": "Oscar",
+    "lastName": "Nelson",
+    "email": "oscar.nelson@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0010",
+    "currentStation": "st-0000",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T18:39:10.608Z",
+    "stats": {
+      "totalOrders": 405,
+      "accuracy": 88,
+      "avgTimePerOrder": 76,
+      "currentStreak": 24,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-07-19T23:18:24.599Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0011",
+    "firstName": "Paul",
+    "lastName": "Parker",
+    "email": "paul.parker@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0011",
+    "currentStation": "st-0001",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T20:48:32.170Z",
+    "stats": {
+      "totalOrders": 240,
+      "accuracy": 87,
+      "avgTimePerOrder": 88,
+      "currentStreak": 25,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-01-03T22:22:00.482Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0012",
+    "firstName": "Quinn",
+    "lastName": "Reed",
+    "email": "quinn.reed@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0012",
+    "currentStation": "st-0002",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T18:46:42.710Z",
+    "stats": {
+      "totalOrders": 168,
+      "accuracy": 96,
+      "avgTimePerOrder": 49,
+      "currentStreak": 16,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-04-09T11:12:37.542Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2024-07-14T20:25:42.717Z"
+        },
+        {
+          "id": "badge-003",
+          "name": "Century Club",
+          "description": "Completed 100 orders",
+          "icon": "💯",
+          "earnedAt": "2025-10-03T16:28:02.622Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0013",
+    "firstName": "Robert",
+    "lastName": "Ross",
+    "email": "robert.ross@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0013",
+    "currentStation": "st-0003",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T18:47:52.771Z",
+    "stats": {
+      "totalOrders": 339,
+      "accuracy": 88,
+      "avgTimePerOrder": 53,
+      "currentStreak": 5,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-12-26T01:37:05.585Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2025-07-01T23:44:42.713Z"
+        },
+        {
+          "id": "badge-003",
+          "name": "Century Club",
+          "description": "Completed 100 orders",
+          "icon": "💯",
+          "earnedAt": "2025-06-11T04:04:38.699Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0014",
+    "firstName": "Steve",
+    "lastName": "Scott",
+    "email": "steve.scott@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0014",
+    "currentStation": "st-0004",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T17:12:15.272Z",
+    "stats": {
+      "totalOrders": 545,
+      "accuracy": 98,
+      "avgTimePerOrder": 79,
+      "currentStreak": 23,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0015",
+    "firstName": "Tom",
+    "lastName": "Turner",
+    "email": "tom.turner@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0015",
+    "currentStation": "st-0005",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T20:33:45.451Z",
+    "stats": {
+      "totalOrders": 533,
+      "accuracy": 83,
+      "avgTimePerOrder": 64,
+      "currentStreak": 18,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-06-18T04:16:25.011Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0016",
+    "firstName": "Victor",
+    "lastName": "Ward",
+    "email": "victor.ward@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0016",
+    "currentStation": "st-0006",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T16:17:58.597Z",
+    "stats": {
+      "totalOrders": 222,
+      "accuracy": 81,
+      "avgTimePerOrder": 88,
+      "currentStreak": 27,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0017",
+    "firstName": "Walter",
+    "lastName": "Wood",
+    "email": "walter.wood@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0017",
+    "currentStation": "st-0007",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T18:39:28.390Z",
+    "stats": {
+      "totalOrders": 252,
+      "accuracy": 88,
+      "avgTimePerOrder": 51,
+      "currentStreak": 12,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-08-27T00:29:17.196Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0018",
+    "firstName": "Xavier",
+    "lastName": "Young",
+    "email": "xavier.young@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0018",
+    "currentStation": "st-0008",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T14:43:02.353Z",
+    "stats": {
+      "totalOrders": 253,
+      "accuracy": 92,
+      "avgTimePerOrder": 52,
+      "currentStreak": 7,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0019",
+    "firstName": "Yusuf",
+    "lastName": "Allen",
+    "email": "yusuf.allen@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0019",
+    "currentStation": "st-0009",
+    "isLoggedIn": true,
+    "lastLoginTime": "2025-10-04T20:31:46.347Z",
+    "stats": {
+      "totalOrders": 414,
+      "accuracy": 97,
+      "avgTimePerOrder": 37,
+      "currentStreak": 27,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-03-10T07:04:43.141Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2025-07-20T00:25:07.022Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0020",
+    "firstName": "Aaron",
+    "lastName": "Bell",
+    "email": "aaron.bell@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0020",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 154,
+      "accuracy": 88,
+      "avgTimePerOrder": 30,
+      "currentStreak": 24,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-01-28T11:12:25.806Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2024-11-30T21:36:37.052Z"
+        },
+        {
+          "id": "badge-003",
+          "name": "Century Club",
+          "description": "Completed 100 orders",
+          "icon": "💯",
+          "earnedAt": "2025-05-21T20:46:34.158Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0021",
+    "firstName": "Brian",
+    "lastName": "Brooks",
+    "email": "brian.brooks@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0021",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 311,
+      "accuracy": 91,
+      "avgTimePerOrder": 77,
+      "currentStreak": 9,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-10-09T09:32:31.520Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2025-04-11T20:38:40.257Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0022",
+    "firstName": "Chris",
+    "lastName": "Cook",
+    "email": "chris.cook@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0022",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 332,
+      "accuracy": 85,
+      "avgTimePerOrder": 39,
+      "currentStreak": 6,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2025-02-03T09:08:49.994Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2024-07-16T00:55:17.848Z"
+        },
+        {
+          "id": "badge-003",
+          "name": "Century Club",
+          "description": "Completed 100 orders",
+          "icon": "💯",
+          "earnedAt": "2025-07-02T13:51:10.612Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0023",
+    "firstName": "Daniel",
+    "lastName": "Cox",
+    "email": "daniel.cox@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0023",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 373,
+      "accuracy": 80,
+      "avgTimePerOrder": 81,
+      "currentStreak": 25,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0024",
+    "firstName": "Eric",
+    "lastName": "Cruz",
+    "email": "eric.cruz@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0024",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 485,
+      "accuracy": 82,
+      "avgTimePerOrder": 60,
+      "currentStreak": 16,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-05-29T10:03:41.021Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2025-03-20T05:12:46.553Z"
+        },
+        {
+          "id": "badge-003",
+          "name": "Century Club",
+          "description": "Completed 100 orders",
+          "icon": "💯",
+          "earnedAt": "2025-09-04T18:55:12.157Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0025",
+    "firstName": "Fred",
+    "lastName": "Diaz",
+    "email": "fred.diaz@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0025",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 435,
+      "accuracy": 99,
+      "avgTimePerOrder": 45,
+      "currentStreak": 2,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-03-15T01:09:17.925Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0026",
+    "firstName": "Greg",
+    "lastName": "Ellis",
+    "email": "greg.ellis@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0026",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 334,
+      "accuracy": 90,
+      "avgTimePerOrder": 46,
+      "currentStreak": 4,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-06-21T02:49:18.595Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0027",
+    "firstName": "Harold",
+    "lastName": "Ford",
+    "email": "harold.ford@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0027",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 298,
+      "accuracy": 95,
+      "avgTimePerOrder": 71,
+      "currentStreak": 16,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0028",
+    "firstName": "Isaac",
+    "lastName": "Green",
+    "email": "isaac.green@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0028",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 75,
+      "accuracy": 83,
+      "avgTimePerOrder": 56,
+      "currentStreak": 24,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-09-05T20:16:36.819Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0029",
+    "firstName": "Justin",
+    "lastName": "Hall",
+    "email": "justin.hall@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0029",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 141,
+      "accuracy": 89,
+      "avgTimePerOrder": 47,
+      "currentStreak": 9,
+      "badges": [
+        {
+          "id": "badge-001",
+          "name": "Speed Demon",
+          "description": "Completed 10 orders under estimated time",
+          "icon": "⚡",
+          "earnedAt": "2024-11-22T07:58:10.451Z"
+        },
+        {
+          "id": "badge-002",
+          "name": "Perfectionist",
+          "description": "100% accuracy for 50 orders",
+          "icon": "🎯",
+          "earnedAt": "2025-06-01T06:52:28.959Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "op-0030",
+    "firstName": "Keith",
+    "lastName": "Hill",
+    "email": "keith.hill@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0030",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 258,
+      "accuracy": 90,
+      "avgTimePerOrder": 39,
+      "currentStreak": 27,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0031",
+    "firstName": "Leon",
+    "lastName": "James",
+    "email": "leon.james@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0031",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 230,
+      "accuracy": 80,
+      "avgTimePerOrder": 46,
+      "currentStreak": 21,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0032",
+    "firstName": "Marcus",
+    "lastName": "Kelly",
+    "email": "marcus.kelly@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0032",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 84,
+      "accuracy": 91,
+      "avgTimePerOrder": 59,
+      "currentStreak": 26,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0033",
+    "firstName": "Neil",
+    "lastName": "Long",
+    "email": "neil.long@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0033",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 260,
+      "accuracy": 88,
+      "avgTimePerOrder": 89,
+      "currentStreak": 6,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0034",
+    "firstName": "Oliver",
+    "lastName": "Morgan",
+    "email": "oliver.morgan@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0034",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 272,
+      "accuracy": 90,
+      "avgTimePerOrder": 30,
+      "currentStreak": 1,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0035",
+    "firstName": "Peter",
+    "lastName": "Myers",
+    "email": "peter.myers@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0035",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 523,
+      "accuracy": 97,
+      "avgTimePerOrder": 37,
+      "currentStreak": 14,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0036",
+    "firstName": "Raymond",
+    "lastName": "Perry",
+    "email": "raymond.perry@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0036",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 311,
+      "accuracy": 84,
+      "avgTimePerOrder": 57,
+      "currentStreak": 4,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0037",
+    "firstName": "Samuel",
+    "lastName": "Powell",
+    "email": "samuel.powell@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0037",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 130,
+      "accuracy": 97,
+      "avgTimePerOrder": 38,
+      "currentStreak": 6,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0038",
+    "firstName": "Timothy",
+    "lastName": "Price",
+    "email": "timothy.price@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0038",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 445,
+      "accuracy": 98,
+      "avgTimePerOrder": 75,
+      "currentStreak": 0,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0039",
+    "firstName": "Vincent",
+    "lastName": "Ramirez",
+    "email": "vincent.ramirez@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0039",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 273,
+      "accuracy": 82,
+      "avgTimePerOrder": 46,
+      "currentStreak": 24,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0040",
+    "firstName": "Wesley",
+    "lastName": "Reyes",
+    "email": "wesley.reyes@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0040",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 82,
+      "accuracy": 93,
+      "avgTimePerOrder": 69,
+      "currentStreak": 28,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0041",
+    "firstName": "Andre",
+    "lastName": "Rivera",
+    "email": "andre.rivera@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0041",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 453,
+      "accuracy": 83,
+      "avgTimePerOrder": 68,
+      "currentStreak": 17,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0042",
+    "firstName": "Bruno",
+    "lastName": "Rogers",
+    "email": "bruno.rogers@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0042",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 84,
+      "accuracy": 87,
+      "avgTimePerOrder": 49,
+      "currentStreak": 2,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0043",
+    "firstName": "Claude",
+    "lastName": "Russell",
+    "email": "claude.russell@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0043",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 396,
+      "accuracy": 84,
+      "avgTimePerOrder": 37,
+      "currentStreak": 1,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0044",
+    "firstName": "Diego",
+    "lastName": "Sanchez",
+    "email": "diego.sanchez@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0044",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 323,
+      "accuracy": 97,
+      "avgTimePerOrder": 53,
+      "currentStreak": 2,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0045",
+    "firstName": "Edgar",
+    "lastName": "Sanders",
+    "email": "edgar.sanders@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0045",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 231,
+      "accuracy": 82,
+      "avgTimePerOrder": 41,
+      "currentStreak": 0,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0046",
+    "firstName": "Felix",
+    "lastName": "Shaw",
+    "email": "felix.shaw@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0046",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 109,
+      "accuracy": 87,
+      "avgTimePerOrder": 38,
+      "currentStreak": 14,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0047",
+    "firstName": "Grant",
+    "lastName": "Silva",
+    "email": "grant.silva@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0047",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 493,
+      "accuracy": 82,
+      "avgTimePerOrder": 82,
+      "currentStreak": 8,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0048",
+    "firstName": "Hugo",
+    "lastName": "Stone",
+    "email": "hugo.stone@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0048",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 499,
+      "accuracy": 83,
+      "avgTimePerOrder": 51,
+      "currentStreak": 3,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0049",
+    "firstName": "Ian",
+    "lastName": "Torres",
+    "email": "ian.torres@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0049",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 285,
+      "accuracy": 98,
+      "avgTimePerOrder": 55,
+      "currentStreak": 9,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0050",
+    "firstName": "Joel",
+    "lastName": "Wagner",
+    "email": "joel.wagner@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0050",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 369,
+      "accuracy": 89,
+      "avgTimePerOrder": 63,
+      "currentStreak": 24,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0051",
+    "firstName": "Kyle",
+    "lastName": "Walsh",
+    "email": "kyle.walsh@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0051",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 511,
+      "accuracy": 95,
+      "avgTimePerOrder": 42,
+      "currentStreak": 20,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0052",
+    "firstName": "Luis",
+    "lastName": "Webb",
+    "email": "luis.webb@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0052",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 85,
+      "accuracy": 87,
+      "avgTimePerOrder": 87,
+      "currentStreak": 22,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0053",
+    "firstName": "Manuel",
+    "lastName": "Wells",
+    "email": "manuel.wells@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0053",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 531,
+      "accuracy": 83,
+      "avgTimePerOrder": 87,
+      "currentStreak": 6,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0054",
+    "firstName": "Nicolas",
+    "lastName": "West",
+    "email": "nicolas.west@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0054",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 174,
+      "accuracy": 88,
+      "avgTimePerOrder": 41,
+      "currentStreak": 27,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0055",
+    "firstName": "Otto",
+    "lastName": "Armstrong",
+    "email": "otto.armstrong@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0055",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 411,
+      "accuracy": 95,
+      "avgTimePerOrder": 75,
+      "currentStreak": 6,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0056",
+    "firstName": "Pablo",
+    "lastName": "Barrett",
+    "email": "pablo.barrett@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0056",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 487,
+      "accuracy": 93,
+      "avgTimePerOrder": 32,
+      "currentStreak": 21,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0057",
+    "firstName": "Rafael",
+    "lastName": "Bennett",
+    "email": "rafael.bennett@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0057",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 518,
+      "accuracy": 92,
+      "avgTimePerOrder": 83,
+      "currentStreak": 10,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0058",
+    "firstName": "Simon",
+    "lastName": "Bishop",
+    "email": "simon.bishop@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0058",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 238,
+      "accuracy": 82,
+      "avgTimePerOrder": 41,
+      "currentStreak": 16,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0059",
+    "firstName": "Theo",
+    "lastName": "Black",
+    "email": "theo.black@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0059",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 502,
+      "accuracy": 99,
+      "avgTimePerOrder": 51,
+      "currentStreak": 3,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0060",
+    "firstName": "Ulysses",
+    "lastName": "Boyd",
+    "email": "ulysses.boyd@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0060",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 107,
+      "accuracy": 97,
+      "avgTimePerOrder": 76,
+      "currentStreak": 22,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0061",
+    "firstName": "Vince",
+    "lastName": "Bradley",
+    "email": "vince.bradley@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0061",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 120,
+      "accuracy": 91,
+      "avgTimePerOrder": 55,
+      "currentStreak": 21,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0062",
+    "firstName": "Wade",
+    "lastName": "Bryant",
+    "email": "wade.bryant@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0062",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 530,
+      "accuracy": 86,
+      "avgTimePerOrder": 66,
+      "currentStreak": 26,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0063",
+    "firstName": "Xander",
+    "lastName": "Burke",
+    "email": "xander.burke@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0063",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 537,
+      "accuracy": 86,
+      "avgTimePerOrder": 35,
+      "currentStreak": 4,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0064",
+    "firstName": "Yale",
+    "lastName": "Burns",
+    "email": "yale.burns@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0064",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 335,
+      "accuracy": 95,
+      "avgTimePerOrder": 32,
+      "currentStreak": 23,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0065",
+    "firstName": "Zach",
+    "lastName": "Butler",
+    "email": "zach.butler@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0065",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 216,
+      "accuracy": 80,
+      "avgTimePerOrder": 42,
+      "currentStreak": 7,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0066",
+    "firstName": "Alan",
+    "lastName": "Campbell",
+    "email": "alan.campbell@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0066",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 226,
+      "accuracy": 94,
+      "avgTimePerOrder": 53,
+      "currentStreak": 18,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0067",
+    "firstName": "Blake",
+    "lastName": "Carroll",
+    "email": "blake.carroll@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0067",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 172,
+      "accuracy": 92,
+      "avgTimePerOrder": 74,
+      "currentStreak": 12,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0068",
+    "firstName": "Colin",
+    "lastName": "Chapman",
+    "email": "colin.chapman@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0068",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 196,
+      "accuracy": 82,
+      "avgTimePerOrder": 30,
+      "currentStreak": 0,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0069",
+    "firstName": "Dean",
+    "lastName": "Coleman",
+    "email": "dean.coleman@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0069",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 422,
+      "accuracy": 86,
+      "avgTimePerOrder": 79,
+      "currentStreak": 7,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0070",
+    "firstName": "Evan",
+    "lastName": "Collins",
+    "email": "evan.collins@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0070",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 499,
+      "accuracy": 85,
+      "avgTimePerOrder": 46,
+      "currentStreak": 1,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0071",
+    "firstName": "Flynn",
+    "lastName": "Crawford",
+    "email": "flynn.crawford@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0071",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 326,
+      "accuracy": 87,
+      "avgTimePerOrder": 39,
+      "currentStreak": 17,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0072",
+    "firstName": "Glenn",
+    "lastName": "Curtis",
+    "email": "glenn.curtis@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0072",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 523,
+      "accuracy": 93,
+      "avgTimePerOrder": 60,
+      "currentStreak": 3,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0073",
+    "firstName": "Hank",
+    "lastName": "Dixon",
+    "email": "hank.dixon@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0073",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 491,
+      "accuracy": 90,
+      "avgTimePerOrder": 48,
+      "currentStreak": 15,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0074",
+    "firstName": "Ivan",
+    "lastName": "Duncan",
+    "email": "ivan.duncan@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0074",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 171,
+      "accuracy": 82,
+      "avgTimePerOrder": 83,
+      "currentStreak": 1,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0075",
+    "firstName": "Jake",
+    "lastName": "Edwards",
+    "email": "jake.edwards@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0075",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 345,
+      "accuracy": 85,
+      "avgTimePerOrder": 30,
+      "currentStreak": 18,
+      "badges": []
+    }
+  },
+  {
+    "id": "op-0076",
+    "firstName": "Kurt",
+    "lastName": "Elliott",
+    "email": "kurt.elliott@contour.com",
+    "role": "operator",
+    "qrCode": "QR-op-0076",
+    "currentStation": null,
+    "isLoggedIn": false,
+    "lastLoginTime": null,
+    "stats": {
+      "totalOrders": 443,
+      "accuracy": 95,
+      "avgTimePerOrder": 70,
+      "currentStreak": 16,
+      "badges": []
+    }
+  }
+]

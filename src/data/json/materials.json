@@ -1,0 +1,982 @@
+[
+  {
+    "id": "mat-0000",
+    "partName": "Brass Casing .223",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 7292,
+    "minimumQuantity": 464,
+    "pricePerUnit": 0.15,
+    "source": "Precision Brass Co",
+    "createdAt": "2023-04-03T09:41:05.730Z"
+  },
+  {
+    "id": "mat-0001",
+    "partName": "Brass Casing .308",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 4542,
+    "minimumQuantity": 287,
+    "pricePerUnit": 0.2,
+    "source": "Metal Works Inc",
+    "createdAt": "2023-06-30T11:35:57.469Z"
+  },
+  {
+    "id": "mat-0002",
+    "partName": "Brass Casing 9mm",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6125,
+    "minimumQuantity": 499,
+    "pricePerUnit": 0.25,
+    "source": "Brass Masters Ltd",
+    "createdAt": "2023-12-12T18:54:13.579Z"
+  },
+  {
+    "id": "mat-0003",
+    "partName": "Brass Casing .45 ACP",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8516,
+    "minimumQuantity": 197,
+    "pricePerUnit": 0.3,
+    "source": "Precision Brass Co",
+    "createdAt": "2023-07-12T23:35:57.043Z"
+  },
+  {
+    "id": "mat-0004",
+    "partName": "Brass Casing .357 Mag",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 5580,
+    "minimumQuantity": 244,
+    "pricePerUnit": 0.35,
+    "source": "Metal Works Inc",
+    "createdAt": "2023-09-08T05:38:30.029Z"
+  },
+  {
+    "id": "mat-0005",
+    "partName": "Brass Casing 7.62mm",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 5433,
+    "minimumQuantity": 153,
+    "pricePerUnit": 0.4,
+    "source": "Brass Masters Ltd",
+    "createdAt": "2023-07-22T12:54:26.825Z"
+  },
+  {
+    "id": "mat-0006",
+    "partName": "Brass Casing 5.56mm",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 7004,
+    "minimumQuantity": 267,
+    "pricePerUnit": 0.45,
+    "source": "Precision Brass Co",
+    "createdAt": "2023-07-27T15:31:12.892Z"
+  },
+  {
+    "id": "mat-0007",
+    "partName": "Brass Casing .40 S&W",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6181,
+    "minimumQuantity": 314,
+    "pricePerUnit": 0.5,
+    "source": "Metal Works Inc",
+    "createdAt": "2023-08-24T16:52:59.936Z"
+  },
+  {
+    "id": "mat-0008",
+    "partName": "Brass Casing .38 Special",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 1684,
+    "minimumQuantity": 372,
+    "pricePerUnit": 0.55,
+    "source": "Brass Masters Ltd",
+    "createdAt": "2023-11-27T17:25:11.744Z"
+  },
+  {
+    "id": "mat-0009",
+    "partName": "Brass Casing 10mm",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 4437,
+    "minimumQuantity": 273,
+    "pricePerUnit": 0.6,
+    "source": "Precision Brass Co",
+    "createdAt": "2023-08-06T09:41:25.565Z"
+  },
+  {
+    "id": "mat-0010",
+    "partName": "Brass Casing .223",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 4838,
+    "minimumQuantity": 506,
+    "pricePerUnit": 0.65,
+    "source": "Metal Works Inc",
+    "createdAt": "2023-01-28T02:49:31.179Z"
+  },
+  {
+    "id": "mat-0011",
+    "partName": "Brass Casing .308",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8417,
+    "minimumQuantity": 345,
+    "pricePerUnit": 0.7,
+    "source": "Brass Masters Ltd",
+    "createdAt": "2023-05-31T17:22:22.388Z"
+  },
+  {
+    "id": "mat-0012",
+    "partName": "Brass Casing 9mm",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 7291,
+    "minimumQuantity": 571,
+    "pricePerUnit": 0.75,
+    "source": "Precision Brass Co",
+    "createdAt": "2023-08-19T01:44:55.488Z"
+  },
+  {
+    "id": "mat-0013",
+    "partName": "Brass Casing .45 ACP",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 5558,
+    "minimumQuantity": 336,
+    "pricePerUnit": 0.8,
+    "source": "Metal Works Inc",
+    "createdAt": "2023-04-12T21:20:26.270Z"
+  },
+  {
+    "id": "mat-0014",
+    "partName": "Brass Casing .357 Mag",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 5625,
+    "minimumQuantity": 261,
+    "pricePerUnit": 0.85,
+    "source": "Brass Masters Ltd",
+    "createdAt": "2023-02-11T13:53:08.736Z"
+  },
+  {
+    "id": "mat-0015",
+    "partName": "Brass Casing 7.62mm",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8861,
+    "minimumQuantity": 201,
+    "pricePerUnit": 0.9,
+    "source": "Precision Brass Co",
+    "createdAt": "2023-09-19T02:54:44.340Z"
+  },
+  {
+    "id": "mat-0016",
+    "partName": "Brass Casing 5.56mm",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 4183,
+    "minimumQuantity": 302,
+    "pricePerUnit": 0.95,
+    "source": "Metal Works Inc",
+    "createdAt": "2023-01-13T14:58:41.680Z"
+  },
+  {
+    "id": "mat-0017",
+    "partName": "Brass Casing .40 S&W",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 7979,
+    "minimumQuantity": 176,
+    "pricePerUnit": 1,
+    "source": "Brass Masters Ltd",
+    "createdAt": "2023-07-03T15:56:06.949Z"
+  },
+  {
+    "id": "mat-0018",
+    "partName": "Brass Casing .38 Special",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8769,
+    "minimumQuantity": 456,
+    "pricePerUnit": 1.05,
+    "source": "Precision Brass Co",
+    "createdAt": "2023-02-26T21:28:50.015Z"
+  },
+  {
+    "id": "mat-0019",
+    "partName": "Brass Casing 10mm",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6853,
+    "minimumQuantity": 225,
+    "pricePerUnit": 1.1,
+    "source": "Metal Works Inc",
+    "createdAt": "2023-04-26T17:51:07.674Z"
+  },
+  {
+    "id": "mat-0020",
+    "partName": "FMJ Bullet 55gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6671,
+    "minimumQuantity": 580,
+    "pricePerUnit": 0.1,
+    "source": "Projectile Pros",
+    "createdAt": "2023-02-13T11:47:09.662Z"
+  },
+  {
+    "id": "mat-0021",
+    "partName": "HP Bullet 62gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8424,
+    "minimumQuantity": 347,
+    "pricePerUnit": 0.13,
+    "source": "Bullet Craft Inc",
+    "createdAt": "2023-04-30T15:10:40.289Z"
+  },
+  {
+    "id": "mat-0022",
+    "partName": "SP Bullet 75gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 3047,
+    "minimumQuantity": 355,
+    "pricePerUnit": 0.16,
+    "source": "Lead Leaders Ltd",
+    "createdAt": "2023-11-08T01:33:12.452Z"
+  },
+  {
+    "id": "mat-0023",
+    "partName": "JHP Bullet 115gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 9565,
+    "minimumQuantity": 202,
+    "pricePerUnit": 0.19,
+    "source": "Projectile Pros",
+    "createdAt": "2023-07-26T10:22:28.982Z"
+  },
+  {
+    "id": "mat-0024",
+    "partName": "TMJ Bullet 124gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 2677,
+    "minimumQuantity": 574,
+    "pricePerUnit": 0.22,
+    "source": "Bullet Craft Inc",
+    "createdAt": "2023-11-11T16:42:06.528Z"
+  },
+  {
+    "id": "mat-0025",
+    "partName": "FMJ Bullet 147gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 2252,
+    "minimumQuantity": 234,
+    "pricePerUnit": 0.25,
+    "source": "Lead Leaders Ltd",
+    "createdAt": "2023-03-15T07:09:47.768Z"
+  },
+  {
+    "id": "mat-0026",
+    "partName": "HP Bullet 158gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8456,
+    "minimumQuantity": 598,
+    "pricePerUnit": 0.28,
+    "source": "Projectile Pros",
+    "createdAt": "2023-02-23T14:01:29.951Z"
+  },
+  {
+    "id": "mat-0027",
+    "partName": "SP Bullet 180gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6640,
+    "minimumQuantity": 471,
+    "pricePerUnit": 0.31,
+    "source": "Bullet Craft Inc",
+    "createdAt": "2023-09-21T04:28:44.594Z"
+  },
+  {
+    "id": "mat-0028",
+    "partName": "JHP Bullet 200gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8166,
+    "minimumQuantity": 572,
+    "pricePerUnit": 0.34,
+    "source": "Lead Leaders Ltd",
+    "createdAt": "2023-08-29T19:29:24.082Z"
+  },
+  {
+    "id": "mat-0029",
+    "partName": "TMJ Bullet 230gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 3446,
+    "minimumQuantity": 186,
+    "pricePerUnit": 0.37,
+    "source": "Projectile Pros",
+    "createdAt": "2023-04-18T00:44:21.620Z"
+  },
+  {
+    "id": "mat-0030",
+    "partName": "FMJ Bullet 55gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 2678,
+    "minimumQuantity": 267,
+    "pricePerUnit": 0.4,
+    "source": "Bullet Craft Inc",
+    "createdAt": "2023-11-29T01:42:47.327Z"
+  },
+  {
+    "id": "mat-0031",
+    "partName": "HP Bullet 62gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8771,
+    "minimumQuantity": 532,
+    "pricePerUnit": 0.43,
+    "source": "Lead Leaders Ltd",
+    "createdAt": "2023-07-31T10:14:00.052Z"
+  },
+  {
+    "id": "mat-0032",
+    "partName": "SP Bullet 75gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6806,
+    "minimumQuantity": 461,
+    "pricePerUnit": 0.46,
+    "source": "Projectile Pros",
+    "createdAt": "2023-08-17T00:24:53.741Z"
+  },
+  {
+    "id": "mat-0033",
+    "partName": "JHP Bullet 115gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 7019,
+    "minimumQuantity": 125,
+    "pricePerUnit": 0.49,
+    "source": "Bullet Craft Inc",
+    "createdAt": "2023-01-12T12:36:19.644Z"
+  },
+  {
+    "id": "mat-0034",
+    "partName": "TMJ Bullet 124gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 9788,
+    "minimumQuantity": 243,
+    "pricePerUnit": 0.52,
+    "source": "Lead Leaders Ltd",
+    "createdAt": "2023-12-02T17:00:09.235Z"
+  },
+  {
+    "id": "mat-0035",
+    "partName": "FMJ Bullet 147gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 5987,
+    "minimumQuantity": 535,
+    "pricePerUnit": 0.55,
+    "source": "Projectile Pros",
+    "createdAt": "2023-08-27T03:56:57.211Z"
+  },
+  {
+    "id": "mat-0036",
+    "partName": "HP Bullet 158gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8223,
+    "minimumQuantity": 307,
+    "pricePerUnit": 0.58,
+    "source": "Bullet Craft Inc",
+    "createdAt": "2023-05-27T17:36:43.263Z"
+  },
+  {
+    "id": "mat-0037",
+    "partName": "SP Bullet 180gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8573,
+    "minimumQuantity": 184,
+    "pricePerUnit": 0.61,
+    "source": "Lead Leaders Ltd",
+    "createdAt": "2023-10-10T12:50:15.953Z"
+  },
+  {
+    "id": "mat-0038",
+    "partName": "JHP Bullet 200gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 3050,
+    "minimumQuantity": 121,
+    "pricePerUnit": 0.64,
+    "source": "Projectile Pros",
+    "createdAt": "2023-07-31T03:22:55.169Z"
+  },
+  {
+    "id": "mat-0039",
+    "partName": "TMJ Bullet 230gr",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 10797,
+    "minimumQuantity": 346,
+    "pricePerUnit": 0.67,
+    "source": "Bullet Craft Inc",
+    "createdAt": "2023-10-11T05:40:43.826Z"
+  },
+  {
+    "id": "mat-0040",
+    "partName": "Fast Burn Powder Type A",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 1739,
+    "minimumQuantity": 385,
+    "pricePerUnit": 0.02,
+    "source": "Powder Dynamics",
+    "createdAt": "2023-07-16T00:38:21.809Z"
+  },
+  {
+    "id": "mat-0041",
+    "partName": "Medium Burn Powder Type B",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 9477,
+    "minimumQuantity": 570,
+    "pricePerUnit": 0.03,
+    "source": "Propellant Plus",
+    "createdAt": "2023-07-20T05:13:09.162Z"
+  },
+  {
+    "id": "mat-0042",
+    "partName": "Slow Burn Powder Type C",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 6571,
+    "minimumQuantity": 524,
+    "pricePerUnit": 0.03,
+    "source": "Burn Rate Co",
+    "createdAt": "2023-11-21T14:47:56.223Z"
+  },
+  {
+    "id": "mat-0043",
+    "partName": "Fast Burn Powder Type D",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 10731,
+    "minimumQuantity": 281,
+    "pricePerUnit": 0.04,
+    "source": "Powder Dynamics",
+    "createdAt": "2023-12-04T20:03:51.943Z"
+  },
+  {
+    "id": "mat-0044",
+    "partName": "Medium Burn Powder Type E",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 6074,
+    "minimumQuantity": 471,
+    "pricePerUnit": 0.04,
+    "source": "Propellant Plus",
+    "createdAt": "2023-06-15T13:36:04.760Z"
+  },
+  {
+    "id": "mat-0045",
+    "partName": "Slow Burn Powder Type F",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 9748,
+    "minimumQuantity": 145,
+    "pricePerUnit": 0.05,
+    "source": "Burn Rate Co",
+    "createdAt": "2023-09-23T23:18:18.341Z"
+  },
+  {
+    "id": "mat-0046",
+    "partName": "Fast Burn Powder Type G",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 5656,
+    "minimumQuantity": 109,
+    "pricePerUnit": 0.05,
+    "source": "Powder Dynamics",
+    "createdAt": "2023-06-22T08:57:24.212Z"
+  },
+  {
+    "id": "mat-0047",
+    "partName": "Medium Burn Powder Type H",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 2892,
+    "minimumQuantity": 311,
+    "pricePerUnit": 0.06,
+    "source": "Propellant Plus",
+    "createdAt": "2023-05-24T08:47:31.433Z"
+  },
+  {
+    "id": "mat-0048",
+    "partName": "Slow Burn Powder Type I",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 4081,
+    "minimumQuantity": 426,
+    "pricePerUnit": 0.06,
+    "source": "Burn Rate Co",
+    "createdAt": "2023-12-25T03:44:27.307Z"
+  },
+  {
+    "id": "mat-0049",
+    "partName": "Fast Burn Powder Type J",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 5473,
+    "minimumQuantity": 352,
+    "pricePerUnit": 0.07,
+    "source": "Powder Dynamics",
+    "createdAt": "2023-02-25T17:29:10.284Z"
+  },
+  {
+    "id": "mat-0050",
+    "partName": "Medium Burn Powder Type K",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 8834,
+    "minimumQuantity": 197,
+    "pricePerUnit": 0.07,
+    "source": "Propellant Plus",
+    "createdAt": "2023-02-02T23:08:09.709Z"
+  },
+  {
+    "id": "mat-0051",
+    "partName": "Slow Burn Powder Type L",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 6416,
+    "minimumQuantity": 123,
+    "pricePerUnit": 0.08,
+    "source": "Burn Rate Co",
+    "createdAt": "2023-11-30T13:47:48.399Z"
+  },
+  {
+    "id": "mat-0052",
+    "partName": "Fast Burn Powder Type M",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 2319,
+    "minimumQuantity": 167,
+    "pricePerUnit": 0.08,
+    "source": "Powder Dynamics",
+    "createdAt": "2023-06-17T05:20:32.449Z"
+  },
+  {
+    "id": "mat-0053",
+    "partName": "Medium Burn Powder Type N",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 6235,
+    "minimumQuantity": 391,
+    "pricePerUnit": 0.09,
+    "source": "Propellant Plus",
+    "createdAt": "2023-12-18T07:07:56.252Z"
+  },
+  {
+    "id": "mat-0054",
+    "partName": "Slow Burn Powder Type O",
+    "unitOfMeasurement": "grams",
+    "quantityInStock": 8164,
+    "minimumQuantity": 587,
+    "pricePerUnit": 0.09,
+    "source": "Burn Rate Co",
+    "createdAt": "2023-11-15T18:08:51.780Z"
+  },
+  {
+    "id": "mat-0055",
+    "partName": "Small Pistol Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 5572,
+    "minimumQuantity": 189,
+    "pricePerUnit": 0.05,
+    "source": "Primer Precision",
+    "createdAt": "2023-10-17T07:36:32.616Z"
+  },
+  {
+    "id": "mat-0056",
+    "partName": "Large Pistol Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 10819,
+    "minimumQuantity": 209,
+    "pricePerUnit": 0.06,
+    "source": "Ignition Systems Inc",
+    "createdAt": "2023-03-19T19:48:17.692Z"
+  },
+  {
+    "id": "mat-0057",
+    "partName": "Small Rifle Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 1415,
+    "minimumQuantity": 210,
+    "pricePerUnit": 0.07,
+    "source": "Spark Tech Ltd",
+    "createdAt": "2023-05-11T14:45:19.509Z"
+  },
+  {
+    "id": "mat-0058",
+    "partName": "Large Rifle Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8948,
+    "minimumQuantity": 528,
+    "pricePerUnit": 0.08,
+    "source": "Primer Precision",
+    "createdAt": "2023-11-11T11:25:37.059Z"
+  },
+  {
+    "id": "mat-0059",
+    "partName": "Small Magnum Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 4988,
+    "minimumQuantity": 262,
+    "pricePerUnit": 0.09,
+    "source": "Ignition Systems Inc",
+    "createdAt": "2023-01-28T13:18:17.629Z"
+  },
+  {
+    "id": "mat-0060",
+    "partName": "Large Magnum Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 9015,
+    "minimumQuantity": 141,
+    "pricePerUnit": 0.1,
+    "source": "Spark Tech Ltd",
+    "createdAt": "2023-07-06T09:59:24.060Z"
+  },
+  {
+    "id": "mat-0061",
+    "partName": "Small Pistol Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 8059,
+    "minimumQuantity": 441,
+    "pricePerUnit": 0.11,
+    "source": "Primer Precision",
+    "createdAt": "2023-06-08T02:34:50.318Z"
+  },
+  {
+    "id": "mat-0062",
+    "partName": "Large Pistol Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6101,
+    "minimumQuantity": 527,
+    "pricePerUnit": 0.12,
+    "source": "Ignition Systems Inc",
+    "createdAt": "2023-03-24T19:55:37.399Z"
+  },
+  {
+    "id": "mat-0063",
+    "partName": "Small Rifle Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 1793,
+    "minimumQuantity": 248,
+    "pricePerUnit": 0.13,
+    "source": "Spark Tech Ltd",
+    "createdAt": "2023-03-23T21:09:54.099Z"
+  },
+  {
+    "id": "mat-0064",
+    "partName": "Large Rifle Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 7046,
+    "minimumQuantity": 184,
+    "pricePerUnit": 0.14,
+    "source": "Primer Precision",
+    "createdAt": "2023-02-06T20:10:08.482Z"
+  },
+  {
+    "id": "mat-0065",
+    "partName": "Small Magnum Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 10371,
+    "minimumQuantity": 344,
+    "pricePerUnit": 0.15,
+    "source": "Ignition Systems Inc",
+    "createdAt": "2023-06-10T12:29:54.892Z"
+  },
+  {
+    "id": "mat-0066",
+    "partName": "Large Magnum Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 4209,
+    "minimumQuantity": 411,
+    "pricePerUnit": 0.16,
+    "source": "Spark Tech Ltd",
+    "createdAt": "2023-02-11T10:18:16.295Z"
+  },
+  {
+    "id": "mat-0067",
+    "partName": "Small Pistol Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6135,
+    "minimumQuantity": 530,
+    "pricePerUnit": 0.17,
+    "source": "Primer Precision",
+    "createdAt": "2023-12-31T10:57:49.562Z"
+  },
+  {
+    "id": "mat-0068",
+    "partName": "Large Pistol Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 1051,
+    "minimumQuantity": 441,
+    "pricePerUnit": 0.18,
+    "source": "Ignition Systems Inc",
+    "createdAt": "2023-04-07T06:38:03.137Z"
+  },
+  {
+    "id": "mat-0069",
+    "partName": "Small Rifle Primer",
+    "unitOfMeasurement": "pieces",
+    "quantityInStock": 6582,
+    "minimumQuantity": 454,
+    "pricePerUnit": 0.19,
+    "source": "Spark Tech Ltd",
+    "createdAt": "2023-09-29T15:56:08.929Z"
+  },
+  {
+    "id": "mat-0070",
+    "partName": "Cardboard Ammo Box 20-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 4931,
+    "minimumQuantity": 290,
+    "pricePerUnit": 0.5,
+    "source": "Package Solutions",
+    "createdAt": "2023-08-08T15:07:07.017Z"
+  },
+  {
+    "id": "mat-0071",
+    "partName": "Plastic Ammo Box 50-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 3611,
+    "minimumQuantity": 494,
+    "pricePerUnit": 0.75,
+    "source": "Box Makers Inc",
+    "createdAt": "2023-07-17T22:52:28.422Z"
+  },
+  {
+    "id": "mat-0072",
+    "partName": "Metal Ammo Box 100-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 2316,
+    "minimumQuantity": 492,
+    "pricePerUnit": 1,
+    "source": "Container Corp",
+    "createdAt": "2023-04-14T23:59:32.720Z"
+  },
+  {
+    "id": "mat-0073",
+    "partName": "Cardboard Ammo Box 250-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 5832,
+    "minimumQuantity": 502,
+    "pricePerUnit": 1.25,
+    "source": "Package Solutions",
+    "createdAt": "2023-03-27T20:53:07.433Z"
+  },
+  {
+    "id": "mat-0074",
+    "partName": "Plastic Ammo Box 500-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 10031,
+    "minimumQuantity": 237,
+    "pricePerUnit": 1.5,
+    "source": "Box Makers Inc",
+    "createdAt": "2023-12-07T13:44:02.218Z"
+  },
+  {
+    "id": "mat-0075",
+    "partName": "Metal Ammo Box 20-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 4780,
+    "minimumQuantity": 289,
+    "pricePerUnit": 1.75,
+    "source": "Container Corp",
+    "createdAt": "2023-09-20T14:18:52.800Z"
+  },
+  {
+    "id": "mat-0076",
+    "partName": "Cardboard Ammo Box 50-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 7434,
+    "minimumQuantity": 519,
+    "pricePerUnit": 2,
+    "source": "Package Solutions",
+    "createdAt": "2023-12-27T04:42:15.360Z"
+  },
+  {
+    "id": "mat-0077",
+    "partName": "Plastic Ammo Box 100-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 6930,
+    "minimumQuantity": 529,
+    "pricePerUnit": 2.25,
+    "source": "Box Makers Inc",
+    "createdAt": "2023-05-06T17:07:03.751Z"
+  },
+  {
+    "id": "mat-0078",
+    "partName": "Metal Ammo Box 250-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 1041,
+    "minimumQuantity": 287,
+    "pricePerUnit": 2.5,
+    "source": "Container Corp",
+    "createdAt": "2023-03-31T01:40:36.838Z"
+  },
+  {
+    "id": "mat-0079",
+    "partName": "Cardboard Ammo Box 500-round",
+    "unitOfMeasurement": "boxes",
+    "quantityInStock": 5320,
+    "minimumQuantity": 197,
+    "pricePerUnit": 2.75,
+    "source": "Package Solutions",
+    "createdAt": "2023-08-16T22:57:48.445Z"
+  },
+  {
+    "id": "mat-0080",
+    "partName": "Case Lubricant 1",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 6426,
+    "pricePerUnit": 0.01,
+    "source": "Chem Solutions",
+    "createdAt": "2023-06-05T11:55:19.818Z"
+  },
+  {
+    "id": "mat-0081",
+    "partName": "Bullet Lubricant 2",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 4917,
+    "pricePerUnit": 0.02,
+    "source": "Lube Tech",
+    "createdAt": "2023-04-01T03:54:46.998Z"
+  },
+  {
+    "id": "mat-0082",
+    "partName": "Die Lubricant 3",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 4729,
+    "pricePerUnit": 0.02,
+    "source": "Fluid Dynamics",
+    "createdAt": "2023-05-11T04:22:45.594Z"
+  },
+  {
+    "id": "mat-0083",
+    "partName": "Case Lubricant 4",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 7908,
+    "pricePerUnit": 0.03,
+    "source": "Chem Solutions",
+    "createdAt": "2023-03-29T22:54:15.477Z"
+  },
+  {
+    "id": "mat-0084",
+    "partName": "Bullet Lubricant 5",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 7552,
+    "pricePerUnit": 0.03,
+    "source": "Lube Tech",
+    "createdAt": "2023-12-01T16:41:50.243Z"
+  },
+  {
+    "id": "mat-0085",
+    "partName": "Die Lubricant 6",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 6318,
+    "pricePerUnit": 0.04,
+    "source": "Fluid Dynamics",
+    "createdAt": "2023-05-11T02:43:57.019Z"
+  },
+  {
+    "id": "mat-0086",
+    "partName": "Case Lubricant 7",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 1738,
+    "pricePerUnit": 0.04,
+    "source": "Chem Solutions",
+    "createdAt": "2023-05-20T05:25:15.719Z"
+  },
+  {
+    "id": "mat-0087",
+    "partName": "Bullet Lubricant 8",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 7774,
+    "pricePerUnit": 0.05,
+    "source": "Lube Tech",
+    "createdAt": "2023-06-15T08:06:28.281Z"
+  },
+  {
+    "id": "mat-0088",
+    "partName": "Die Lubricant 9",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 8183,
+    "pricePerUnit": 0.05,
+    "source": "Fluid Dynamics",
+    "createdAt": "2023-11-18T08:47:13.086Z"
+  },
+  {
+    "id": "mat-0089",
+    "partName": "Case Lubricant 10",
+    "unitOfMeasurement": "ml",
+    "quantityInStock": 7934,
+    "pricePerUnit": 0.06,
+    "source": "Chem Solutions",
+    "createdAt": "2023-10-10T19:06:43.852Z"
+  },
+  {
+    "id": "mat-0090",
+    "partName": "QC Gauge Calibration Set 1",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 6790,
+    "pricePerUnit": 10,
+    "source": "Precision Tools Inc",
+    "createdAt": "2023-11-03T15:46:29.712Z"
+  },
+  {
+    "id": "mat-0091",
+    "partName": "QC Caliper Calibration Set 2",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 5164,
+    "pricePerUnit": 12,
+    "source": "QC Masters",
+    "createdAt": "2023-03-26T20:58:28.706Z"
+  },
+  {
+    "id": "mat-0092",
+    "partName": "QC Scale Calibration Set 3",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 1991,
+    "pricePerUnit": 14,
+    "source": "Measurement Co",
+    "createdAt": "2023-06-09T19:15:59.111Z"
+  },
+  {
+    "id": "mat-0093",
+    "partName": "QC Tester Calibration Set 4",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 5674,
+    "pricePerUnit": 16,
+    "source": "Precision Tools Inc",
+    "createdAt": "2023-04-21T22:10:24.961Z"
+  },
+  {
+    "id": "mat-0094",
+    "partName": "QC Meter Calibration Set 5",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 5688,
+    "pricePerUnit": 18,
+    "source": "QC Masters",
+    "createdAt": "2023-08-27T10:17:33.765Z"
+  },
+  {
+    "id": "mat-0095",
+    "partName": "QC Gauge Calibration Set 6",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 3991,
+    "pricePerUnit": 20,
+    "source": "Measurement Co",
+    "createdAt": "2023-07-21T20:51:26.970Z"
+  },
+  {
+    "id": "mat-0096",
+    "partName": "QC Caliper Calibration Set 7",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 8591,
+    "pricePerUnit": 22,
+    "source": "Precision Tools Inc",
+    "createdAt": "2023-04-29T16:23:06.216Z"
+  },
+  {
+    "id": "mat-0097",
+    "partName": "QC Scale Calibration Set 8",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 4817,
+    "pricePerUnit": 24,
+    "source": "QC Masters",
+    "createdAt": "2023-04-03T13:57:25.706Z"
+  },
+  {
+    "id": "mat-0098",
+    "partName": "QC Tester Calibration Set 9",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 3314,
+    "pricePerUnit": 26,
+    "source": "Measurement Co",
+    "createdAt": "2023-07-03T20:59:59.586Z"
+  },
+  {
+    "id": "mat-0099",
+    "partName": "QC Meter Calibration Set 10",
+    "unitOfMeasurement": "sets",
+    "quantityInStock": 4656,
+    "pricePerUnit": 28,
+    "source": "Precision Tools Inc",
+    "createdAt": "2023-07-10T03:42:39.029Z"
+  }
+]
