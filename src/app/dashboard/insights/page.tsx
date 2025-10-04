@@ -83,7 +83,7 @@ export default function InsightsPage() {
               >
                 <div className="flex items-start gap-3 mb-3">
                   <span className="text-2xl">
-                    {insight.type === 'warning' ? '⬥' : insight.type === 'recommendation' ? '◆' : '▣'}
+                    {insight.type === 'warning' ? '⚠' : insight.type === 'recommendation' ? '💡' : '☷'}
                   </span>
                   <div>
                     <h3 className="text-white font-semibold mb-1">{insight.title}</h3>
