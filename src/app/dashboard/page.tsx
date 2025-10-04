@@ -13,6 +13,29 @@ export default function Dashboard() {
   const stations = useStore((state) => state.stations);
   const personnel = useStore((state) => state.personnel);
   const [selectedStation, setSelectedStation] = useState<string>('');
+  const [stationCode, setStationCode] = useState<string>('');
+  const [showConfirmTakeover, setShowConfirmTakeover] = useState(false);
+  const [takeoverStation, setTakeoverStation] = useState<string>('');
+
+  // Get operators currently at stations
+  const getOperatorAtStation = (stationId: string) => {
+    return personnel.find(p => p.role === 'operator' && (p as any).currentStation === stationId && (p as any).isLoggedIn);
+  };
+
+  // Handle station code scan/input
+  const handleStationCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const station = stations.find(s => s.id === stationCode);
+    if (station) {
+      const occupyingOperator = getOperatorAtStation(stationCode);
+      if (occupyingOperator && occupyingOperator.id !== currentUser?.id) {
+        setTakeoverStation(stationCode);
+        setShowConfirmTakeover(true);
+      } else {
+        setSelectedStation(stationCode);
+      }
+    }
+  };
 
   // Operator View
   if (currentUser?.role === 'operator') {
@@ -55,27 +78,75 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Station Selection */}
+          {/* Station Code Scanner */}
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-white/10 mb-8">
-            <h3 className="text-xl font-bold text-white mb-6">Select Your Station</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stations.map((station) => (
+            <h3 className="text-xl font-bold text-white mb-6">Scan Station Code</h3>
+            <form onSubmit={handleStationCodeSubmit} className="mb-6">
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  value={stationCode}
+                  onChange={(e) => setStationCode(e.target.value)}
+                  className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#4682B4] text-center text-xl tracking-wider"
+                  placeholder="st-0000"
+                  autoFocus
+                />
                 <button
-                  key={station.id}
-                  onClick={() => setSelectedStation(station.id)}
-                  className={`p-6 rounded-xl border-2 transition-all text-left ${
-                    selectedStation === station.id
-                      ? 'border-[#4682B4] bg-[#4682B4]/20'
-                      : 'border-white/10 bg-white/5 hover:border-white/20'
-                  }`}
+                  type="submit"
+                  className="gradient-button px-8 py-3 rounded-lg text-white font-semibold"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="text-white font-semibold">{station.name}</h4>
-                    <span className="text-2xl">⚙</span>
-                  </div>
-                  <p className="text-[#B0B3B8] text-sm">{station.description}</p>
+                  Connect
                 </button>
-              ))}
+              </div>
+              <p className="text-[#B0B3B8] text-xs mt-2 text-center">
+                Scan your station QR code or type the station ID
+              </p>
+            </form>
+
+            <div className="text-center text-[#B0B3B8] text-sm mb-4">or select from list below</div>
+
+            {/* Station Selection Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stations.map((station) => {
+                const occupyingOperator = getOperatorAtStation(station.id) as any;
+                const isOccupied = !!occupyingOperator;
+                const isCurrentOperator = occupyingOperator?.id === currentUser?.id;
+
+                return (
+                  <button
+                    key={station.id}
+                    onClick={() => {
+                      if (isOccupied && !isCurrentOperator) {
+                        setTakeoverStation(station.id);
+                        setShowConfirmTakeover(true);
+                      } else {
+                        setSelectedStation(station.id);
+                      }
+                    }}
+                    className={`p-6 rounded-xl border-2 transition-all text-left relative ${
+                      selectedStation === station.id
+                        ? 'border-[#4682B4] bg-[#4682B4]/20'
+                        : isOccupied && !isCurrentOperator
+                        ? 'border-orange-500/30 bg-orange-500/10'
+                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                    }`}
+                  >
+                    {isOccupied && (
+                      <div className="absolute top-2 right-2 px-2 py-1 bg-orange-500/20 border border-orange-500/30 rounded text-xs text-orange-300">
+                        {isCurrentOperator ? 'You' : `${occupyingOperator.firstName}`}
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="text-white font-semibold">{station.name}</h4>
+                        <p className="text-[#B0B3B8] text-xs mt-1">{station.id}</p>
+                      </div>
+                      <span className="text-2xl">⚙</span>
+                    </div>
+                    <p className="text-[#B0B3B8] text-sm">{station.description}</p>
+                  </button>
+                );
+              })}
             </div>
             {selectedStation && (
               <div className="mt-6">
@@ -85,6 +156,44 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Takeover Confirmation Modal */}
+          {showConfirmTakeover && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-[#111439] rounded-2xl p-8 max-w-md w-full border border-white/20">
+                <h3 className="text-2xl font-bold text-white mb-4">Station Already Occupied</h3>
+                <p className="text-[#B0B3B8] mb-6">
+                  This station is currently assigned to{' '}
+                  <span className="text-white font-semibold">
+                    {(getOperatorAtStation(takeoverStation) as any)?.firstName}{' '}
+                    {(getOperatorAtStation(takeoverStation) as any)?.lastName}
+                  </span>
+                  . Do you want to take over this station?
+                </p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setShowConfirmTakeover(false);
+                      setTakeoverStation('');
+                    }}
+                    className="flex-1 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedStation(takeoverStation);
+                      setShowConfirmTakeover(false);
+                      setTakeoverStation('');
+                    }}
+                    className="flex-1 gradient-button px-6 py-3 rounded-lg text-white font-semibold"
+                  >
+                    Take Over Station
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Badges */}
           {operator?.stats?.badges && operator.stats.badges.length > 0 && (
