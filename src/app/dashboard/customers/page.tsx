@@ -125,7 +125,7 @@ export default function CustomersPage() {
 
         {filteredCustomers.length === 0 && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-12 text-center">
-            <div className="text-4xl mb-3">◉</div>
+            <div className="text-4xl mb-3">⚇</div>
             <p className="text-[#B0B3B8]">No customers found matching your search.</p>
           </div>
         )}
