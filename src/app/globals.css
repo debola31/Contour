@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --steel-blue: #4682B4;
+  --deep-indigo: #111439;
+  --neutral-gray: #B0B3B8;
+  --steel-blue-light: #6FA3D8;
+  --steel-blue-dark: #2E5A8A;
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-steel-blue: var(--steel-blue);
+  --color-deep-indigo: var(--deep-indigo);
+  --color-neutral-gray: var(--neutral-gray);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
+  background: var(--deep-indigo);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #111439 0%, #4682B4 50%, #111439 100%);
+}
+
+.gradient-card {
+  background: linear-gradient(135deg, rgba(17, 20, 57, 0.95) 0%, rgba(70, 130, 180, 0.1) 100%);
+}
+
+.gradient-button {
+  background: linear-gradient(135deg, #4682B4 0%, #2E5A8A 100%);
+}
+
+.gradient-button:hover {
+  background: linear-gradient(135deg, #6FA3D8 0%, #4682B4 100%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111439;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4682B4;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6FA3D8;
 }
