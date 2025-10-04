@@ -11,17 +11,17 @@ export default function Dashboard() {
   const customers = useStore((state) => state.customers);
 
   const stats = [
-    { label: 'Active Work Orders', value: workOrders.filter(wo => wo.status === 'in_progress').length, icon: '📋', color: '#4682B4' },
-    { label: 'Total Customers', value: customers.length, icon: '👥', color: '#6FA3D8' },
-    { label: 'Inventory Items', value: materials.length, icon: '📦', color: '#2E5A8A' },
-    { label: 'Pending Approvals', value: workOrders.filter(wo => wo.status === 'requested').length, icon: '⏳', color: '#4682B4' },
+    { label: 'Active Work Orders', value: workOrders.filter(wo => wo.status === 'in_progress').length, icon: '▤', color: '#4682B4' },
+    { label: 'Total Customers', value: customers.length, icon: '◉', color: '#6FA3D8' },
+    { label: 'Inventory Items', value: materials.length, icon: '▢', color: '#2E5A8A' },
+    { label: 'Pending Approvals', value: workOrders.filter(wo => wo.status === 'requested').length, icon: '◇', color: '#4682B4' },
   ];
 
   const quickActions = [
-    { name: 'View Inventory', path: '/dashboard/inventory', icon: '📦', description: 'Manage materials and stock levels' },
-    { name: 'Work Orders', path: '/dashboard/work-orders', icon: '📋', description: 'Create and manage work orders' },
-    { name: 'Customers', path: '/dashboard/customers', icon: '👥', description: 'Manage customer information' },
-    { name: 'Insights', path: '/dashboard/insights', icon: '📊', description: 'View analytics and reports' },
+    { name: 'View Inventory', path: '/dashboard/inventory', icon: '▢', description: 'Manage materials and stock levels' },
+    { name: 'Work Orders', path: '/dashboard/work-orders', icon: '▤', description: 'Create and manage work orders' },
+    { name: 'Customers', path: '/dashboard/customers', icon: '◉', description: 'Manage customer information' },
+    { name: 'Insights', path: '/dashboard/insights', icon: '▣', description: 'View analytics and reports' },
   ];
 
   return (
@@ -32,7 +32,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8 gradient-card rounded-2xl p-8 border border-white/10">
           <h2 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {currentUser?.firstName}! 👋
+            Welcome back, {currentUser?.firstName}
           </h2>
           <p className="text-[#B0B3B8] text-lg">
             {currentUser?.role === 'owner'
@@ -84,7 +84,7 @@ export default function Dashboard() {
           <h3 className="text-xl font-bold text-white mb-4">Recent Activity</h3>
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6">
             <div className="text-center text-[#B0B3B8] py-8">
-              <div className="text-4xl mb-3">📊</div>
+              <div className="text-4xl mb-3">▣</div>
               <p>Start creating work orders and managing inventory to see activity here.</p>
             </div>
           </div>

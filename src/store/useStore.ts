@@ -15,7 +15,7 @@ import {
   TransactionType,
   PersonnelRole,
 } from '@/types';
-import { generateSampleData } from '@/data/sampleData';
+import { loadSampleData } from '@/data/loadSampleData';
 
 interface StoreActions {
   // Auth
@@ -86,7 +86,7 @@ interface StoreActions {
 
 type Store = AppState & StoreActions;
 
-const initialData = generateSampleData();
+const initialData = loadSampleData();
 
 export const useStore = create<Store>()(
   persist(
@@ -421,7 +421,7 @@ export const useStore = create<Store>()(
       },
 
       resetToSampleData: () => {
-        const freshData = generateSampleData();
+        const freshData = loadSampleData();
         set({
           personnel: freshData.personnel,
           customers: freshData.customers,

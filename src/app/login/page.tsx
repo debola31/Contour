@@ -9,10 +9,13 @@ import { getAssetPath } from '@/lib/utils';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [operatorId, setOperatorId] = useState('');
   const [showOperatorLogin, setShowOperatorLogin] = useState(false);
   const [error, setError] = useState('');
+  const [operatorError, setOperatorError] = useState('');
   const router = useRouter();
   const login = useStore((state) => state.login);
+  const loginOperator = useStore((state) => state.loginOperator);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +24,18 @@ export default function LoginPage() {
       router.push('/dashboard');
     } else {
       setError('Invalid credentials');
+    }
+  };
+
+  const handleOperatorLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // The QR code format is "QR-op-XXXX", so we construct it from the operator ID
+    const qrCode = `QR-${operatorId}`;
+    const user = loginOperator(qrCode, 'default-station'); // Station will be selected later
+    if (user) {
+      router.push('/dashboard');
+    } else {
+      setOperatorError('Invalid operator ID');
     }
   };
 
@@ -105,20 +120,51 @@ export default function LoginPage() {
         ) : (
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20">
             <h2 className="text-2xl font-semibold text-white mb-6">Operator Login</h2>
-            <div className="text-center">
-              <div className="bg-white p-6 rounded-xl mb-6">
-                <p className="text-deep-indigo text-sm mb-4">Scan your QR code to log in</p>
-                <div className="text-6xl">📷</div>
+            <form onSubmit={handleOperatorLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-gray mb-2">
+                  Operator ID
+                </label>
+                <input
+                  type="text"
+                  value={operatorId}
+                  onChange={(e) => setOperatorId(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/5 border border-neutral-gray/30 rounded-lg text-white placeholder-neutral-gray/50 focus:outline-none focus:ring-2 focus:ring-steel-blue text-center text-xl tracking-wider"
+                  placeholder="op-0000"
+                  required
+                  autoFocus
+                />
+                <p className="text-neutral-gray text-xs mt-2 text-center">
+                  Scan your QR code or type your operator ID
+                </p>
               </div>
-              <p className="text-neutral-gray text-sm mb-6">
-                Position your QR code in front of the scanner
-              </p>
+              {operatorError && (
+                <div className="text-red-400 text-sm bg-red-500/10 p-3 rounded-lg">
+                  {operatorError}
+                </div>
+              )}
               <button
-                onClick={() => setShowOperatorLogin(false)}
-                className="text-steel-blue hover:text-steel-blue-light transition-colors"
+                type="submit"
+                className="w-full gradient-button text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 hover:shadow-lg"
+              >
+                Login
+              </button>
+            </form>
+            <div className="mt-6 pt-6 border-t border-neutral-gray/20">
+              <button
+                onClick={() => {
+                  setShowOperatorLogin(false);
+                  setOperatorId('');
+                  setOperatorError('');
+                }}
+                className="text-steel-blue hover:text-steel-blue-light transition-colors text-sm"
               >
                 ← Back to Professional Login
               </button>
+            </div>
+            <div className="mt-6 text-center text-sm text-neutral-gray">
+              <p>Demo Operator IDs:</p>
+              <p className="mt-2">op-0000 to op-0076</p>
             </div>
           </div>
         )}

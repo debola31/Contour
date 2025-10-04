@@ -1,0 +1,92 @@
+[
+  {
+    "id": "st-0000",
+    "name": "Case Cleaning",
+    "description": "Clean and prepare brass casings for reloading",
+    "createdAt": "2023-02-21T16:13:01.315Z"
+  },
+  {
+    "id": "st-0001",
+    "name": "Case Inspection",
+    "description": "Visual and measurement inspection of cases",
+    "createdAt": "2023-01-28T11:51:15.119Z"
+  },
+  {
+    "id": "st-0002",
+    "name": "Decapping",
+    "description": "Remove spent primers from cases",
+    "createdAt": "2023-02-01T14:39:55.723Z"
+  },
+  {
+    "id": "st-0003",
+    "name": "Case Sizing",
+    "description": "Resize cases to proper dimensions",
+    "createdAt": "2023-06-13T12:48:43.578Z"
+  },
+  {
+    "id": "st-0004",
+    "name": "Priming",
+    "description": "Insert new primers into cases",
+    "createdAt": "2023-02-13T03:14:47.151Z"
+  },
+  {
+    "id": "st-0005",
+    "name": "Powder Charging",
+    "description": "Measure and add powder to cases",
+    "createdAt": "2023-01-25T03:33:36.415Z"
+  },
+  {
+    "id": "st-0006",
+    "name": "Bullet Seating",
+    "description": "Seat bullets to proper depth",
+    "createdAt": "2023-06-05T13:04:34.919Z"
+  },
+  {
+    "id": "st-0007",
+    "name": "Crimping",
+    "description": "Apply crimp to secure bullet",
+    "createdAt": "2023-01-26T12:06:09.885Z"
+  },
+  {
+    "id": "st-0008",
+    "name": "Final Inspection",
+    "description": "Visual inspection of completed rounds",
+    "createdAt": "2023-05-11T19:22:26.708Z"
+  },
+  {
+    "id": "st-0009",
+    "name": "Quality Testing",
+    "description": "Test rounds for quality and safety - FINAL STATION",
+    "createdAt": "2023-03-05T00:45:39.473Z"
+  },
+  {
+    "id": "st-0010",
+    "name": "Packaging",
+    "description": "Package ammunition in boxes",
+    "createdAt": "2023-01-09T11:49:47.270Z"
+  },
+  {
+    "id": "st-0011",
+    "name": "Labeling",
+    "description": "Apply labels and lot numbers",
+    "createdAt": "2023-05-13T13:10:50.079Z"
+  },
+  {
+    "id": "st-0012",
+    "name": "Inventory Storage",
+    "description": "Store completed products in inventory",
+    "createdAt": "2023-01-08T11:17:51.979Z"
+  },
+  {
+    "id": "st-0013",
+    "name": "Assembly Prep",
+    "description": "Prepare components for assembly",
+    "createdAt": "2023-05-15T22:32:35.298Z"
+  },
+  {
+    "id": "st-0014",
+    "name": "Batch Preparation",
+    "description": "Prepare materials in batches",
+    "createdAt": "2023-05-07T08:27:29.396Z"
+  }
+]

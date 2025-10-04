@@ -24,7 +24,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a]">
+    <div className="flex h-screen gradient-bg">
       <Sidebar />
       <div className="flex-1 overflow-auto">
         {children}

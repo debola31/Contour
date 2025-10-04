@@ -84,7 +84,7 @@ export default function WorkOrdersPage() {
         {/* Work Orders List */}
         {workOrders.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-12 text-center">
-            <div className="text-4xl mb-3">📋</div>
+            <div className="text-4xl mb-3">▤</div>
             <h3 className="text-white font-semibold mb-2">No Work Orders Yet</h3>
             <p className="text-[#B0B3B8] mb-6">
               Create your first work order to get started with production management.

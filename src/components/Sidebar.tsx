@@ -8,16 +8,16 @@ import { getAssetPath } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
 
 const menuItems = [
-  { name: 'Home', path: '/dashboard', icon: '🏠', roles: ['owner', 'salesperson', 'operator'] },
-  { name: 'Insights', path: '/dashboard/insights', icon: '📊', roles: ['owner', 'salesperson'] },
-  { name: 'Inventory', path: '/dashboard/inventory', icon: '📦', roles: ['owner', 'salesperson'] },
-  { name: 'Customers', path: '/dashboard/customers', icon: '👥', roles: ['owner', 'salesperson'] },
-  { name: 'Work Orders', path: '/dashboard/work-orders', icon: '📋', roles: ['owner', 'salesperson'] },
-  { name: 'Operators', path: '/dashboard/operators', icon: '👷', roles: ['owner', 'salesperson'] },
-  { name: 'Invoices', path: '/dashboard/invoices', icon: '💰', roles: ['owner', 'salesperson'] },
-  { name: 'Shipping', path: '/dashboard/shipping', icon: '🚚', roles: ['owner', 'salesperson'] },
-  { name: 'Transactions', path: '/dashboard/transactions', icon: '📝', roles: ['owner', 'salesperson'] },
-  { name: 'Admin', path: '/dashboard/admin', icon: '⚙️', roles: ['owner'] },
+  { name: 'Home', path: '/dashboard', icon: '◆', roles: ['owner', 'salesperson', 'operator'] },
+  { name: 'Insights', path: '/dashboard/insights', icon: '▣', roles: ['owner', 'salesperson'] },
+  { name: 'Inventory', path: '/dashboard/inventory', icon: '▢', roles: ['owner', 'salesperson'] },
+  { name: 'Customers', path: '/dashboard/customers', icon: '◉', roles: ['owner', 'salesperson'] },
+  { name: 'Work Orders', path: '/dashboard/work-orders', icon: '▤', roles: ['owner', 'salesperson'] },
+  { name: 'Operators', path: '/dashboard/operators', icon: '◈', roles: ['owner', 'salesperson'] },
+  { name: 'Invoices', path: '/dashboard/invoices', icon: '▥', roles: ['owner', 'salesperson'] },
+  { name: 'Shipping', path: '/dashboard/shipping', icon: '▦', roles: ['owner', 'salesperson'] },
+  { name: 'Transactions', path: '/dashboard/transactions', icon: '▧', roles: ['owner', 'salesperson'] },
+  { name: 'Admin', path: '/dashboard/admin', icon: '◎', roles: ['owner'] },
 ];
 
 export default function Sidebar() {
@@ -109,7 +109,7 @@ export default function Sidebar() {
             className="w-full flex justify-center text-2xl hover:opacity-80 transition-opacity"
             title="Logout"
           >
-            🚪
+            ◀
           </button>
         )}
       </div>
