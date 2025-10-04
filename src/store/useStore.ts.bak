@@ -209,7 +209,7 @@ export const useStore = create<Store>()(
 
       updateMaterial: (id: string, updates: Partial<Material>) => {
         set((state) => ({
-          materials: state.materials.map((m) => (m.id === id ? { ...m, ...updates } as Material : m)),
+          materials: state.materials.map((m) => (m.id === id ? { ...m, ...updates } : m)),
         }));
         get().logTransaction('material', id, 'update', `Updated material`, updates);
       },
@@ -227,7 +227,7 @@ export const useStore = create<Store>()(
 
       updateStation: (id: string, updates: Partial<Station>) => {
         set((state) => ({
-          stations: state.stations.map((s) => (s.id === id ? { ...s, ...updates } as Station : s)),
+          stations: state.stations.map((s) => (s.id === id ? { ...s, ...updates } : s)),
         }));
         get().logTransaction('station', id, 'update', `Updated station`, updates);
       },
@@ -245,7 +245,7 @@ export const useStore = create<Store>()(
 
       updateTemplate: (id: string, updates: Partial<WorkOrderTemplate>) => {
         set((state) => ({
-          templates: state.templates.map((t) => (t.id === id ? { ...t, ...updates } as WorkOrderTemplate : t)),
+          templates: state.templates.map((t) => (t.id === id ? { ...t, ...updates } : t)),
         }));
         get().logTransaction('template', id, 'update', `Updated template`, updates);
       },
@@ -263,7 +263,7 @@ export const useStore = create<Store>()(
 
       updateWorkOrder: (id: string, updates: Partial<WorkOrder>) => {
         set((state) => ({
-          workOrders: state.workOrders.map((wo) => (wo.id === id ? { ...wo, ...updates } as WorkOrder : wo)),
+          workOrders: state.workOrders.map((wo) => (wo.id === id ? { ...wo, ...updates } : wo)),
         }));
       },
 
@@ -339,7 +339,7 @@ export const useStore = create<Store>()(
 
       updateInvoice: (id: string, updates: Partial<Invoice>) => {
         set((state) => ({
-          invoices: state.invoices.map((inv) => (inv.id === id ? { ...inv, ...updates } as Invoice : inv)),
+          invoices: state.invoices.map((inv) => (inv.id === id ? { ...inv, ...updates } : inv)),
         }));
       },
 
@@ -359,7 +359,7 @@ export const useStore = create<Store>()(
 
       updateShipment: (id: string, updates: Partial<Shipment>) => {
         set((state) => ({
-          shipments: state.shipments.map((s) => (s.id === id ? { ...s, ...updates } as Shipment : s)),
+          shipments: state.shipments.map((s) => (s.id === id ? { ...s, ...updates } : s)),
         }));
         get().logTransaction('shipment', id, 'update', `Updated shipment`, updates);
       },
