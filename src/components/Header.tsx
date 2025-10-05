@@ -36,10 +36,10 @@ export default function Header({ title }: { title: string }) {
           {showUserMenu && (
             <>
               <div
-                className="fixed inset-0 z-10"
+                className="fixed inset-0 z-[9998]"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-56 bg-[#111439] border border-white/10 rounded-xl shadow-xl z-20">
+              <div className="absolute right-0 top-full mt-2 w-56 bg-[#111439] border border-white/10 rounded-xl shadow-xl z-[9999]">
                 <div className="p-3 border-b border-white/10">
                   <div className="text-white font-medium">
                     {currentUser?.firstName} {currentUser?.lastName}
