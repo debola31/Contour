@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { getAssetPath } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
@@ -23,13 +23,7 @@ const menuItems = [
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const { currentUser, logout } = useStore();
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
+  const currentUser = useStore((state) => state.currentUser);
 
   const visibleMenuItems = menuItems.filter(item =>
     currentUser && item.roles.includes(currentUser.role)
@@ -88,31 +82,6 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* User Info */}
-      <div className="p-4 border-t border-white/10">
-        {!isCollapsed ? (
-          <div className="space-y-3">
-            <div className="text-white/60 text-sm">
-              <div className="font-medium text-white">{currentUser?.firstName} {currentUser?.lastName}</div>
-              <div className="text-xs capitalize">{currentUser?.role}</div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="w-full px-3 py-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-lg transition-colors text-sm"
-            >
-              Logout
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={handleLogout}
-            className="w-full flex justify-center text-2xl hover:opacity-80 transition-opacity"
-            title="Logout"
-          >
-            ◀
-          </button>
-        )}
-      </div>
     </div>
   );
 }
