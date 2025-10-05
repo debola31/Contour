@@ -78,12 +78,13 @@ export default function CustomersPage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                  <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                     customer.type === 'business'
                       ? 'bg-[#4682B4]/20 text-white'
                       : 'bg-[#6FA3D8]/20 text-white'
                   }`}>
-                    {customer.type === 'business' ? '⌂ Business' : '⚇ Individual'}
+                    <span className="text-lg">{customer.type === 'business' ? '⌂' : '⚇'}</span>
+                    {customer.type === 'business' ? 'Business' : 'Individual'}
                   </span>
                 </div>
               </div>

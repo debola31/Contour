@@ -79,8 +79,8 @@ export default function Sidebar() {
                       : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <span className="text-xl">{item.icon}</span>
-                  {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                  <span className="text-xl flex items-center justify-center w-6">{item.icon}</span>
+                  {!isCollapsed && <span className="font-medium leading-none">{item.name}</span>}
                 </Link>
               </li>
             );

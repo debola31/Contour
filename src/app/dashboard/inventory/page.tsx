@@ -217,9 +217,9 @@ export default function InventoryPage() {
                   <div className="relative">
                     <input
                       type="number"
-                      value={Math.abs(quantityChange)}
+                      value={quantityChange === 0 ? '' : Math.abs(quantityChange)}
                       onChange={(e) => {
-                        const val = Number(e.target.value);
+                        const val = e.target.value === '' ? 0 : Number(e.target.value);
                         setQuantityChange(quantityChange >= 0 ? val : -val);
                       }}
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
