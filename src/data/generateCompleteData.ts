@@ -1,5 +1,4 @@
-import { WorkOrder, Invoice, Shipment, Transaction } from '@/types';
-import { generateWorkOrderTemplates } from './generateTemplates';
+import { WorkOrder, Invoice, Shipment, Transaction, WorkOrderTemplate, Customer } from '@/types';
 
 const generateId = (prefix: string, index: number) => `${prefix}-${String(index).padStart(4, '0')}`;
 
@@ -10,7 +9,7 @@ const getRandomDate = (start: Date, end: Date) => {
 const formatDate = (date: Date) => date.toISOString();
 
 export const generateWorkOrders = (
-  templates: any[],
+  templates: WorkOrderTemplate[],
   customerIds: string[],
   salesPersonIds: string[],
   ownerIds: string[]
@@ -88,7 +87,7 @@ export const generateInvoices = (workOrders: WorkOrder[], customerIds: string[])
   return invoices;
 };
 
-export const generateShipments = (workOrders: WorkOrder[], customerIds: string[], customers: any[]): Shipment[] => {
+export const generateShipments = (workOrders: WorkOrder[], customerIds: string[], customers: Customer[]): Shipment[] => {
   const shipments: Shipment[] = [];
   const finishedOrders = workOrders.filter(wo => wo.status === 'finished');
 

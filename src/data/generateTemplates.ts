@@ -1,4 +1,4 @@
-import { WorkOrderTemplate, FlowNode, FlowEdge } from '@/types';
+import { WorkOrderTemplate } from '@/types';
 
 const generateId = (prefix: string, index: number) => `${prefix}-${String(index).padStart(4, '0')}`;
 

@@ -12,7 +12,6 @@ export default function InventoryPage() {
   const deleteMaterial = useStore((state) => state.deleteMaterial);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [editQuantityModal, setEditQuantityModal] = useState<Material | null>(null);
   const [quantityChange, setQuantityChange] = useState<number>(0);
   const [deleteConfirm, setDeleteConfirm] = useState<Material | null>(null);
@@ -34,15 +33,6 @@ export default function InventoryPage() {
   const lowStockMaterials = materials.filter(
     (m) => m.minimumQuantity && m.quantityInStock <= m.minimumQuantity
   );
-
-  const handleUpdateStock = (id: string, change: number) => {
-    const material = materials.find((m) => m.id === id);
-    if (material) {
-      updateMaterial(id, {
-        quantityInStock: Math.max(0, material.quantityInStock + change),
-      });
-    }
-  };
 
   const handleEditQuantity = () => {
     if (editQuantityModal) {
@@ -88,7 +78,9 @@ export default function InventoryPage() {
         {lowStockMaterials.length > 0 && (
           <div className="mb-6 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">⚠️</span>
+              <svg className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
               <div>
                 <h3 className="text-yellow-500 font-semibold mb-1">Low Stock Alert</h3>
                 <p className="text-white/80 text-sm">
@@ -154,7 +146,11 @@ export default function InventoryPage() {
                     >
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          {isLowStock && <span className="text-yellow-500">⚠️</span>}
+                          {isLowStock && (
+                            <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          )}
                           <span className="text-white font-medium">{material.partName}</span>
                         </div>
                       </td>
@@ -176,14 +172,18 @@ export default function InventoryPage() {
                             className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white rounded transition-colors"
                             title="Edit Quantity"
                           >
-                            ✎
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
                           </button>
                           <button
                             onClick={() => setDeleteConfirm(material)}
                             className="px-3 py-2 bg-white/5 hover:bg-red-500/20 text-white hover:text-red-400 rounded transition-colors"
                             title="Delete Material"
                           >
-                            ✕
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </button>
                         </div>
                       </td>
@@ -272,7 +272,12 @@ export default function InventoryPage() {
                     </span>
                   </div>
                   {editQuantityModal.quantityInStock + quantityChange < 0 && (
-                    <div className="text-red-400 text-xs mt-1">⚠️ Cannot have negative stock</div>
+                    <div className="flex items-center gap-1 text-red-400 text-xs mt-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Cannot have negative stock
+                    </div>
                   )}
                 </div>
               </div>
@@ -321,7 +326,9 @@ export default function InventoryPage() {
                 {similarMaterials.length > 0 && (
                   <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
                     <div className="flex items-start gap-3">
-                      <span className="text-xl">⚠️</span>
+                      <svg className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
                       <div className="flex-1">
                         <h3 className="text-yellow-500 font-semibold mb-2">Similar Materials Found</h3>
                         <p className="text-white/80 text-sm mb-3">

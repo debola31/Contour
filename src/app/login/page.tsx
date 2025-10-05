@@ -11,38 +11,28 @@ export default function LoginPage() {
   const login = useStore((state) => state.login);
   const loginOperator = useStore((state) => state.loginOperator);
 
+  const handleOwnerLogin = () => {
+    const owners = personnel.filter(p => p.role === 'owner');
+    if (owners.length === 0) return;
+    const randomOwner = owners[Math.floor(Math.random() * owners.length)];
+    const user = login(randomOwner.email, 'password');
+    if (user) router.push('/dashboard');
+  };
+
   const handleAdminLogin = () => {
-    // Get all non-operator personnel (owners and salespeople)
-    const admins = personnel.filter(p => p.role === 'owner' || p.role === 'salesperson');
-
+    const admins = personnel.filter(p => p.role === 'salesperson');
     if (admins.length === 0) return;
-
-    // Pick a random admin
     const randomAdmin = admins[Math.floor(Math.random() * admins.length)];
-
-    // Login with their email
-    const user = login(randomAdmin.email, 'password'); // Password doesn't matter in demo
-
-    if (user) {
-      router.push('/dashboard');
-    }
+    const user = login(randomAdmin.email, 'password');
+    if (user) router.push('/dashboard');
   };
 
   const handleOperatorLogin = () => {
-    // Get all operators
     const operators = personnel.filter(p => p.role === 'operator');
-
     if (operators.length === 0) return;
-
-    // Pick a random operator
     const randomOperator = operators[Math.floor(Math.random() * operators.length)];
-
-    // Login with their QR code
     const user = loginOperator(randomOperator.qrCode, 'default-station');
-
-    if (user) {
-      router.push('/dashboard');
-    }
+    if (user) router.push('/dashboard');
   };
 
   return (
@@ -69,8 +59,15 @@ export default function LoginPage() {
 
           <div className="space-y-4">
             <button
-              onClick={handleAdminLogin}
+              onClick={handleOwnerLogin}
               className="w-full gradient-button text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 hover:shadow-lg text-lg"
+            >
+              Login as Owner
+            </button>
+
+            <button
+              onClick={handleAdminLogin}
+              className="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 border border-neutral-gray/30 text-lg"
             >
               Login as Admin
             </button>
@@ -85,7 +82,8 @@ export default function LoginPage() {
 
           <div className="mt-8 text-center text-sm text-neutral-gray">
             <p>Click a button to login as a random user</p>
-            <p className="mt-2 text-xs">Admin: Owner or Salesperson</p>
+            <p className="mt-2 text-xs">Owner: Company Owner</p>
+            <p className="text-xs">Admin: Salesperson</p>
             <p className="text-xs">Operator: Production Floor Worker</p>
           </div>
         </div>

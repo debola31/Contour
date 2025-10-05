@@ -1,4 +1,4 @@
-import { Personnel, Customer, Material, Station, WorkOrderTemplate, WorkOrder, Invoice, Shipment, Transaction } from '@/types';
+import { Personnel, Customer, Material, Station } from '@/types';
 import personnelData from './json/personnel.json';
 import customersData from './json/customers.json';
 import materialsData from './json/materials.json';
@@ -6,7 +6,19 @@ import stationsData from './json/stations.json';
 import { generateWorkOrderTemplates } from './generateTemplates';
 import { generateWorkOrders, generateInvoices, generateShipments, generateTransactions } from './generateCompleteData';
 
-let cachedData: any = null;
+interface CachedData {
+  personnel: Personnel[];
+  customers: Customer[];
+  materials: Material[];
+  stations: Station[];
+  templates: ReturnType<typeof generateWorkOrderTemplates>;
+  workOrders: ReturnType<typeof generateWorkOrders>;
+  invoices: ReturnType<typeof generateInvoices>;
+  shipments: ReturnType<typeof generateShipments>;
+  transactions: ReturnType<typeof generateTransactions>;
+}
+
+let cachedData: CachedData | null = null;
 
 export const loadSampleData = () => {
   if (cachedData) return cachedData;

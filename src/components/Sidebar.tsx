@@ -9,6 +9,7 @@ import { useStore } from '@/store/useStore';
 
 const menuItems = [
   { name: 'Home', path: '/dashboard', icon: '⌂', roles: ['owner', 'salesperson', 'operator'] },
+  { name: 'Station Work', path: '/dashboard/station', icon: '🔧', roles: ['operator'] },
   { name: 'Insights', path: '/dashboard/insights', icon: '☷', roles: ['owner', 'salesperson'] },
   { name: 'Inventory', path: '/dashboard/inventory', icon: '⊞', roles: ['owner', 'salesperson'] },
   { name: 'Customers', path: '/dashboard/customers', icon: '⚇', roles: ['owner', 'salesperson'] },
@@ -17,6 +18,8 @@ const menuItems = [
   { name: 'Invoices', path: '/dashboard/invoices', icon: '⚖', roles: ['owner', 'salesperson'] },
   { name: 'Shipping', path: '/dashboard/shipping', icon: '⛟', roles: ['owner', 'salesperson'] },
   { name: 'Transactions', path: '/dashboard/transactions', icon: '☲', roles: ['owner', 'salesperson'] },
+  { name: 'Personnel', path: '/dashboard/personnel', icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>', roles: ['owner'] },
+  { name: 'Templates', path: '/dashboard/templates', icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>', roles: ['owner'] },
   { name: 'Admin', path: '/dashboard/admin', icon: '⚒', roles: ['owner'] },
 ];
 
@@ -73,7 +76,13 @@ export default function Sidebar() {
                       : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <span className="text-xl flex items-center justify-center w-6">{item.icon}</span>
+                  <span className="text-xl flex items-center justify-center w-6">
+                    {item.icon.startsWith('<svg') ? (
+                      <span className="w-6 h-6" dangerouslySetInnerHTML={{ __html: item.icon }} />
+                    ) : (
+                      item.icon
+                    )}
+                  </span>
                   {!isCollapsed && <span className="font-medium leading-none">{item.name}</span>}
                 </Link>
               </li>

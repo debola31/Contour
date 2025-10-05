@@ -73,7 +73,7 @@ export default function Dashboard() {
               </div>
               <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                 <div className="text-[#B0B3B8] text-sm mb-1">Streak</div>
-                <div className="text-3xl font-bold text-orange-400">{operator.stats.currentStreak} ⚡</div>
+                <div className="text-3xl font-bold text-orange-400">{operator.stats.currentStreak}</div>
               </div>
             </div>
           )}
@@ -141,7 +141,10 @@ export default function Dashboard() {
                         <h4 className="text-white font-semibold">{station.name}</h4>
                         <p className="text-[#B0B3B8] text-xs mt-1">{station.id}</p>
                       </div>
-                      <span className="text-2xl">⚙</span>
+                      <svg className="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
                     </div>
                     <p className="text-[#B0B3B8] text-sm">{station.description}</p>
                   </button>
@@ -220,18 +223,46 @@ export default function Dashboard() {
 
   // Professional Staff View (Owner/Salesperson)
   const stats = [
-    { label: 'Active Work Orders', value: workOrders.filter(wo => wo.status === 'in_progress').length, icon: '☰', color: '#4682B4' },
-    { label: 'Total Customers', value: customers.length, icon: '⚇', color: '#6FA3D8' },
-    { label: 'Inventory Items', value: materials.length, icon: '⊞', color: '#2E5A8A' },
-    { label: 'Pending Approvals', value: workOrders.filter(wo => wo.status === 'requested').length, icon: '⧗', color: '#4682B4' },
+    { label: 'Active Work Orders', value: workOrders.filter(wo => wo.status === 'in_progress').length, icon: 'list', color: '#4682B4' },
+    { label: 'Total Customers', value: customers.length, icon: 'users', color: '#6FA3D8' },
+    { label: 'Inventory Items', value: materials.length, icon: 'box', color: '#2E5A8A' },
+    { label: 'Pending Approvals', value: workOrders.filter(wo => wo.status === 'requested').length, icon: 'clock', color: '#4682B4' },
   ];
 
   const quickActions = [
-    { name: 'View Inventory', path: '/dashboard/inventory', icon: '⊞', description: 'Manage materials and stock levels' },
-    { name: 'Work Orders', path: '/dashboard/work-orders', icon: '☰', description: 'Create and manage work orders' },
-    { name: 'Customers', path: '/dashboard/customers', icon: '⚇', description: 'Manage customer information' },
-    { name: 'Insights', path: '/dashboard/insights', icon: '☷', description: 'View analytics and reports' },
+    { name: 'View Inventory', path: '/dashboard/inventory', icon: 'box', description: 'Manage materials and stock levels' },
+    { name: 'Work Orders', path: '/dashboard/work-orders', icon: 'list', description: 'Create and manage work orders' },
+    { name: 'Customers', path: '/dashboard/customers', icon: 'users', description: 'Manage customer information' },
+    { name: 'Insights', path: '/dashboard/insights', icon: 'chart', description: 'View analytics and reports' },
   ];
+
+  const iconMap: Record<string, React.ReactElement> = {
+    list: (
+      <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    ),
+    users: (
+      <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    ),
+    box: (
+      <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+    clock: (
+      <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    chart: (
+      <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+  };
 
   return (
     <div className="min-h-screen">
@@ -260,7 +291,9 @@ export default function Dashboard() {
               className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all"
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-3xl">{stat.icon}</span>
+                <div className="w-8 h-8 text-white">
+                  {iconMap[stat.icon]}
+                </div>
                 <div className="text-3xl font-bold text-white">{stat.value}</div>
               </div>
               <div className="text-[#B0B3B8] font-medium">{stat.label}</div>
@@ -278,7 +311,9 @@ export default function Dashboard() {
                 href={action.path}
                 className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-[#4682B4] hover:bg-white/10 transition-all group"
               >
-                <div className="text-4xl mb-3">{action.icon}</div>
+                <div className="w-10 h-10 text-white mb-3">
+                  {iconMap[action.icon]}
+                </div>
                 <h4 className="text-white font-semibold mb-1 group-hover:text-[#4682B4] transition-colors">
                   {action.name}
                 </h4>
@@ -293,7 +328,9 @@ export default function Dashboard() {
           <h3 className="text-xl font-bold text-white mb-4">Recent Activity</h3>
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6">
             <div className="text-center text-[#B0B3B8] py-8">
-              <div className="text-4xl mb-3">☷</div>
+              <div className="w-12 h-12 mx-auto mb-3 text-white/20">
+                {iconMap['chart']}
+              </div>
               <p>Start creating work orders and managing inventory to see activity here.</p>
             </div>
           </div>
