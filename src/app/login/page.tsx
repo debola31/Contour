@@ -40,12 +40,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
-            <div className="w-32 h-32">
+            <div className="w-48 h-48">
               <Image
                 src={getAssetPath('/ctm-logo.png')}
                 alt="CTM Logo"
-                width={128}
-                height={128}
+                width={192}
+                height={192}
                 priority
               />
             </div>

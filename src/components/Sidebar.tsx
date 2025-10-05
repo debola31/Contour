@@ -35,10 +35,10 @@ export default function Sidebar() {
   return (
     <div
       data-tour="sidebar"
-      className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 bg-[#111439] h-screen flex flex-col border-r border-white/10`}
+      className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 bg-[#1a1f3a] h-screen flex flex-col border-r border-white/10`}
     >
       {/* Logo */}
-      <div className="p-4 border-b border-white/10">
+      <div className="p-4 border-b border-white/10 bg-white/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3" data-tour="logo">
             <div className="w-10 h-10 flex-shrink-0">

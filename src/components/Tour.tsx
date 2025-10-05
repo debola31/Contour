@@ -73,13 +73,25 @@ export default function Tour({ steps, run, onComplete, onSkip }: TourProps) {
 
       // Highlight the element
       element.classList.add('tour-highlight');
+
+      // Scroll element into view and center it
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center'
+      });
     };
 
     updatePosition();
+
+    // Small delay to ensure smooth scrolling completes before positioning tooltip
+    const scrollTimer = setTimeout(updatePosition, 100);
+
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition);
 
     return () => {
+      clearTimeout(scrollTimer);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition);
 
