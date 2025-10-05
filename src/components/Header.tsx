@@ -16,7 +16,7 @@ export default function Header({ title }: { title: string }) {
   };
 
   return (
-    <header className="bg-[#111439]/50 backdrop-blur-sm border-b border-white/10 px-6 py-4">
+    <header className="bg-[#111439]/50 backdrop-blur-sm border-b border-white/10 px-6 py-4 relative z-50">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">{title}</h1>
         <div className="flex items-center gap-4 relative">
@@ -34,7 +34,7 @@ export default function Header({ title }: { title: string }) {
                 className="fixed inset-0 z-[9998]"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-56 bg-[#111439] border border-white/10 rounded-xl shadow-xl z-[9999]">
+              <div className="absolute right-0 top-full mt-2 w-56 bg-[#111439] border border-white/10 rounded-xl shadow-2xl z-[9999] backdrop-blur-md">
                 <div className="p-3 border-b border-white/10">
                   <div className="text-white font-medium">
                     {currentUser?.firstName} {currentUser?.lastName}
