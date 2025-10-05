@@ -1,41 +1,47 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Image from 'next/image';
 import { getAssetPath } from '@/lib/utils';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [operatorId, setOperatorId] = useState('');
-  const [showOperatorLogin, setShowOperatorLogin] = useState(false);
-  const [error, setError] = useState('');
-  const [operatorError, setOperatorError] = useState('');
   const router = useRouter();
+  const personnel = useStore((state) => state.personnel);
   const login = useStore((state) => state.login);
   const loginOperator = useStore((state) => state.loginOperator);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const user = login(email, password);
+  const handleAdminLogin = () => {
+    // Get all non-operator personnel (owners and salespeople)
+    const admins = personnel.filter(p => p.role === 'owner' || p.role === 'salesperson');
+
+    if (admins.length === 0) return;
+
+    // Pick a random admin
+    const randomAdmin = admins[Math.floor(Math.random() * admins.length)];
+
+    // Login with their email
+    const user = login(randomAdmin.email, 'password'); // Password doesn't matter in demo
+
     if (user) {
       router.push('/dashboard');
-    } else {
-      setError('Invalid credentials');
     }
   };
 
-  const handleOperatorLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // The QR code format is "QR-op-XXXX", so we construct it from the operator ID
-    const qrCode = `QR-${operatorId}`;
-    const user = loginOperator(qrCode, 'default-station'); // Station will be selected later
+  const handleOperatorLogin = () => {
+    // Get all operators
+    const operators = personnel.filter(p => p.role === 'operator');
+
+    if (operators.length === 0) return;
+
+    // Pick a random operator
+    const randomOperator = operators[Math.floor(Math.random() * operators.length)];
+
+    // Login with their QR code
+    const user = loginOperator(randomOperator.qrCode, 'default-station');
+
     if (user) {
       router.push('/dashboard');
-    } else {
-      setOperatorError('Invalid operator ID');
     }
   };
 
@@ -58,116 +64,31 @@ export default function LoginPage() {
           <p className="text-neutral-gray text-lg">Enterprise Resource Planning</p>
         </div>
 
-        {!showOperatorLogin ? (
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20">
-            <h2 className="text-2xl font-semibold text-white mb-6">Professional Login</h2>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-gray mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-neutral-gray/30 rounded-lg text-white placeholder-neutral-gray/50 focus:outline-none focus:ring-2 focus:ring-steel-blue"
-                  placeholder="your.email@contour.com"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-gray mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-neutral-gray/30 rounded-lg text-white placeholder-neutral-gray/50 focus:outline-none focus:ring-2 focus:ring-steel-blue"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              {error && (
-                <div className="text-red-400 text-sm bg-red-500/10 p-3 rounded-lg">
-                  {error}
-                </div>
-              )}
-              <button
-                type="submit"
-                className="w-full gradient-button text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 hover:shadow-lg"
-              >
-                Sign In
-              </button>
-            </form>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20">
+          <h2 className="text-2xl font-semibold text-white mb-6 text-center">Quick Login</h2>
 
-            <div className="mt-6 pt-6 border-t border-neutral-gray/20">
-              <button
-                onClick={() => setShowOperatorLogin(true)}
-                className="w-full bg-white/5 hover:bg-white/10 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 border border-neutral-gray/30"
-              >
-                Operator Login →
-              </button>
-            </div>
+          <div className="space-y-4">
+            <button
+              onClick={handleAdminLogin}
+              className="w-full gradient-button text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 hover:shadow-lg text-lg"
+            >
+              Login as Admin
+            </button>
 
-            <div className="mt-6 text-center text-sm text-neutral-gray">
-              <p>Demo Credentials:</p>
-              <p className="mt-2">Owner: john.smith@contour.com</p>
-              <p>Salesperson: emma.brown@contour.com</p>
-              <p className="text-xs mt-2">(Any password works in demo mode)</p>
-            </div>
+            <button
+              onClick={handleOperatorLogin}
+              className="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 border border-neutral-gray/30 text-lg"
+            >
+              Login as Operator
+            </button>
           </div>
-        ) : (
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20">
-            <h2 className="text-2xl font-semibold text-white mb-6">Operator Login</h2>
-            <form onSubmit={handleOperatorLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-gray mb-2">
-                  Operator ID
-                </label>
-                <input
-                  type="text"
-                  value={operatorId}
-                  onChange={(e) => setOperatorId(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-neutral-gray/30 rounded-lg text-white placeholder-neutral-gray/50 focus:outline-none focus:ring-2 focus:ring-steel-blue text-center text-xl tracking-wider"
-                  placeholder="op-0000"
-                  required
-                  autoFocus
-                />
-                <p className="text-neutral-gray text-xs mt-2 text-center">
-                  Scan your QR code or type your operator ID
-                </p>
-              </div>
-              {operatorError && (
-                <div className="text-red-400 text-sm bg-red-500/10 p-3 rounded-lg">
-                  {operatorError}
-                </div>
-              )}
-              <button
-                type="submit"
-                className="w-full gradient-button text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 hover:shadow-lg"
-              >
-                Login
-              </button>
-            </form>
-            <div className="mt-6 pt-6 border-t border-neutral-gray/20">
-              <button
-                onClick={() => {
-                  setShowOperatorLogin(false);
-                  setOperatorId('');
-                  setOperatorError('');
-                }}
-                className="text-steel-blue hover:text-steel-blue-light transition-colors text-sm"
-              >
-                ← Back to Professional Login
-              </button>
-            </div>
-            <div className="mt-6 text-center text-sm text-neutral-gray">
-              <p>Demo Operator IDs:</p>
-              <p className="mt-2">op-0000 to op-0076</p>
-            </div>
+
+          <div className="mt-8 text-center text-sm text-neutral-gray">
+            <p>Click a button to login as a random user</p>
+            <p className="mt-2 text-xs">Admin: Owner or Salesperson</p>
+            <p className="text-xs">Operator: Production Floor Worker</p>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
