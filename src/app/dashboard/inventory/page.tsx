@@ -137,7 +137,7 @@ export default function InventoryPage() {
                   <th className="text-left p-4 text-[#B0B3B8] font-medium">Part Name</th>
                   <th className="text-left p-4 text-[#B0B3B8] font-medium">Source</th>
                   <th className="text-left p-4 text-[#B0B3B8] font-medium">In Stock</th>
-                  <th className="text-left p-4 text-[#B0B3B8] font-medium">Unit</th>
+                  <th className="text-left p-4 text-[#B0B3B8] font-medium">Unit of Measurement</th>
                   <th className="text-left p-4 text-[#B0B3B8] font-medium">Price Per Unit</th>
                   <th className="text-left p-4 text-[#B0B3B8] font-medium">Actions</th>
                 </tr>
