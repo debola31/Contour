@@ -9,11 +9,13 @@ export default function InventoryPage() {
   const materials = useStore((state) => state.materials);
   const updateMaterial = useStore((state) => state.updateMaterial);
   const addMaterial = useStore((state) => state.addMaterial);
+  const deleteMaterial = useStore((state) => state.deleteMaterial);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [editQuantityModal, setEditQuantityModal] = useState<Material | null>(null);
   const [quantityChange, setQuantityChange] = useState<number>(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<Material | null>(null);
 
   // New material form state
   const [newMaterial, setNewMaterial] = useState({
@@ -161,23 +163,29 @@ export default function InventoryPage() {
                         <span className={`font-semibold ${isLowStock ? 'text-yellow-500' : 'text-white'}`}>
                           {material.quantityInStock.toLocaleString()}
                         </span>
-                        {material.minimumQuantity && (
-                          <span className="text-[#B0B3B8] text-sm ml-2">/ {material.minimumQuantity}</span>
-                        )}
                       </td>
                       <td className="p-4 text-[#B0B3B8]">{material.unitOfMeasurement}</td>
                       <td className="p-4 text-white">${material.pricePerUnit.toFixed(2)}</td>
                       <td className="p-4">
-                        <button
-                          onClick={() => {
-                            setEditQuantityModal(material);
-                            setQuantityChange(0);
-                          }}
-                          className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white rounded transition-colors"
-                          title="Edit Quantity"
-                        >
-                          ✎
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditQuantityModal(material);
+                              setQuantityChange(0);
+                            }}
+                            className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white rounded transition-colors"
+                            title="Edit Quantity"
+                          >
+                            ✎
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(material)}
+                            className="px-3 py-2 bg-white/5 hover:bg-red-500/20 text-white hover:text-red-400 rounded transition-colors"
+                            title="Delete Material"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -205,25 +213,66 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[#B0B3B8] mb-2">Change Amount ({editQuantityModal.unitOfMeasurement})</label>
-                  <input
-                    type="number"
-                    value={quantityChange}
-                    onChange={(e) => setQuantityChange(Number(e.target.value))}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
-                    placeholder="Enter positive to add, negative to subtract"
-                  />
+                  <label className="block text-[#B0B3B8] mb-2">Quantity to {quantityChange >= 0 ? 'Add' : 'Remove'} ({editQuantityModal.unitOfMeasurement})</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={Math.abs(quantityChange)}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setQuantityChange(quantityChange >= 0 ? val : -val);
+                      }}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => setQuantityChange(Math.abs(quantityChange))}
+                      className={`flex-1 px-3 py-2 rounded-lg transition-colors ${
+                        quantityChange >= 0
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : 'bg-white/5 text-white hover:bg-white/10'
+                      }`}
+                    >
+                      + Add
+                    </button>
+                    <button
+                      onClick={() => setQuantityChange(-Math.abs(quantityChange))}
+                      className={`flex-1 px-3 py-2 rounded-lg transition-colors ${
+                        quantityChange < 0
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          : 'bg-white/5 text-white hover:bg-white/10'
+                      }`}
+                    >
+                      − Remove
+                    </button>
+                  </div>
                 </div>
 
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <div className="text-[#B0B3B8] text-sm mb-1">New Stock Level</div>
-                  <div className={`text-xl font-semibold ${
-                    editQuantityModal.quantityInStock + quantityChange < 0 ? 'text-red-400' : 'text-white'
-                  }`}>
-                    {Math.max(0, editQuantityModal.quantityInStock + quantityChange).toLocaleString()} {editQuantityModal.unitOfMeasurement}
+                <div className={`rounded-lg p-3 border ${
+                  quantityChange >= 0
+                    ? 'bg-green-500/10 border-green-500/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                }`}>
+                  <div className="text-[#B0B3B8] text-sm mb-1">
+                    {quantityChange >= 0 ? 'Adding' : 'Removing'} {Math.abs(quantityChange).toLocaleString()} {editQuantityModal.unitOfMeasurement}
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[#B0B3B8]">{editQuantityModal.quantityInStock.toLocaleString()}</span>
+                    <span className={quantityChange >= 0 ? 'text-green-400' : 'text-red-400'}>
+                      {quantityChange >= 0 ? '+' : ''}{quantityChange.toLocaleString()}
+                    </span>
+                    <span className="text-white">→</span>
+                    <span className={`text-xl font-semibold ${
+                      editQuantityModal.quantityInStock + quantityChange < 0 ? 'text-red-400' : 'text-white'
+                    }`}>
+                      {Math.max(0, editQuantityModal.quantityInStock + quantityChange).toLocaleString()} {editQuantityModal.unitOfMeasurement}
+                    </span>
                   </div>
                   {editQuantityModal.quantityInStock + quantityChange < 0 && (
-                    <div className="text-red-400 text-xs mt-1">Cannot have negative stock</div>
+                    <div className="text-red-400 text-xs mt-1">⚠️ Cannot have negative stock</div>
                   )}
                 </div>
               </div>
@@ -368,6 +417,40 @@ export default function InventoryPage() {
                   className="flex-1 gradient-button px-4 py-3 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Add Material
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-[#111439] rounded-xl p-6 w-full max-w-md border border-white/10">
+              <h2 className="text-xl font-semibold text-white mb-4">Delete Material</h2>
+
+              <p className="text-[#B0B3B8] mb-2">
+                Are you sure you want to delete <span className="text-white font-semibold">{deleteConfirm.partName}</span>?
+              </p>
+              <p className="text-[#B0B3B8] text-sm mb-6">
+                Current stock: {deleteConfirm.quantityInStock.toLocaleString()} {deleteConfirm.unitOfMeasurement}
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    deleteMaterial(deleteConfirm.id);
+                    setDeleteConfirm(null);
+                  }}
+                  className="flex-1 px-4 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                >
+                  Delete Material
                 </button>
               </div>
             </div>
