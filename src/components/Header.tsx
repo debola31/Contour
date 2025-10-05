@@ -22,14 +22,9 @@ export default function Header({ title }: { title: string }) {
         <div className="flex items-center gap-4 relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="text-right hover:bg-white/5 px-4 py-2 rounded-lg transition-colors"
+            className="text-white font-medium hover:bg-white/5 px-4 py-2 rounded-lg transition-colors"
           >
-            <div className="text-white font-medium">
-              {currentUser?.firstName} {currentUser?.lastName}
-            </div>
-            <div className="text-[#B0B3B8] text-sm capitalize">
-              {currentUser?.role}
-            </div>
+            {currentUser?.firstName} {currentUser?.lastName}
           </button>
 
           {/* User Menu Dropdown */}
