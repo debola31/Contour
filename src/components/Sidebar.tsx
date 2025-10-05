@@ -34,22 +34,23 @@ export default function Sidebar() {
 
   return (
     <div
+      data-tour="sidebar"
       className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 bg-[#111439] h-screen flex flex-col border-r border-white/10`}
     >
       {/* Logo */}
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" data-tour="logo">
             <div className="w-10 h-10 flex-shrink-0">
               <Image
-                src={getAssetPath('/contour-logo.svg')}
-                alt="Contour"
+                src={getAssetPath('/ctm-logo.png')}
+                alt="CTM"
                 width={40}
                 height={40}
               />
             </div>
             {!isCollapsed && (
-              <span className="text-white font-bold text-lg">CONTOUR</span>
+              <span className="text-white font-bold text-lg">CTM</span>
             )}
           </div>
           <button

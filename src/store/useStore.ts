@@ -82,6 +82,11 @@ interface StoreActions {
   exportData: (objectType?: string) => any;
   importData: (data: any) => void;
   resetToSampleData: () => void;
+
+  // Tour Management
+  completeTour: (tourId: string) => void;
+  isTourCompleted: (tourId: string) => boolean;
+  resetTours: () => void;
 }
 
 type Store = AppState & StoreActions;
@@ -104,6 +109,7 @@ export const useStore = create<Store>()(
       shipments: [],
       transactions: [],
       operatorAutoLogoutMinutes: 600, // 10 hours
+      completedTours: [],
 
       // Auth actions
       login: (email: string, password: string) => {
@@ -433,6 +439,21 @@ export const useStore = create<Store>()(
           shipments: [],
           transactions: [],
         });
+      },
+
+      // Tour management
+      completeTour: (tourId: string) => {
+        set((state) => ({
+          completedTours: [...state.completedTours, tourId],
+        }));
+      },
+
+      isTourCompleted: (tourId: string) => {
+        return get().completedTours.includes(tourId);
+      },
+
+      resetTours: () => {
+        set({ completedTours: [] });
       },
     }),
     {

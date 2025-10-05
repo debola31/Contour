@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Sidebar from '@/components/Sidebar';
+import TourProvider from '@/components/TourProvider';
 
 export default function DashboardLayout({
   children,
@@ -24,11 +25,13 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen gradient-bg">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
-        {children}
+    <TourProvider>
+      <div className="flex h-screen gradient-bg">
+        <Sidebar />
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
       </div>
-    </div>
+    </TourProvider>
   );
 }

@@ -42,16 +42,16 @@ export default function LoginPage() {
           <div className="flex justify-center mb-6">
             <div className="w-32 h-32">
               <Image
-                src={getAssetPath('/contour-logo.svg')}
-                alt="Contour Logo"
+                src={getAssetPath('/ctm-logo.png')}
+                alt="CTM Logo"
                 width={128}
                 height={128}
                 priority
               />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">CONTOUR</h1>
-          <p className="text-neutral-gray text-lg">Enterprise Resource Planning</p>
+          <h1 className="text-4xl font-bold text-white mb-2">CTM</h1>
+          <p className="text-neutral-gray text-lg">Manufacturing Management System</p>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20">

@@ -248,6 +248,9 @@ export interface AppState {
   // Settings
   operatorAutoLogoutMinutes: number;
 
+  // Tours
+  completedTours: string[];
+
   // Actions will be defined in the store
 }
 

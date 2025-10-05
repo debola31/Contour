@@ -19,7 +19,7 @@ export default function Header({ title }: { title: string }) {
     <header className="bg-[#111439]/50 backdrop-blur-sm border-b border-white/10 px-6 py-4 relative z-50">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">{title}</h1>
-        <div className="flex items-center gap-4 relative">
+        <div className="flex items-center gap-4 relative" data-tour="user-info">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="text-white font-medium hover:bg-white/5 px-4 py-2 rounded-lg transition-colors"
