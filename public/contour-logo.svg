@@ -1,0 +1,31 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="200" height="200" rx="40" fill="#1a2332"/>
+  
+  <!-- Contour lines design with bullet silhouette -->
+  <g transform="translate(100, 100)">
+    <!-- Outer contour rings -->
+    <ellipse cx="0" cy="0" rx="70" ry="70" fill="none" stroke="#3d5a80" stroke-width="2" opacity="0.4"/>
+    <ellipse cx="0" cy="0" rx="55" ry="55" fill="none" stroke="#3d5a80" stroke-width="2" opacity="0.5"/>
+    <ellipse cx="0" cy="0" rx="40" ry="40" fill="none" stroke="#3d5a80" stroke-width="2.5" opacity="0.6"/>
+    
+    <!-- Stylized bullet/cartridge in center -->
+    <g transform="translate(0, -5)">
+      <!-- Bullet casing -->
+      <rect x="-12" y="0" width="24" height="35" fill="#98c1d9" rx="2"/>
+      <!-- Bullet tip -->
+      <path d="M -12 0 L -12 -15 Q -12 -25 0 -28 Q 12 -25 12 -15 L 12 0 Z" fill="#ee6c4d"/>
+      <!-- Casing detail -->
+      <rect x="-12" y="28" width="24" height="3" fill="#7a9eb8"/>
+      <circle cx="0" cy="18" r="2" fill="#1a2332" opacity="0.3"/>
+    </g>
+    
+    <!-- Letter C integrated -->
+    <path d="M -25 -50 Q -40 -50 -40 -35 L -40 35 Q -40 50 -25 50" 
+          fill="none" stroke="#ee6c4d" stroke-width="4" opacity="0.8"/>
+  </g>
+  
+  <!-- Company name at bottom -->
+  <text x="100" y="175" font-family="Arial, sans-serif" font-size="20" font-weight="700" 
+        text-anchor="middle" fill="#98c1d9" letter-spacing="2">CONTOUR</text>
+</svg>

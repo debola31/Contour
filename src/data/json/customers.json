@@ -1,0 +1,932 @@
+[
+  {
+    "id": "bc-0000",
+    "type": "business",
+    "name": "Precision Defense Systems",
+    "address": "8708 Main St, Dallas, TX 75000",
+    "contactPersonName": "Robert Johnson",
+    "contactPersonPhone": "590-446-9294",
+    "contactPersonEmail": "robert@precisiondefensesystems.com",
+    "createdAt": "2023-08-18T01:32:17.854Z"
+  },
+  {
+    "id": "bc-0001",
+    "type": "business",
+    "name": "Tactical Solutions Inc",
+    "address": "8446 Oak Ave, Houston, TX 75001",
+    "contactPersonName": "Jennifer Williams",
+    "contactPersonPhone": "932-883-4706",
+    "contactPersonEmail": "jennifer@tacticalsolutionsinc.com",
+    "createdAt": "2024-06-27T16:59:54.290Z"
+  },
+  {
+    "id": "bc-0002",
+    "type": "business",
+    "name": "SecureArms Corp",
+    "address": "5833 Industrial Blvd, Phoenix, TX 75002",
+    "contactPersonName": "Michael Brown",
+    "contactPersonPhone": "882-823-8926",
+    "contactPersonEmail": "michael@securearmscorp.com",
+    "createdAt": "2025-04-25T07:22:47.102Z"
+  },
+  {
+    "id": "bc-0003",
+    "type": "business",
+    "name": "Elite Munitions Ltd",
+    "address": "4139 Commerce Dr, Atlanta, TX 75003",
+    "contactPersonName": "Linda Jones",
+    "contactPersonPhone": "692-134-7436",
+    "contactPersonEmail": "linda@elitemunitionsltd.com",
+    "createdAt": "2023-10-02T19:17:14.014Z"
+  },
+  {
+    "id": "bc-0004",
+    "type": "business",
+    "name": "Frontier Armory",
+    "address": "4799 Business Park Way, Denver, TX 75004",
+    "contactPersonName": "David Garcia",
+    "contactPersonPhone": "238-444-6410",
+    "contactPersonEmail": "david@frontierarmory.com",
+    "createdAt": "2023-10-29T04:21:08.252Z"
+  },
+  {
+    "id": "bc-0005",
+    "type": "business",
+    "name": "Apex Defense Group",
+    "address": "7749 Main St, Nashville, TX 75005",
+    "contactPersonName": "Patricia Miller",
+    "contactPersonPhone": "309-317-6203",
+    "contactPersonEmail": "patricia@apexdefensegroup.com",
+    "createdAt": "2024-09-24T19:56:32.757Z"
+  },
+  {
+    "id": "bc-0006",
+    "type": "business",
+    "name": "Guardian Security Systems",
+    "address": "8439 Oak Ave, Austin, TX 75006",
+    "contactPersonName": "Richard Davis",
+    "contactPersonPhone": "716-592-3944",
+    "contactPersonEmail": "richard@guardiansecuritysystems.com",
+    "createdAt": "2023-07-03T17:27:04.127Z"
+  },
+  {
+    "id": "bc-0007",
+    "type": "business",
+    "name": "Sentinel Arms Co",
+    "address": "7075 Industrial Blvd, Charlotte, TX 75007",
+    "contactPersonName": "Barbara Rodriguez",
+    "contactPersonPhone": "495-966-6713",
+    "contactPersonEmail": "barbara@sentinelarmsco.com",
+    "createdAt": "2024-08-21T01:20:34.823Z"
+  },
+  {
+    "id": "bc-0008",
+    "type": "business",
+    "name": "Patriot Manufacturing",
+    "address": "1628 Commerce Dr, San Antonio, TX 75008",
+    "contactPersonName": "Joseph Martinez",
+    "contactPersonPhone": "311-952-8200",
+    "contactPersonEmail": "joseph@patriotmanufacturing.com",
+    "createdAt": "2025-08-08T13:13:53.121Z"
+  },
+  {
+    "id": "bc-0009",
+    "type": "business",
+    "name": "Liberty Defense Corp",
+    "address": "9254 Business Park Way, Jacksonville, TX 75009",
+    "contactPersonName": "Elizabeth Hernandez",
+    "contactPersonPhone": "142-401-9515",
+    "contactPersonEmail": "elizabeth@libertydefensecorp.com",
+    "createdAt": "2023-04-15T10:40:00.338Z"
+  },
+  {
+    "id": "bc-0010",
+    "type": "business",
+    "name": "Eagle Eye Tactical",
+    "address": "2600 Main St, Dallas, TX 75010",
+    "contactPersonName": "Robert Johnson",
+    "contactPersonPhone": "390-609-1579",
+    "contactPersonEmail": "robert@eagleeyetactical.com",
+    "createdAt": "2023-12-07T00:32:01.248Z"
+  },
+  {
+    "id": "bc-0011",
+    "type": "business",
+    "name": "Iron Mountain Arsenal",
+    "address": "2714 Oak Ave, Houston, TX 75011",
+    "contactPersonName": "Jennifer Williams",
+    "contactPersonPhone": "172-628-1436",
+    "contactPersonEmail": "jennifer@ironmountainarsenal.com",
+    "createdAt": "2024-09-09T04:06:58.697Z"
+  },
+  {
+    "id": "bc-0012",
+    "type": "business",
+    "name": "Vanguard Security Solutions",
+    "address": "6958 Industrial Blvd, Phoenix, TX 75012",
+    "contactPersonName": "Michael Brown",
+    "contactPersonPhone": "737-838-6661",
+    "contactPersonEmail": "michael@vanguardsecuritysolutions.com",
+    "createdAt": "2024-06-11T05:41:43.458Z"
+  },
+  {
+    "id": "bc-0013",
+    "type": "business",
+    "name": "Fortress Defense Systems",
+    "address": "8876 Commerce Dr, Atlanta, TX 75013",
+    "contactPersonName": "Linda Jones",
+    "contactPersonPhone": "313-506-8055",
+    "contactPersonEmail": "linda@fortressdefensesystems.com",
+    "createdAt": "2023-03-27T22:33:41.851Z"
+  },
+  {
+    "id": "bc-0014",
+    "type": "business",
+    "name": "Ranger Tactical Group",
+    "address": "8233 Business Park Way, Denver, TX 75014",
+    "contactPersonName": "David Garcia",
+    "contactPersonPhone": "399-475-6191",
+    "contactPersonEmail": "david@rangertacticalgroup.com",
+    "createdAt": "2023-11-18T06:10:52.460Z"
+  },
+  {
+    "id": "bc-0015",
+    "type": "business",
+    "name": "Titan Arms Corporation",
+    "address": "6895 Main St, Nashville, TX 75015",
+    "contactPersonName": "Patricia Miller",
+    "contactPersonPhone": "399-640-9124",
+    "contactPersonEmail": "patricia@titanarmscorporation.com",
+    "createdAt": "2025-06-14T11:08:18.450Z"
+  },
+  {
+    "id": "bc-0016",
+    "type": "business",
+    "name": "Summit Defense Industries",
+    "address": "3617 Oak Ave, Austin, TX 75016",
+    "contactPersonName": "Richard Davis",
+    "contactPersonPhone": "691-569-8408",
+    "contactPersonEmail": "richard@summitdefenseindustries.com",
+    "createdAt": "2025-08-26T18:49:04.209Z"
+  },
+  {
+    "id": "bc-0017",
+    "type": "business",
+    "name": "Pinnacle Security Ltd",
+    "address": "1417 Industrial Blvd, Charlotte, TX 75017",
+    "contactPersonName": "Barbara Rodriguez",
+    "contactPersonPhone": "897-481-2544",
+    "contactPersonEmail": "barbara@pinnaclesecurityltd.com",
+    "createdAt": "2023-06-23T23:32:04.001Z"
+  },
+  {
+    "id": "bc-0018",
+    "type": "business",
+    "name": "Nexus Armory",
+    "address": "4879 Commerce Dr, San Antonio, TX 75018",
+    "contactPersonName": "Joseph Martinez",
+    "contactPersonPhone": "150-865-4614",
+    "contactPersonEmail": "joseph@nexusarmory.com",
+    "createdAt": "2023-04-03T04:07:24.399Z"
+  },
+  {
+    "id": "bc-0019",
+    "type": "business",
+    "name": "Prime Tactical Solutions",
+    "address": "1056 Business Park Way, Jacksonville, TX 75019",
+    "contactPersonName": "Elizabeth Hernandez",
+    "contactPersonPhone": "139-265-1441",
+    "contactPersonEmail": "elizabeth@primetacticalsolutions.com",
+    "createdAt": "2025-05-24T06:08:35.058Z"
+  },
+  {
+    "id": "bc-0020",
+    "type": "business",
+    "name": "Omega Defense Systems",
+    "address": "4344 Main St, Dallas, TX 75020",
+    "contactPersonName": "Robert Johnson",
+    "contactPersonPhone": "236-636-2041",
+    "contactPersonEmail": "robert@omegadefensesystems.com",
+    "createdAt": "2024-08-17T18:28:04.600Z"
+  },
+  {
+    "id": "bc-0021",
+    "type": "business",
+    "name": "Atlas Security Corp",
+    "address": "8179 Oak Ave, Houston, TX 75021",
+    "contactPersonName": "Jennifer Williams",
+    "contactPersonPhone": "794-805-5787",
+    "contactPersonEmail": "jennifer@atlassecuritycorp.com",
+    "createdAt": "2024-03-27T22:41:13.656Z"
+  },
+  {
+    "id": "bc-0022",
+    "type": "business",
+    "name": "Spartan Arms Inc",
+    "address": "2869 Industrial Blvd, Phoenix, TX 75022",
+    "contactPersonName": "Michael Brown",
+    "contactPersonPhone": "147-958-7859",
+    "contactPersonEmail": "michael@spartanarmsinc.com",
+    "createdAt": "2024-04-08T07:20:51.823Z"
+  },
+  {
+    "id": "bc-0023",
+    "type": "business",
+    "name": "Centurion Defense Group",
+    "address": "2512 Commerce Dr, Atlanta, TX 75023",
+    "contactPersonName": "Linda Jones",
+    "contactPersonPhone": "335-840-8277",
+    "contactPersonEmail": "linda@centuriondefensegroup.com",
+    "createdAt": "2023-12-17T08:04:16.411Z"
+  },
+  {
+    "id": "bc-0024",
+    "type": "business",
+    "name": "Triumph Tactical Ltd",
+    "address": "3107 Business Park Way, Denver, TX 75024",
+    "contactPersonName": "David Garcia",
+    "contactPersonPhone": "446-257-3855",
+    "contactPersonEmail": "david@triumphtacticalltd.com",
+    "createdAt": "2025-06-06T05:56:39.337Z"
+  },
+  {
+    "id": "bc-0025",
+    "type": "business",
+    "name": "Victory Defense Systems",
+    "address": "6193 Main St, Nashville, TX 75025",
+    "contactPersonName": "Patricia Miller",
+    "contactPersonPhone": "963-211-2440",
+    "contactPersonEmail": "patricia@victorydefensesystems.com",
+    "createdAt": "2024-10-07T16:53:11.615Z"
+  },
+  {
+    "id": "bc-0026",
+    "type": "business",
+    "name": "Crown Security Co",
+    "address": "4439 Oak Ave, Austin, TX 75026",
+    "contactPersonName": "Richard Davis",
+    "contactPersonPhone": "521-336-7675",
+    "contactPersonEmail": "richard@crownsecurityco.com",
+    "createdAt": "2024-06-24T05:04:31.319Z"
+  },
+  {
+    "id": "bc-0027",
+    "type": "business",
+    "name": "Imperial Arms Corp",
+    "address": "6503 Industrial Blvd, Charlotte, TX 75027",
+    "contactPersonName": "Barbara Rodriguez",
+    "contactPersonPhone": "463-741-3047",
+    "contactPersonEmail": "barbara@imperialarmscorp.com",
+    "createdAt": "2023-03-30T21:36:58.840Z"
+  },
+  {
+    "id": "bc-0028",
+    "type": "business",
+    "name": "Royal Defense Industries",
+    "address": "7537 Commerce Dr, San Antonio, TX 75028",
+    "contactPersonName": "Joseph Martinez",
+    "contactPersonPhone": "417-545-9674",
+    "contactPersonEmail": "joseph@royaldefenseindustries.com",
+    "createdAt": "2025-05-24T00:06:58.155Z"
+  },
+  {
+    "id": "bc-0029",
+    "type": "business",
+    "name": "Sterling Tactical Group",
+    "address": "9844 Business Park Way, Jacksonville, TX 75029",
+    "contactPersonName": "Elizabeth Hernandez",
+    "contactPersonPhone": "904-870-7412",
+    "contactPersonEmail": "elizabeth@sterlingtacticalgroup.com",
+    "createdAt": "2024-04-06T23:08:24.456Z"
+  },
+  {
+    "id": "bc-0030",
+    "type": "business",
+    "name": "Prestige Armory",
+    "address": "3935 Main St, Dallas, TX 75030",
+    "contactPersonName": "Robert Johnson",
+    "contactPersonPhone": "785-413-7555",
+    "contactPersonEmail": "robert@prestigearmory.com",
+    "createdAt": "2024-09-12T01:50:57.804Z"
+  },
+  {
+    "id": "bc-0031",
+    "type": "business",
+    "name": "Elite Guard Systems",
+    "address": "2841 Oak Ave, Houston, TX 75031",
+    "contactPersonName": "Jennifer Williams",
+    "contactPersonPhone": "872-430-2383",
+    "contactPersonEmail": "jennifer@eliteguardsystems.com",
+    "createdAt": "2024-09-22T11:26:52.536Z"
+  },
+  {
+    "id": "bc-0032",
+    "type": "business",
+    "name": "Prime Security Solutions",
+    "address": "7396 Industrial Blvd, Phoenix, TX 75032",
+    "contactPersonName": "Michael Brown",
+    "contactPersonPhone": "504-338-1323",
+    "contactPersonEmail": "michael@primesecuritysolutions.com",
+    "createdAt": "2023-12-27T23:44:42.182Z"
+  },
+  {
+    "id": "bc-0033",
+    "type": "business",
+    "name": "Apex Tactical Corp",
+    "address": "6033 Commerce Dr, Atlanta, TX 75033",
+    "contactPersonName": "Linda Jones",
+    "contactPersonPhone": "547-386-7310",
+    "contactPersonEmail": "linda@apextacticalcorp.com",
+    "createdAt": "2023-07-04T23:47:00.101Z"
+  },
+  {
+    "id": "bc-0034",
+    "type": "business",
+    "name": "Summit Arms Ltd",
+    "address": "9956 Business Park Way, Denver, TX 75034",
+    "contactPersonName": "David Garcia",
+    "contactPersonPhone": "825-685-1250",
+    "contactPersonEmail": "david@summitarmsltd.com",
+    "createdAt": "2023-03-13T00:27:21.725Z"
+  },
+  {
+    "id": "bc-0035",
+    "type": "business",
+    "name": "Pinnacle Defense Group",
+    "address": "8333 Main St, Nashville, TX 75035",
+    "contactPersonName": "Patricia Miller",
+    "contactPersonPhone": "139-440-9259",
+    "contactPersonEmail": "patricia@pinnacledefensegroup.com",
+    "createdAt": "2023-09-13T09:52:40.654Z"
+  },
+  {
+    "id": "bc-0036",
+    "type": "business",
+    "name": "Frontier Security Inc",
+    "address": "5705 Oak Ave, Austin, TX 75036",
+    "contactPersonName": "Richard Davis",
+    "contactPersonPhone": "939-679-2946",
+    "contactPersonEmail": "richard@frontiersecurityinc.com",
+    "createdAt": "2025-05-28T15:32:08.829Z"
+  },
+  {
+    "id": "bc-0037",
+    "type": "business",
+    "name": "Vanguard Arms Co",
+    "address": "9064 Industrial Blvd, Charlotte, TX 75037",
+    "contactPersonName": "Barbara Rodriguez",
+    "contactPersonPhone": "205-258-9790",
+    "contactPersonEmail": "barbara@vanguardarmsco.com",
+    "createdAt": "2023-12-16T15:06:55.818Z"
+  },
+  {
+    "id": "bc-0038",
+    "type": "business",
+    "name": "Guardian Tactical Systems",
+    "address": "3529 Commerce Dr, San Antonio, TX 75038",
+    "contactPersonName": "Joseph Martinez",
+    "contactPersonPhone": "791-773-5850",
+    "contactPersonEmail": "joseph@guardiantacticalsystems.com",
+    "createdAt": "2023-10-10T03:14:01.393Z"
+  },
+  {
+    "id": "bc-0039",
+    "type": "business",
+    "name": "Sentinel Defense Corp",
+    "address": "7074 Business Park Way, Jacksonville, TX 75039",
+    "contactPersonName": "Elizabeth Hernandez",
+    "contactPersonPhone": "221-442-2827",
+    "contactPersonEmail": "elizabeth@sentineldefensecorp.com",
+    "createdAt": "2023-05-16T17:56:15.102Z"
+  },
+  {
+    "id": "bc-0040",
+    "type": "business",
+    "name": "Liberty Security Group",
+    "address": "8189 Main St, Dallas, TX 75040",
+    "contactPersonName": "Robert Johnson",
+    "contactPersonPhone": "717-717-1766",
+    "contactPersonEmail": "robert@libertysecuritygroup.com",
+    "createdAt": "2025-02-27T04:14:58.584Z"
+  },
+  {
+    "id": "bc-0041",
+    "type": "business",
+    "name": "Patriot Arms Ltd",
+    "address": "7015 Oak Ave, Houston, TX 75041",
+    "contactPersonName": "Jennifer Williams",
+    "contactPersonPhone": "925-638-8996",
+    "contactPersonEmail": "jennifer@patriotarmsltd.com",
+    "createdAt": "2023-08-05T10:15:33.320Z"
+  },
+  {
+    "id": "bc-0042",
+    "type": "business",
+    "name": "Eagle Tactical Inc",
+    "address": "2726 Industrial Blvd, Phoenix, TX 75042",
+    "contactPersonName": "Michael Brown",
+    "contactPersonPhone": "440-563-6874",
+    "contactPersonEmail": "michael@eagletacticalinc.com",
+    "createdAt": "2023-03-17T07:41:14.243Z"
+  },
+  {
+    "id": "bc-0043",
+    "type": "business",
+    "name": "Iron Defense Systems",
+    "address": "6508 Commerce Dr, Atlanta, TX 75043",
+    "contactPersonName": "Linda Jones",
+    "contactPersonPhone": "957-186-5854",
+    "contactPersonEmail": "linda@irondefensesystems.com",
+    "createdAt": "2025-01-01T16:14:04.738Z"
+  },
+  {
+    "id": "bc-0044",
+    "type": "business",
+    "name": "Mountain Security Co",
+    "address": "3942 Business Park Way, Denver, TX 75044",
+    "contactPersonName": "David Garcia",
+    "contactPersonPhone": "984-877-2801",
+    "contactPersonEmail": "david@mountainsecurityco.com",
+    "createdAt": "2024-08-22T08:50:32.457Z"
+  },
+  {
+    "id": "bc-0045",
+    "type": "business",
+    "name": "Fortress Arms Corp",
+    "address": "2300 Main St, Nashville, TX 75045",
+    "contactPersonName": "Patricia Miller",
+    "contactPersonPhone": "581-211-5337",
+    "contactPersonEmail": "patricia@fortressarmscorp.com",
+    "createdAt": "2025-07-27T01:35:58.182Z"
+  },
+  {
+    "id": "bc-0046",
+    "type": "business",
+    "name": "Ranger Defense Group",
+    "address": "3048 Oak Ave, Austin, TX 75046",
+    "contactPersonName": "Richard Davis",
+    "contactPersonPhone": "957-102-3216",
+    "contactPersonEmail": "richard@rangerdefensegroup.com",
+    "createdAt": "2024-01-08T08:02:33.036Z"
+  },
+  {
+    "id": "bc-0047",
+    "type": "business",
+    "name": "Titan Tactical Ltd",
+    "address": "7856 Industrial Blvd, Charlotte, TX 75047",
+    "contactPersonName": "Barbara Rodriguez",
+    "contactPersonPhone": "600-116-8335",
+    "contactPersonEmail": "barbara@titantacticalltd.com",
+    "createdAt": "2023-02-06T03:58:10.809Z"
+  },
+  {
+    "id": "bc-0048",
+    "type": "business",
+    "name": "Summit Security Systems",
+    "address": "8290 Commerce Dr, San Antonio, TX 75048",
+    "contactPersonName": "Joseph Martinez",
+    "contactPersonPhone": "484-465-6672",
+    "contactPersonEmail": "joseph@summitsecuritysystems.com",
+    "createdAt": "2025-05-03T13:05:04.037Z"
+  },
+  {
+    "id": "bc-0049",
+    "type": "business",
+    "name": "Nexus Defense Inc",
+    "address": "7887 Business Park Way, Jacksonville, TX 75049",
+    "contactPersonName": "Elizabeth Hernandez",
+    "contactPersonPhone": "488-692-8018",
+    "contactPersonEmail": "elizabeth@nexusdefenseinc.com",
+    "createdAt": "2023-10-04T09:45:20.358Z"
+  },
+  {
+    "id": "bc-0050",
+    "type": "business",
+    "name": "Prime Arms Co",
+    "address": "9249 Main St, Dallas, TX 75050",
+    "contactPersonName": "Robert Johnson",
+    "contactPersonPhone": "616-555-5659",
+    "contactPersonEmail": "robert@primearmsco.com",
+    "createdAt": "2024-07-23T06:02:39.527Z"
+  },
+  {
+    "id": "bc-0051",
+    "type": "business",
+    "name": "Omega Tactical Corp",
+    "address": "5672 Oak Ave, Houston, TX 75051",
+    "contactPersonName": "Jennifer Williams",
+    "contactPersonPhone": "702-771-5018",
+    "contactPersonEmail": "jennifer@omegatacticalcorp.com",
+    "createdAt": "2023-06-15T01:13:14.705Z"
+  },
+  {
+    "id": "bc-0052",
+    "type": "business",
+    "name": "Atlas Defense Group",
+    "address": "6315 Industrial Blvd, Phoenix, TX 75052",
+    "contactPersonName": "Michael Brown",
+    "contactPersonPhone": "733-960-1016",
+    "contactPersonEmail": "michael@atlasdefensegroup.com",
+    "createdAt": "2024-10-03T10:25:43.360Z"
+  },
+  {
+    "id": "bc-0053",
+    "type": "business",
+    "name": "Spartan Security Ltd",
+    "address": "5061 Commerce Dr, Atlanta, TX 75053",
+    "contactPersonName": "Linda Jones",
+    "contactPersonPhone": "228-665-2672",
+    "contactPersonEmail": "linda@spartansecurityltd.com",
+    "createdAt": "2023-03-31T19:06:37.421Z"
+  },
+  {
+    "id": "bc-0054",
+    "type": "business",
+    "name": "Centurion Arms Inc",
+    "address": "3140 Business Park Way, Denver, TX 75054",
+    "contactPersonName": "David Garcia",
+    "contactPersonPhone": "146-117-4954",
+    "contactPersonEmail": "david@centurionarmsinc.com",
+    "createdAt": "2025-06-17T10:25:15.570Z"
+  },
+  {
+    "id": "bc-0055",
+    "type": "business",
+    "name": "Triumph Defense Systems",
+    "address": "6877 Main St, Nashville, TX 75055",
+    "contactPersonName": "Patricia Miller",
+    "contactPersonPhone": "121-669-8611",
+    "contactPersonEmail": "patricia@triumphdefensesystems.com",
+    "createdAt": "2024-09-19T21:40:01.300Z"
+  },
+  {
+    "id": "bc-0056",
+    "type": "business",
+    "name": "Victory Tactical Co",
+    "address": "4892 Oak Ave, Austin, TX 75056",
+    "contactPersonName": "Richard Davis",
+    "contactPersonPhone": "744-772-8310",
+    "contactPersonEmail": "richard@victorytacticalco.com",
+    "createdAt": "2025-09-19T20:37:44.708Z"
+  },
+  {
+    "id": "bc-0057",
+    "type": "business",
+    "name": "Crown Arms Corp",
+    "address": "2146 Industrial Blvd, Charlotte, TX 75057",
+    "contactPersonName": "Barbara Rodriguez",
+    "contactPersonPhone": "385-291-1287",
+    "contactPersonEmail": "barbara@crownarmscorp.com",
+    "createdAt": "2024-04-03T03:53:40.940Z"
+  },
+  {
+    "id": "bc-0058",
+    "type": "business",
+    "name": "Imperial Security Group",
+    "address": "5947 Commerce Dr, San Antonio, TX 75058",
+    "contactPersonName": "Joseph Martinez",
+    "contactPersonPhone": "851-876-6993",
+    "contactPersonEmail": "joseph@imperialsecuritygroup.com",
+    "createdAt": "2023-11-19T03:40:36.203Z"
+  },
+  {
+    "id": "bc-0059",
+    "type": "business",
+    "name": "Royal Tactical Ltd",
+    "address": "7068 Business Park Way, Jacksonville, TX 75059",
+    "contactPersonName": "Elizabeth Hernandez",
+    "contactPersonPhone": "464-774-3496",
+    "contactPersonEmail": "elizabeth@royaltacticalltd.com",
+    "createdAt": "2023-06-16T11:46:45.866Z"
+  },
+  {
+    "id": "bc-0060",
+    "type": "business",
+    "name": "Sterling Defense Inc",
+    "address": "2387 Main St, Dallas, TX 75060",
+    "contactPersonName": "Robert Johnson",
+    "contactPersonPhone": "160-197-3030",
+    "contactPersonEmail": "robert@sterlingdefenseinc.com",
+    "createdAt": "2024-02-19T21:21:22.193Z"
+  },
+  {
+    "id": "ic-0000",
+    "type": "individual",
+    "name": "John Anderson",
+    "phone": "305-604-4784",
+    "email": "john.anderson@email.com",
+    "createdAt": "2023-10-07T23:55:24.757Z"
+  },
+  {
+    "id": "ic-0001",
+    "type": "individual",
+    "name": "Jane Baker",
+    "phone": "157-259-6926",
+    "email": "jane.baker@email.com",
+    "createdAt": "2023-08-16T16:07:57.540Z"
+  },
+  {
+    "id": "ic-0002",
+    "type": "individual",
+    "name": "Bob Clark",
+    "phone": "902-171-7155",
+    "email": "bob.clark@email.com",
+    "createdAt": "2025-08-27T14:50:37.014Z"
+  },
+  {
+    "id": "ic-0003",
+    "type": "individual",
+    "name": "Alice Davis",
+    "phone": "340-707-8545",
+    "email": "alice.davis@email.com",
+    "createdAt": "2023-12-03T19:28:50.341Z"
+  },
+  {
+    "id": "ic-0004",
+    "type": "individual",
+    "name": "Charlie Evans",
+    "phone": "653-338-5504",
+    "email": "charlie.evans@email.com",
+    "createdAt": "2024-02-16T18:45:02.552Z"
+  },
+  {
+    "id": "ic-0005",
+    "type": "individual",
+    "name": "Diana Foster",
+    "phone": "593-466-1261",
+    "email": "diana.foster@email.com",
+    "createdAt": "2025-03-24T08:06:06.629Z"
+  },
+  {
+    "id": "ic-0006",
+    "type": "individual",
+    "name": "Edward Green",
+    "phone": "698-828-3896",
+    "email": "edward.green@email.com",
+    "createdAt": "2023-04-24T18:56:38.455Z"
+  },
+  {
+    "id": "ic-0007",
+    "type": "individual",
+    "name": "Fiona Harris",
+    "phone": "779-634-8327",
+    "email": "fiona.harris@email.com",
+    "createdAt": "2025-04-08T05:33:41.840Z"
+  },
+  {
+    "id": "ic-0008",
+    "type": "individual",
+    "name": "George Irving",
+    "phone": "295-399-1891",
+    "email": "george.irving@email.com",
+    "createdAt": "2024-03-06T06:39:49.718Z"
+  },
+  {
+    "id": "ic-0009",
+    "type": "individual",
+    "name": "Hannah Jackson",
+    "phone": "856-691-4579",
+    "email": "hannah.jackson@email.com",
+    "createdAt": "2023-05-23T00:08:26.919Z"
+  },
+  {
+    "id": "ic-0010",
+    "type": "individual",
+    "name": "Ian Kelly",
+    "phone": "551-999-3424",
+    "email": "ian.kelly@email.com",
+    "createdAt": "2025-01-25T13:33:36.296Z"
+  },
+  {
+    "id": "ic-0011",
+    "type": "individual",
+    "name": "Julia Lewis",
+    "phone": "481-579-1442",
+    "email": "julia.lewis@email.com",
+    "createdAt": "2025-07-06T02:38:52.404Z"
+  },
+  {
+    "id": "ic-0012",
+    "type": "individual",
+    "name": "Kevin Mason",
+    "phone": "993-182-9982",
+    "email": "kevin.mason@email.com",
+    "createdAt": "2023-11-10T18:26:53.094Z"
+  },
+  {
+    "id": "ic-0013",
+    "type": "individual",
+    "name": "Laura Nelson",
+    "phone": "708-240-4634",
+    "email": "laura.nelson@email.com",
+    "createdAt": "2025-03-23T14:00:22.384Z"
+  },
+  {
+    "id": "ic-0014",
+    "type": "individual",
+    "name": "Mark O'Brien",
+    "phone": "898-901-1421",
+    "email": "mark.o'brien@email.com",
+    "createdAt": "2024-01-01T13:14:47.998Z"
+  },
+  {
+    "id": "ic-0015",
+    "type": "individual",
+    "name": "Nancy Palmer",
+    "phone": "628-869-1373",
+    "email": "nancy.palmer@email.com",
+    "createdAt": "2024-07-07T11:56:14.230Z"
+  },
+  {
+    "id": "ic-0016",
+    "type": "individual",
+    "name": "Owen Quinn",
+    "phone": "464-695-9167",
+    "email": "owen.quinn@email.com",
+    "createdAt": "2024-04-14T15:15:50.740Z"
+  },
+  {
+    "id": "ic-0017",
+    "type": "individual",
+    "name": "Paula Roberts",
+    "phone": "724-214-1742",
+    "email": "paula.roberts@email.com",
+    "createdAt": "2023-01-26T14:20:55.594Z"
+  },
+  {
+    "id": "ic-0018",
+    "type": "individual",
+    "name": "Quincy Stevens",
+    "phone": "115-724-8973",
+    "email": "quincy.stevens@email.com",
+    "createdAt": "2024-02-10T20:57:23.727Z"
+  },
+  {
+    "id": "ic-0019",
+    "type": "individual",
+    "name": "Rachel Taylor",
+    "phone": "267-633-1141",
+    "email": "rachel.taylor@email.com",
+    "createdAt": "2024-03-21T16:47:23.780Z"
+  },
+  {
+    "id": "ic-0020",
+    "type": "individual",
+    "name": "Sam Underwood",
+    "phone": "566-678-7582",
+    "email": "sam.underwood@email.com",
+    "createdAt": "2024-12-20T22:44:46.681Z"
+  },
+  {
+    "id": "ic-0021",
+    "type": "individual",
+    "name": "Teresa Vincent",
+    "phone": "730-248-3061",
+    "email": "teresa.vincent@email.com",
+    "createdAt": "2025-10-04T04:28:39.149Z"
+  },
+  {
+    "id": "ic-0022",
+    "type": "individual",
+    "name": "Uma Walker",
+    "phone": "681-454-8351",
+    "email": "uma.walker@email.com",
+    "createdAt": "2025-05-10T21:07:22.516Z"
+  },
+  {
+    "id": "ic-0023",
+    "type": "individual",
+    "name": "Victor Xavier",
+    "phone": "460-967-9985",
+    "email": "victor.xavier@email.com",
+    "createdAt": "2024-05-12T03:20:01.551Z"
+  },
+  {
+    "id": "ic-0024",
+    "type": "individual",
+    "name": "Wendy Young",
+    "phone": "917-359-2066",
+    "email": "wendy.young@email.com",
+    "createdAt": "2024-12-17T12:47:11.077Z"
+  },
+  {
+    "id": "ic-0025",
+    "type": "individual",
+    "name": "Xander Zhang",
+    "phone": "505-916-9334",
+    "email": "xander.zhang@email.com",
+    "createdAt": "2023-04-09T21:15:29.342Z"
+  },
+  {
+    "id": "ic-0026",
+    "type": "individual",
+    "name": "Yvonne Abbott",
+    "phone": "818-170-8827",
+    "email": "yvonne.abbott@email.com",
+    "createdAt": "2023-11-16T12:03:28.086Z"
+  },
+  {
+    "id": "ic-0027",
+    "type": "individual",
+    "name": "Zachary Barnes",
+    "phone": "649-969-7057",
+    "email": "zachary.barnes@email.com",
+    "createdAt": "2024-07-19T04:19:48.227Z"
+  },
+  {
+    "id": "ic-0028",
+    "type": "individual",
+    "name": "Arthur Collins",
+    "phone": "121-573-9790",
+    "email": "arthur.collins@email.com",
+    "createdAt": "2024-07-17T00:32:59.180Z"
+  },
+  {
+    "id": "ic-0029",
+    "type": "individual",
+    "name": "Betty Drake",
+    "phone": "652-166-3299",
+    "email": "betty.drake@email.com",
+    "createdAt": "2023-02-19T17:20:02.549Z"
+  },
+  {
+    "id": "ic-0030",
+    "type": "individual",
+    "name": "Carl Ellis",
+    "phone": "738-742-9836",
+    "email": "carl.ellis@email.com",
+    "createdAt": "2023-06-05T02:40:59.308Z"
+  },
+  {
+    "id": "ic-0031",
+    "type": "individual",
+    "name": "Donna Fletcher",
+    "phone": "805-655-5569",
+    "email": "donna.fletcher@email.com",
+    "createdAt": "2025-01-19T02:28:35.552Z"
+  },
+  {
+    "id": "ic-0032",
+    "type": "individual",
+    "name": "Eugene Gibson",
+    "phone": "190-536-5419",
+    "email": "eugene.gibson@email.com",
+    "createdAt": "2023-02-20T22:59:18.076Z"
+  },
+  {
+    "id": "ic-0033",
+    "type": "individual",
+    "name": "Frances Hayes",
+    "phone": "219-356-1532",
+    "email": "frances.hayes@email.com",
+    "createdAt": "2023-10-28T11:09:16.441Z"
+  },
+  {
+    "id": "ic-0034",
+    "type": "individual",
+    "name": "Gary Ingram",
+    "phone": "961-297-6111",
+    "email": "gary.ingram@email.com",
+    "createdAt": "2024-05-12T21:41:01.623Z"
+  },
+  {
+    "id": "ic-0035",
+    "type": "individual",
+    "name": "Helen Jenkins",
+    "phone": "481-658-8422",
+    "email": "helen.jenkins@email.com",
+    "createdAt": "2023-05-25T19:18:08.979Z"
+  },
+  {
+    "id": "ic-0036",
+    "type": "individual",
+    "name": "Irene Knight",
+    "phone": "261-926-1019",
+    "email": "irene.knight@email.com",
+    "createdAt": "2024-03-26T04:07:57.318Z"
+  },
+  {
+    "id": "ic-0037",
+    "type": "individual",
+    "name": "Jerry Lopez",
+    "phone": "952-570-4569",
+    "email": "jerry.lopez@email.com",
+    "createdAt": "2024-04-02T23:00:53.930Z"
+  },
+  {
+    "id": "ic-0038",
+    "type": "individual",
+    "name": "Karen Murray",
+    "phone": "427-982-9678",
+    "email": "karen.murray@email.com",
+    "createdAt": "2025-02-27T03:26:36.130Z"
+  },
+  {
+    "id": "ic-0039",
+    "type": "individual",
+    "name": "Leo Norton",
+    "phone": "117-770-2619",
+    "email": "leo.norton@email.com",
+    "createdAt": "2024-05-03T02:55:06.442Z"
+  }
+]
