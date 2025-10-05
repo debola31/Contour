@@ -22,7 +22,6 @@ export default function InventoryPage() {
     unitOfMeasurement: '',
     quantityInStock: 0,
     pricePerUnit: 0,
-    minimumQuantity: 0,
   });
 
   const filteredMaterials = materials.filter((m) =>
@@ -67,7 +66,6 @@ export default function InventoryPage() {
       unitOfMeasurement: '',
       quantityInStock: 0,
       pricePerUnit: 0,
-      minimumQuantity: 0,
     });
   };
 
@@ -206,32 +204,12 @@ export default function InventoryPage() {
                   <div className="text-white font-medium">{editQuantityModal.quantityInStock.toLocaleString()} {editQuantityModal.unitOfMeasurement}</div>
                 </div>
 
-                {editQuantityModal.minimumQuantity && (
-                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                    <div className="text-[#B0B3B8] text-sm mb-1">Minimum Measurement Unit</div>
-                    <div className="text-white font-medium">{editQuantityModal.minimumQuantity} {editQuantityModal.unitOfMeasurement}</div>
-                    <div className="text-[#B0B3B8] text-xs mt-1">Add or subtract in multiples of this value</div>
-                  </div>
-                )}
-
                 <div>
-                  <label className="block text-[#B0B3B8] mb-2">
-                    Change Amount {editQuantityModal.minimumQuantity ? `(multiples of ${editQuantityModal.minimumQuantity})` : ''}
-                  </label>
+                  <label className="block text-[#B0B3B8] mb-2">Change Amount ({editQuantityModal.unitOfMeasurement})</label>
                   <input
                     type="number"
                     value={quantityChange}
-                    onChange={(e) => {
-                      const value = Number(e.target.value);
-                      if (editQuantityModal.minimumQuantity) {
-                        // Round to nearest multiple of minimum quantity
-                        const rounded = Math.round(value / editQuantityModal.minimumQuantity) * editQuantityModal.minimumQuantity;
-                        setQuantityChange(rounded);
-                      } else {
-                        setQuantityChange(value);
-                      }
-                    }}
-                    step={editQuantityModal.minimumQuantity || 1}
+                    onChange={(e) => setQuantityChange(Number(e.target.value))}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
                     placeholder="Enter positive to add, negative to subtract"
                   />
@@ -366,20 +344,6 @@ export default function InventoryPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[#B0B3B8] mb-2">Minimum Measurement Unit (Optional)</label>
-                  <input
-                    type="number"
-                    value={newMaterial.minimumQuantity}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, minimumQuantity: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
-                    placeholder="e.g., 10 (stock changes in multiples of 10)"
-                    min="0"
-                  />
-                  <div className="text-[#B0B3B8] text-xs mt-1">
-                    The minimum amount that can be added or removed at a time
-                  </div>
-                </div>
               </div>
 
               <div className="flex gap-3 mt-6">
@@ -392,7 +356,6 @@ export default function InventoryPage() {
                       unitOfMeasurement: '',
                       quantityInStock: 0,
                       pricePerUnit: 0,
-                      minimumQuantity: 0,
                     });
                   }}
                   className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
