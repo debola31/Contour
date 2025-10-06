@@ -40,18 +40,18 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
-            <div className="w-48 h-48">
+            <div className="bg-white rounded-2xl px-8 py-6 shadow-lg inline-block">
               <Image
                 src={getAssetPath('/ctm-logo.png')}
                 alt="CTM Logo"
-                width={192}
-                height={192}
+                width={320}
+                height={100}
+                className="object-contain"
                 priority
               />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">CTM</h1>
-          <p className="text-neutral-gray text-lg">Manufacturing Management System</p>
+          <p className="text-white/80 text-lg font-light">Manufacturing Management System</p>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20">

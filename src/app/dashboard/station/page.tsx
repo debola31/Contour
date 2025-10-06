@@ -20,9 +20,23 @@ export default function StationWorkflowPage() {
   const [materialsUsed, setMaterialsUsed] = useState<Record<string, number>>({});
 
   const handleScanWorkOrder = () => {
-    const wo = workOrders.find(w => w.id === workOrderNumber || w.id.includes(workOrderNumber));
+    const trimmedInput = workOrderNumber.trim();
+    const wo = workOrders.find(w =>
+      w.id === trimmedInput ||
+      w.orderNumber === trimmedInput ||
+      w.id.includes(trimmedInput) ||
+      w.orderNumber.includes(trimmedInput)
+    );
+
     if (wo) {
-      setCurrentWorkOrder(wo);
+      // Only allow scanning work orders that are approved or in progress
+      if (wo.status === 'approved' || wo.status === 'in_progress') {
+        setCurrentWorkOrder(wo);
+      } else {
+        alert(`Work Order ${wo.orderNumber} is not approved yet. Current status: ${wo.status}`);
+      }
+    } else {
+      alert(`Work Order "${trimmedInput}" not found. Please check the order number.`);
     }
   };
 

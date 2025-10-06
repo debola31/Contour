@@ -21,16 +21,23 @@ export default function Tour({ steps, run, onComplete, onSkip }: TourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [arrowPosition, setArrowPosition] = useState({ top: 0, left: 0 });
+  const [isPositioned, setIsPositioned] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!run || steps.length === 0) return;
 
+    setIsPositioned(false);
+
     const updatePosition = () => {
       const step = steps[currentStep];
       const element = document.querySelector(step.target);
 
-      if (!element || !tooltipRef.current) return;
+      if (!element || !tooltipRef.current) {
+        // Retry if tooltip not ready
+        setTimeout(updatePosition, 50);
+        return;
+      }
 
       const rect = element.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
@@ -70,6 +77,7 @@ export default function Tour({ steps, run, onComplete, onSkip }: TourProps) {
 
       setPosition({ top, left });
       setArrowPosition({ top: arrowTop, left: arrowLeft });
+      setIsPositioned(true);
 
       // Highlight the element
       element.classList.add('tour-highlight');
@@ -82,18 +90,20 @@ export default function Tour({ steps, run, onComplete, onSkip }: TourProps) {
       });
     };
 
-    updatePosition();
+    // Initial delay to ensure DOM is ready
+    const initialTimer = setTimeout(updatePosition, 50);
 
-    // Small delay to ensure smooth scrolling completes before positioning tooltip
-    const scrollTimer = setTimeout(updatePosition, 100);
+    // Additional update after scroll completes
+    const scrollTimer = setTimeout(updatePosition, 300);
 
     window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
 
     return () => {
+      clearTimeout(initialTimer);
       clearTimeout(scrollTimer);
       window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
 
       // Remove highlight from all elements
       document.querySelectorAll('.tour-highlight').forEach(el => {
@@ -128,10 +138,11 @@ export default function Tour({ steps, run, onComplete, onSkip }: TourProps) {
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="fixed z-[9999] bg-white rounded-lg shadow-2xl max-w-md"
+        className="fixed z-[9999] bg-white rounded-lg shadow-2xl max-w-md transition-opacity duration-200"
         style={{
           top: `${position.top}px`,
           left: `${position.left}px`,
+          opacity: isPositioned ? 1 : 0,
         }}
       >
         {/* Arrow */}

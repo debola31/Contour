@@ -224,15 +224,12 @@ export default function Dashboard() {
   // Professional Staff View (Owner/Salesperson)
   const stats = [
     { label: 'Active Work Orders', value: workOrders.filter(wo => wo.status === 'in_progress').length, icon: 'list', color: '#4682B4' },
-    { label: 'Total Customers', value: customers.length, icon: 'users', color: '#6FA3D8' },
-    { label: 'Inventory Items', value: materials.length, icon: 'box', color: '#2E5A8A' },
     { label: 'Pending Approvals', value: workOrders.filter(wo => wo.status === 'requested').length, icon: 'clock', color: '#4682B4' },
   ];
 
   const quickActions = [
     { name: 'View Inventory', path: '/dashboard/inventory', icon: 'box', description: 'Manage materials and stock levels' },
     { name: 'Work Orders', path: '/dashboard/work-orders', icon: 'list', description: 'Create and manage work orders' },
-    { name: 'Customers', path: '/dashboard/customers', icon: 'users', description: 'Manage customer information' },
     { name: 'Insights', path: '/dashboard/insights', icon: 'chart', description: 'View analytics and reports' },
   ];
 
@@ -284,7 +281,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -304,7 +301,7 @@ export default function Dashboard() {
         {/* Quick Actions */}
         <div>
           <h3 className="text-xl font-bold text-white mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {quickActions.map((action) => (
               <Link
                 key={action.path}

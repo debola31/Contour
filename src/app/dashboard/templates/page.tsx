@@ -187,6 +187,22 @@ export default function TemplatesPage() {
                       <div className="text-white font-semibold">{selectedTemplate.flow.nodes.length}</div>
                     </div>
                   </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setEditingWorkflow(true)}
+                      className="flex-1 px-4 py-3 bg-[#4682B4] hover:bg-[#3a6a94] text-white rounded-lg transition-colors font-medium"
+                    >
+                      Edit Workflow
+                    </button>
+                    <button
+                      onClick={handleDeleteTemplate}
+                      className="flex-1 px-4 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors font-medium"
+                    >
+                      Delete Template
+                    </button>
+                  </div>
                 </div>
 
                 {/* Workflow Steps */}
@@ -254,21 +270,6 @@ export default function TemplatesPage() {
                         </div>
                       );
                     })}
-                </div>
-
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={() => setEditingWorkflow(true)}
-                    className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
-                  >
-                    Edit Workflow
-                  </button>
-                  <button
-                    onClick={handleDeleteTemplate}
-                    className="flex-1 px-4 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
-                  >
-                    Delete Template
-                  </button>
                 </div>
               </div>
             ) : (

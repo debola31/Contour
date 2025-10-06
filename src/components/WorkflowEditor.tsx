@@ -159,7 +159,9 @@ export default function WorkflowEditor({ nodes: initialNodes, edges: initialEdge
             stationId: nodeForm.stationId || n.stationId,
             data: {
               ...n.data,
-              label: nodeForm.label,
+              label: n.type === 'station'
+                ? (stations.find(s => s.id === nodeForm.stationId)?.name || nodeForm.label)
+                : nodeForm.label,
               materials: nodeForm.materials
             }
           }
@@ -167,7 +169,7 @@ export default function WorkflowEditor({ nodes: initialNodes, edges: initialEdge
     ));
 
     setEditingNode(null);
-  }, [editingNode, nodes, nodeForm]);
+  }, [editingNode, nodes, nodeForm, stations]);
 
   const handleAddMaterial = useCallback(() => {
     setNodeForm({
@@ -383,28 +385,29 @@ export default function WorkflowEditor({ nodes: initialNodes, edges: initialEdge
           </svg>
 
           {/* Draw nodes */}
-          {nodes.map(node => (
-            <div
-              key={node.id}
-              className={getNodeStyle(node)}
-              style={{
-                left: node.position.x,
-                top: node.position.y
-              }}
-              onClick={(e) => handleNodeClick(node.id, e)}
-              onMouseDown={(e) => handleNodeMouseDown(node.id, e)}
-            >
-              <div className="text-xs font-bold">{node.data.label}</div>
-              {node.type === 'station' && node.stationId && (
-                <div className="text-xs opacity-75 mt-1">
-                  {stations.find(s => s.id === node.stationId)?.name || 'Unknown'}
-                </div>
-              )}
-              {connectingFrom === node.id && (
-                <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
-              )}
-            </div>
-          ))}
+          {nodes.map(node => {
+            const displayLabel = node.type === 'station' && node.stationId
+              ? stations.find(s => s.id === node.stationId)?.name || node.data.label
+              : node.data.label;
+
+            return (
+              <div
+                key={node.id}
+                className={getNodeStyle(node)}
+                style={{
+                  left: node.position.x,
+                  top: node.position.y
+                }}
+                onClick={(e) => handleNodeClick(node.id, e)}
+                onMouseDown={(e) => handleNodeMouseDown(node.id, e)}
+              >
+                <div className="text-xs font-bold">{displayLabel}</div>
+                {connectingFrom === node.id && (
+                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+                )}
+              </div>
+            );
+          })}
 
           {/* Instructions */}
           <div className="absolute top-4 left-4 bg-black/50 text-white text-xs p-3 rounded-lg max-w-xs">
@@ -426,34 +429,35 @@ export default function WorkflowEditor({ nodes: initialNodes, edges: initialEdge
               <h2 className="text-xl font-semibold text-white">Edit Node</h2>
             </div>
             <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-[#B0B3B8] mb-2 text-sm">Label</label>
-                <input
-                  type="text"
-                  value={nodeForm.label}
-                  onChange={(e) => setNodeForm({ ...nodeForm, label: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
-                />
-              </div>
+              {nodes.find(n => n.id === editingNode)?.type === 'station' ? (
+                <div>
+                  <label className="block text-[#B0B3B8] mb-2 text-sm">Station</label>
+                  <select
+                    value={nodeForm.stationId}
+                    onChange={(e) => setNodeForm({ ...nodeForm, stationId: e.target.value })}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
+                  >
+                    {stations.map(station => (
+                      <option key={station.id} value={station.id} className="bg-[#1a1f3a]">
+                        {station.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-[#B0B3B8] mb-2 text-sm">Label</label>
+                  <input
+                    type="text"
+                    value={nodeForm.label}
+                    onChange={(e) => setNodeForm({ ...nodeForm, label: e.target.value })}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
+                  />
+                </div>
+              )}
 
               {nodes.find(n => n.id === editingNode)?.type === 'station' && (
-                <>
-                  <div>
-                    <label className="block text-[#B0B3B8] mb-2 text-sm">Station</label>
-                    <select
-                      value={nodeForm.stationId}
-                      onChange={(e) => setNodeForm({ ...nodeForm, stationId: e.target.value })}
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
-                    >
-                      {stations.map(station => (
-                        <option key={station.id} value={station.id} className="bg-[#1a1f3a]">
-                          {station.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
+                <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-[#B0B3B8] text-sm">Materials Required</label>
                       <button
@@ -494,7 +498,6 @@ export default function WorkflowEditor({ nodes: initialNodes, edges: initialEdge
                       ))}
                     </div>
                   </div>
-                </>
               )}
             </div>
             <div className="p-6 border-t border-white/10 flex gap-3">
