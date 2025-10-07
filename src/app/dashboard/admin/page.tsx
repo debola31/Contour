@@ -29,7 +29,7 @@ export default function AdminPage() {
 
       <div className="p-6">
         {/* System Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" data-tour="system-stats">
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <div className="text-[#B0B3B8] mb-2">Total Personnel</div>
             <div className="text-3xl font-bold text-white">{totalPersonnel}</div>
@@ -49,7 +49,7 @@ export default function AdminPage() {
         </div>
 
         {/* Live Station Monitor */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden" data-tour="live-stations">
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
               <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
@@ -108,7 +108,7 @@ export default function AdminPage() {
         </div>
 
         {/* Alerts */}
-        <div className="mt-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+        <div className="mt-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6" data-tour="recent-orders">
           <div className="flex items-center gap-3 mb-4">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />

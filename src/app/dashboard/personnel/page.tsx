@@ -134,7 +134,7 @@ export default function PersonnelPage() {
 
       <div className="p-6">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" data-tour="role-filter">
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <div className="text-[#B0B3B8] mb-2">Total Personnel</div>
             <div className="text-3xl font-bold text-white">{personnel.length}</div>
@@ -175,13 +175,14 @@ export default function PersonnelPage() {
           <button
             onClick={() => setShowAddModal(true)}
             className="gradient-button px-6 py-3 rounded-lg text-white font-medium"
+            data-tour="add-personnel"
           >
             + Add Personnel
           </button>
         </div>
 
         {/* Personnel Table */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden" data-tour="personnel-list">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/10">

@@ -61,7 +61,7 @@ export default function ShippingPage() {
         </div>
 
         {/* Search and Filter */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-4 mb-6" data-tour="shipment-filter">
           <input
             type="text"
             placeholder="Search by tracking number..."
@@ -82,7 +82,7 @@ export default function ShippingPage() {
         </div>
 
         {/* Shipments Table */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden" data-tour="shipments-table">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/10">

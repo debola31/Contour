@@ -53,6 +53,7 @@ interface StoreActions {
   updateWorkOrder: (id: string, updates: Partial<WorkOrder>) => void;
   approveWorkOrder: (id: string, ownerId: string) => void;
   rejectWorkOrder: (id: string, ownerId: string, reason?: string) => void;
+  cancelWorkOrder: (id: string, userId: string, reason?: string) => void;
   startWorkOrderAtStation: (workOrderId: string, stationId: string, operatorId: string) => void;
   completeStationWork: (workOrderId: string, stationId: string, materialsUsed?: any, notes?: string) => void;
   failQualityCheck: (workOrderId: string, sendBackToStationId: string, notes: string) => void;
@@ -92,6 +93,7 @@ interface StoreActions {
 type Store = AppState & StoreActions;
 
 const initialData = loadSampleData();
+const DATA_VERSION = 2; // Increment this to force data reload
 
 export const useStore = create<Store>()(
   persist(
@@ -103,13 +105,14 @@ export const useStore = create<Store>()(
       customers: initialData.customers,
       materials: initialData.materials,
       stations: initialData.stations,
-      templates: [],
-      workOrders: [],
-      invoices: [],
-      shipments: [],
-      transactions: [],
+      templates: initialData.templates,
+      workOrders: initialData.workOrders,
+      invoices: initialData.invoices,
+      shipments: initialData.shipments,
+      transactions: initialData.transactions,
       operatorAutoLogoutMinutes: 600, // 10 hours
       completedTours: [],
+      dataVersion: DATA_VERSION,
 
       // Auth actions
       login: (email: string, password: string) => {
@@ -294,6 +297,17 @@ export const useStore = create<Store>()(
         get().logTransaction('workorder', id, 'reject', `Rejected work order: ${reason || 'No reason provided'}`);
       },
 
+      cancelWorkOrder: (id: string, userId: string, reason?: string) => {
+        const updates = {
+          status: 'cancelled' as const,
+          cancelledAt: new Date().toISOString(),
+          cancelledBy: userId,
+          cancellationReason: reason,
+        };
+        get().updateWorkOrder(id, updates);
+        get().logTransaction('workorder', id, 'cancel', `Cancelled work order: ${reason || 'No reason provided'}`);
+      },
+
       startWorkOrderAtStation: (workOrderId: string, stationId: string, operatorId: string) => {
         const workOrder = get().workOrders.find((wo) => wo.id === workOrderId);
         if (workOrder) {
@@ -433,11 +447,12 @@ export const useStore = create<Store>()(
           customers: freshData.customers,
           materials: freshData.materials,
           stations: freshData.stations,
-          templates: [],
-          workOrders: [],
-          invoices: [],
-          shipments: [],
-          transactions: [],
+          templates: freshData.templates,
+          workOrders: freshData.workOrders,
+          invoices: freshData.invoices,
+          shipments: freshData.shipments,
+          transactions: freshData.transactions,
+          dataVersion: DATA_VERSION,
         });
       },
 
@@ -458,6 +473,23 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'contour-erp-storage',
+      version: DATA_VERSION,
+      migrate: (persistedState: any, version: number) => {
+        // If stored version doesn't match, reload all data
+        if (!persistedState.dataVersion || persistedState.dataVersion !== DATA_VERSION) {
+          const freshData = loadSampleData();
+          return {
+            ...persistedState,
+            templates: freshData.templates,
+            workOrders: freshData.workOrders,
+            invoices: freshData.invoices,
+            shipments: freshData.shipments,
+            transactions: freshData.transactions,
+            dataVersion: DATA_VERSION,
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );

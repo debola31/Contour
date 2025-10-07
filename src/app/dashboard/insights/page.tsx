@@ -131,7 +131,7 @@ export default function InsightsPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Work Orders Trend */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10" data-tour="trend-chart">
               <h3 className="text-white font-semibold mb-4">Work Orders Trend</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={workOrderData}>
@@ -151,7 +151,7 @@ export default function InsightsPage() {
             </div>
 
             {/* Work Order Status Distribution */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10" data-tour="status-distribution">
               <h3 className="text-white font-semibold mb-4">Work Order Status Distribution</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -181,7 +181,7 @@ export default function InsightsPage() {
             </div>
 
             {/* Inventory Levels */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 lg:col-span-2">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 lg:col-span-2" data-tour="inventory-chart">
               <h3 className="text-white font-semibold mb-4">Top 10 Inventory Items</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={inventoryData}>

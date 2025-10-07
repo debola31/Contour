@@ -15,47 +15,105 @@ export const generateWorkOrders = (
   ownerIds: string[]
 ): WorkOrder[] => {
   const workOrders: WorkOrder[] = [];
-  const statuses: WorkOrder['status'][] = ['requested', 'approved', 'in_progress', 'finished', 'rejected'];
 
-  for (let i = 0; i < 100; i++) {
-    const template = templates[i % templates.length];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const requestedDate = getRandomDate(new Date(2024, 0, 1), new Date());
+  // More realistic distribution: 10% requested, 15% approved, 20% in_progress, 50% finished, 5% rejected, 0% cancelled
+  const statusWeights = [
+    { status: 'requested' as const, weight: 10, count: 0 },
+    { status: 'approved' as const, weight: 15, count: 0 },
+    { status: 'in_progress' as const, weight: 20, count: 0 },
+    { status: 'finished' as const, weight: 50, count: 0 },
+    { status: 'rejected' as const, weight: 5, count: 0 },
+  ];
 
-    const workOrder: WorkOrder = {
-      id: generateId('wo', i),
-      orderNumber: `WO-${2024}-${String(i + 1).padStart(5, '0')}`,
-      templateId: template.id,
-      customerId: customerIds[i % customerIds.length],
-      salesPersonId: salesPersonIds[i % salesPersonIds.length],
-      status,
-      currentStations: status === 'in_progress' ? [template.flow.nodes[Math.floor(Math.random() * 3)].stationId || ''] : [],
-      stationHistory: [],
-      estimatedPrice: template.estimatedCost * (1000 + Math.floor(Math.random() * 4000)),
-      requestedAt: formatDate(requestedDate),
-      activeFlowPositions: status === 'in_progress' ? [template.flow.nodes[0].id] : [],
-    };
+  const totalOrders = 150; // Increased from 100
 
-    if (status === 'approved' || status === 'in_progress' || status === 'finished') {
-      workOrder.approvedAt = formatDate(new Date(requestedDate.getTime() + 86400000));
-      workOrder.approvedBy = ownerIds[i % ownerIds.length];
+  // Calculate target counts
+  statusWeights.forEach(sw => {
+    sw.count = Math.floor((sw.weight / 100) * totalOrders);
+  });
+
+  // Generate orders by status to ensure proper distribution
+  let orderIndex = 0;
+  statusWeights.forEach(({ status, count }) => {
+    for (let i = 0; i < count; i++) {
+      const template = templates[orderIndex % templates.length];
+      const requestedDate = getRandomDate(new Date(2024, 0, 1), new Date());
+      const quantity = 500 + Math.floor(Math.random() * 4500); // 500-5000 rounds
+
+      const workOrder: WorkOrder = {
+        id: generateId('wo', orderIndex),
+        orderNumber: `WO-${String(orderIndex + 1).padStart(3, '0')}`,
+        templateId: template.id,
+        customerId: customerIds[orderIndex % customerIds.length],
+        salesPersonId: salesPersonIds[orderIndex % salesPersonIds.length],
+        status,
+        currentStations: status === 'in_progress' ? [template.flow.nodes[Math.floor(Math.random() * 3)].stationId || ''] : [],
+        stationHistory: [],
+        estimatedPrice: template.estimatedCost * quantity,
+        requestedAt: formatDate(requestedDate),
+        activeFlowPositions: status === 'in_progress' ? [template.flow.nodes[Math.floor(Math.random() * template.flow.nodes.length)].id] : [],
+      };
+
+      if (status === 'approved' || status === 'in_progress' || status === 'finished') {
+        const approvalDelay = 3600000 + Math.random() * 82800000; // 1-24 hours
+        workOrder.approvedAt = formatDate(new Date(requestedDate.getTime() + approvalDelay));
+        workOrder.approvedBy = ownerIds[orderIndex % ownerIds.length];
+      }
+
+      if (status === 'rejected') {
+        const rejectionDelay = 3600000 + Math.random() * 172800000; // 1-48 hours
+        workOrder.rejectedAt = formatDate(new Date(requestedDate.getTime() + rejectionDelay));
+        workOrder.rejectedBy = ownerIds[orderIndex % ownerIds.length];
+        const reasons = [
+          'Insufficient materials in stock',
+          'Customer credit check failed',
+          'Template requires safety review',
+          'Quantity exceeds production capacity',
+          'Customer requested cancellation',
+        ];
+        workOrder.rejectionReason = reasons[orderIndex % reasons.length];
+      }
+
+      if (status === 'in_progress') {
+        // Add some station history for in-progress orders
+        const completedStations = Math.floor(Math.random() * (template.flow.nodes.length / 2));
+        workOrder.stationHistory = [];
+        for (let j = 0; j < completedStations; j++) {
+          const node = template.flow.nodes[j];
+          if (node.stationId) {
+            workOrder.stationHistory.push({
+              stationId: node.stationId,
+              startedAt: formatDate(new Date(requestedDate.getTime() + (j * 3600000))),
+              completedAt: formatDate(new Date(requestedDate.getTime() + ((j + 1) * 3600000))),
+              operatorId: `opr-${String(Math.floor(Math.random() * 5)).padStart(4, '0')}`,
+            });
+          }
+        }
+      }
+
+      if (status === 'finished') {
+        const completionTime = 86400000 + Math.random() * 259200000; // 1-4 days
+        workOrder.finishedAt = formatDate(new Date(requestedDate.getTime() + completionTime));
+        workOrder.actualPrice = workOrder.estimatedPrice * (0.95 + Math.random() * 0.15); // -5% to +10% variance
+
+        // Add complete station history
+        workOrder.stationHistory = template.flow.nodes
+          .filter(node => node.stationId)
+          .map((node, idx) => ({
+            stationId: node.stationId!,
+            startedAt: formatDate(new Date(requestedDate.getTime() + (idx * 7200000))),
+            completedAt: formatDate(new Date(requestedDate.getTime() + ((idx + 1) * 7200000))),
+            operatorId: `opr-${String(Math.floor(Math.random() * 10)).padStart(4, '0')}`,
+          }));
+      }
+
+      workOrders.push(workOrder);
+      orderIndex++;
     }
+  });
 
-    if (status === 'rejected') {
-      workOrder.rejectedAt = formatDate(new Date(requestedDate.getTime() + 86400000));
-      workOrder.rejectedBy = ownerIds[i % ownerIds.length];
-      workOrder.rejectionReason = ['Insufficient materials', 'Customer credit issue', 'Template needs revision'][i % 3];
-    }
-
-    if (status === 'finished') {
-      workOrder.finishedAt = formatDate(new Date(requestedDate.getTime() + 172800000));
-      workOrder.actualPrice = workOrder.estimatedPrice * (0.95 + Math.random() * 0.1);
-    }
-
-    workOrders.push(workOrder);
-  }
-
-  return workOrders;
+  // Sort by requested date (most recent first)
+  return workOrders.sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
 };
 
 export const generateInvoices = (workOrders: WorkOrder[], customerIds: string[]): Invoice[] => {
@@ -64,21 +122,35 @@ export const generateInvoices = (workOrders: WorkOrder[], customerIds: string[])
 
   finishedOrders.forEach((wo, i) => {
     const issuedDate = new Date(wo.finishedAt!);
+    // 70% paid, 30% unpaid - more realistic for manufacturing
     const isPaid = Math.random() > 0.3;
+
+    // Payment terms: NET 30 days
+    const dueDate = new Date(issuedDate.getTime() + 2592000000); // 30 days
+    const daysSinceIssued = (new Date().getTime() - issuedDate.getTime()) / 86400000;
 
     const invoice: Invoice = {
       id: generateId('inv', i),
-      invoiceNumber: `INV-${2024}-${String(i + 1).padStart(5, '0')}`,
+      invoiceNumber: `INV-${String(i + 1).padStart(4, '0')}`,
       workOrderId: wo.id,
       customerId: wo.customerId,
       amount: wo.actualPrice || wo.estimatedPrice,
       status: isPaid ? 'paid' : 'unpaid',
       issuedAt: formatDate(issuedDate),
-      dueDate: formatDate(new Date(issuedDate.getTime() + 2592000000)), // 30 days
+      dueDate: formatDate(dueDate),
     };
 
     if (isPaid) {
-      invoice.paidAt = formatDate(new Date(issuedDate.getTime() + Math.random() * 2592000000));
+      // Paid invoices: most paid within 30 days, some early, some late
+      const paymentDelay = Math.random() < 0.7
+        ? Math.random() * 2592000000 // 0-30 days (70% of paid invoices)
+        : 2592000000 + Math.random() * 1296000000; // 30-45 days (30% paid late)
+
+      const paidDate = new Date(issuedDate.getTime() + paymentDelay);
+      // Only set paidAt if the payment date is in the past
+      if (paidDate.getTime() < new Date().getTime()) {
+        invoice.paidAt = formatDate(paidDate);
+      }
     }
 
     invoices.push(invoice);
@@ -94,25 +166,49 @@ export const generateShipments = (workOrders: WorkOrder[], customerIds: string[]
   finishedOrders.forEach((wo, i) => {
     const customer = customers.find(c => c.id === wo.customerId);
     const createdDate = new Date(wo.finishedAt!);
-    const statuses: Shipment['deliveryStatus'][] = ['label_created', 'shipped', 'delivered'];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const daysSinceFinished = (new Date().getTime() - createdDate.getTime()) / 86400000;
+
+    // Realistic status distribution based on time since completion
+    let status: Shipment['deliveryStatus'];
+    if (daysSinceFinished < 1) {
+      status = 'label_created'; // Just finished, label created
+    } else if (daysSinceFinished < 3) {
+      status = Math.random() > 0.3 ? 'shipped' : 'label_created'; // 70% shipped after 1 day
+    } else {
+      status = Math.random() > 0.2 ? 'delivered' : 'shipped'; // 80% delivered after 3 days
+    }
+
+    // Generate realistic shipping address
+    const states = ['CA', 'TX', 'FL', 'NY', 'PA', 'IL', 'OH', 'GA', 'NC', 'MI'];
+    const cities = ['Los Angeles', 'Houston', 'Miami', 'New York', 'Philadelphia', 'Chicago', 'Columbus', 'Atlanta', 'Charlotte', 'Detroit'];
+    const streetNames = ['Main St', 'Oak Ave', 'Pine Rd', 'Maple Dr', 'Cedar Ln', 'Elm St', 'Washington Blvd', 'Commerce Dr', 'Industrial Way'];
+
+    const randomIndex = i % states.length;
+    const shippingAddress = customer?.type === 'business' && customer.address
+      ? customer.address
+      : `${Math.floor(Math.random() * 9000) + 1000} ${streetNames[i % streetNames.length]}, ${cities[randomIndex]}, ${states[randomIndex]} ${String(Math.floor(Math.random() * 90000) + 10000)}`;
 
     const shipment: Shipment = {
       id: generateId('ship', i),
-      trackingNumber: `TRK${String(i + 1).padStart(10, '0')}`,
+      trackingNumber: `1Z999AA1${String(i + 1).padStart(8, '0')}`, // UPS-style tracking number
       workOrderId: wo.id,
       customerId: wo.customerId,
       deliveryStatus: status,
       createdAt: formatDate(createdDate),
-      shippingAddress: customer?.type === 'business' ? customer.address : `${Math.floor(Math.random() * 9000) + 1000} Main St, City, ST 12345`,
+      shippingAddress,
     };
 
     if (status === 'shipped' || status === 'delivered') {
-      shipment.shippedAt = formatDate(new Date(createdDate.getTime() + 86400000));
+      // Ship 1-2 days after completion
+      const shipDelay = 86400000 + Math.random() * 86400000; // 1-2 days
+      shipment.shippedAt = formatDate(new Date(createdDate.getTime() + shipDelay));
     }
 
     if (status === 'delivered') {
-      shipment.deliveredAt = formatDate(new Date(createdDate.getTime() + 259200000));
+      // Deliver 2-5 days after shipping
+      const deliveryDelay = 172800000 + Math.random() * 259200000; // 2-5 days
+      const shippedTime = new Date(shipment.shippedAt!).getTime();
+      shipment.deliveredAt = formatDate(new Date(shippedTime + deliveryDelay));
     }
 
     shipments.push(shipment);

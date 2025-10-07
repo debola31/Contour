@@ -1,54 +1,10 @@
 import { TourStep } from '@/components/Tour';
 
 // Initial website tour for first-time users
-export const initialTour: TourStep[] = [
-  {
-    target: 'body',
-    title: 'Welcome to CTM!',
-    content: 'Welcome to the CTM Manufacturing Management System! Let\'s take a quick tour to show you the key features.',
-    placement: 'bottom',
-  },
-  {
-    target: '[data-tour="sidebar"]',
-    title: 'Navigation Sidebar',
-    content: 'Use the sidebar to navigate between different sections. Your available options depend on your user role.',
-    placement: 'right',
-  },
-  {
-    target: '[data-tour="logo"]',
-    title: 'Company Logo',
-    content: 'Click the logo to collapse/expand the sidebar for more screen space.',
-    placement: 'right',
-  },
-  {
-    target: '[data-tour="user-info"]',
-    title: 'User Information',
-    content: 'Your profile information and logout button are here.',
-    placement: 'bottom',
-  },
-];
+export const initialTour: TourStep[] = [];
 
 // Dashboard home tour
-export const dashboardHomeTour: TourStep[] = [
-  {
-    target: '[data-tour="stats-cards"]',
-    title: 'Key Metrics',
-    content: 'View important statistics at a glance - total work orders, active orders, revenue, and pending approvals.',
-    placement: 'bottom',
-  },
-  {
-    target: '[data-tour="recent-activity"]',
-    title: 'Recent Activity',
-    content: 'Track the latest work orders and their current status.',
-    placement: 'left',
-  },
-  {
-    target: '[data-tour="status-chart"]',
-    title: 'Visual Analytics',
-    content: 'Charts provide visual insights into work order distribution and trends.',
-    placement: 'left',
-  },
-];
+export const dashboardHomeTour: TourStep[] = [];
 
 // Work Orders tour
 export const workOrdersTour: TourStep[] = [
@@ -161,8 +117,8 @@ export const templatesTour: TourStep[] = [
   {
     target: '[data-tour="edit-workflow"]',
     title: 'Visual Workflow Editor',
-    content: 'Click "Edit Workflow" to use the visual editor. Add stations, create parallel paths, and assign materials.',
-    placement: 'top',
+    content: 'Select a template from the list first, then click "Edit Workflow" to use the visual editor. Add stations, create parallel paths, and assign materials.',
+    placement: 'left',
   },
 ];
 

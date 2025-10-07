@@ -13,14 +13,17 @@ export default function WorkOrdersPage() {
   const stations = useStore((state) => state.stations);
   const approveWorkOrder = useStore((state) => state.approveWorkOrder);
   const rejectWorkOrder = useStore((state) => state.rejectWorkOrder);
+  const cancelWorkOrder = useStore((state) => state.cancelWorkOrder);
   const addWorkOrder = useStore((state) => state.addWorkOrder);
 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [cancellationReason, setCancellationReason] = useState('');
   const [detailsView, setDetailsView] = useState<'list' | 'diagram'>('list');
 
   const [newOrder, setNewOrder] = useState({
@@ -39,6 +42,7 @@ export default function WorkOrdersPage() {
     in_progress: workOrders.filter((wo) => wo.status === 'in_progress').length,
     finished: workOrders.filter((wo) => wo.status === 'finished').length,
     rejected: workOrders.filter((wo) => wo.status === 'rejected').length,
+    cancelled: workOrders.filter((wo) => wo.status === 'cancelled').length,
   };
 
   const getStatusColor = (status: string) => {
@@ -48,6 +52,7 @@ export default function WorkOrdersPage() {
       case 'in_progress': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
       case 'finished': return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'rejected': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'cancelled': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
       default: return 'bg-white/5 text-white/60 border-white/10';
     }
   };
@@ -98,7 +103,7 @@ export default function WorkOrdersPage() {
 
       <div className="p-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
             <div className="text-yellow-400 text-sm mb-1">Requested</div>
             <div className="text-2xl font-bold text-white">{statusCounts.requested}</div>
@@ -119,10 +124,14 @@ export default function WorkOrdersPage() {
             <div className="text-red-400 text-sm mb-1">Rejected</div>
             <div className="text-2xl font-bold text-white">{statusCounts.rejected}</div>
           </div>
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <div className="text-gray-400 text-sm mb-1">Cancelled</div>
+            <div className="text-2xl font-bold text-white">{statusCounts.cancelled}</div>
+          </div>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-4 mb-6" data-tour="search-filter">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -134,17 +143,19 @@ export default function WorkOrdersPage() {
             <option value="in_progress">In Progress</option>
             <option value="finished">Finished</option>
             <option value="rejected">Rejected</option>
+            <option value="cancelled">Cancelled</option>
           </select>
           <button
             onClick={() => setShowCreateModal(true)}
             className="gradient-button px-6 py-3 rounded-lg text-white font-medium ml-auto"
+            data-tour="new-work-order"
           >
             + Create Work Order
           </button>
         </div>
 
         {/* Work Orders List */}
-        <div className="space-y-4">
+        <div className="space-y-4" data-tour="work-orders-list">
           {filteredOrders.map((order) => {
             const customer = customers.find((c) => c.id === order.customerId);
             const template = templates.find((t) => t.id === order.templateId);
@@ -338,6 +349,50 @@ export default function WorkOrdersPage() {
                 className="flex-1 bg-red-500/20 hover:bg-red-500/30 px-6 py-3 rounded-lg text-red-400 font-semibold transition-colors"
               >
                 Reject Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111439] rounded-2xl p-8 max-w-md w-full border border-white/20">
+            <h3 className="text-2xl font-bold text-white mb-6">Cancel Work Order</h3>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-[#B0B3B8] mb-2">Reason (optional)</label>
+              <textarea
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4682B4]"
+                rows={4}
+                placeholder="Enter reason for cancellation..."
+              />
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setSelectedOrderId('');
+                  setCancellationReason('');
+                }}
+                className="flex-1 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => {
+                  if (currentUser && selectedOrderId) {
+                    cancelWorkOrder(selectedOrderId, currentUser.id, cancellationReason);
+                    setShowCancelModal(false);
+                    setSelectedOrderId('');
+                    setCancellationReason('');
+                  }
+                }}
+                className="flex-1 bg-red-500/20 hover:bg-red-500/30 px-6 py-3 rounded-lg text-red-400 font-semibold transition-colors"
+              >
+                Cancel Order
               </button>
             </div>
           </div>
@@ -639,7 +694,8 @@ export default function WorkOrdersPage() {
                   <div className="bg-white/5 rounded-lg p-6">
                     <h3 className="text-white font-semibold text-lg mb-6">Workflow Flow Diagram</h3>
                     {template && template.flow.nodes.length > 0 ? (
-                      <div className="relative bg-[#111439] rounded-lg p-8" style={{ minHeight: '500px' }}>
+                      <div className="bg-[#111439] rounded-lg overflow-auto" style={{ maxHeight: '700px' }}>
+                        <div className="relative p-8" style={{ minWidth: '2000px', minHeight: '600px' }}>
                         {/* Draw edges first (so they appear behind nodes) */}
                         <svg className="absolute inset-0 w-full h-full pointer-events-none">
                           {template.flow.edges.map(edge => {
@@ -666,7 +722,7 @@ export default function WorkOrdersPage() {
                                 y2={y2}
                                 stroke={isCompleted ? '#10b981' : '#4682B4'}
                                 strokeWidth="2"
-                                markerEnd="url(#arrowhead-detail)"
+                                markerEnd={isCompleted ? 'url(#arrowhead-detail-green)' : 'url(#arrowhead-detail)'}
                               />
                             );
                           })}
@@ -675,11 +731,23 @@ export default function WorkOrdersPage() {
                               id="arrowhead-detail"
                               markerWidth="10"
                               markerHeight="10"
-                              refX="9"
-                              refY="3"
+                              refX="10"
+                              refY="5"
                               orient="auto"
+                              markerUnits="strokeWidth"
                             >
-                              <polygon points="0 0, 10 3, 0 6" fill="#4682B4" />
+                              <path d="M 0 0 L 10 5 L 0 10 z" fill="#4682B4" />
+                            </marker>
+                            <marker
+                              id="arrowhead-detail-green"
+                              markerWidth="10"
+                              markerHeight="10"
+                              refX="10"
+                              refY="5"
+                              orient="auto"
+                              markerUnits="strokeWidth"
+                            >
+                              <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
                             </marker>
                           </defs>
                         </svg>
@@ -719,6 +787,7 @@ export default function WorkOrdersPage() {
                             </div>
                           );
                         })}
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-12 text-[#B0B3B8]">
@@ -730,15 +799,28 @@ export default function WorkOrdersPage() {
               </div>
 
               <div className="p-6 border-t border-white/10 sticky bottom-0 bg-[#1a1f3a]">
-                <button
-                  onClick={() => {
-                    setShowDetailsModal(false);
-                    setSelectedOrderId('');
-                  }}
-                  className="w-full px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors font-medium"
-                >
-                  Close
-                </button>
+                <div className="flex gap-3">
+                  {order.status !== 'cancelled' && order.status !== 'rejected' && order.status !== 'finished' && (
+                    <button
+                      onClick={() => {
+                        setShowDetailsModal(false);
+                        setShowCancelModal(true);
+                      }}
+                      className="px-6 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors font-medium"
+                    >
+                      Cancel Order
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      setSelectedOrderId('');
+                    }}
+                    className="flex-1 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>

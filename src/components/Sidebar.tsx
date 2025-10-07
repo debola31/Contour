@@ -24,7 +24,6 @@ const menuItems = [
 ];
 
 export default function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const currentUser = useStore((state) => state.currentUser);
 
@@ -35,54 +34,21 @@ export default function Sidebar() {
   return (
     <div
       data-tour="sidebar"
-      className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 bg-[#1a1f3a] h-screen flex flex-col border-r border-white/10`}
+      className="w-64 bg-[#1a1f3a] h-screen flex flex-col border-r border-white/10"
     >
       {/* Logo */}
-      <div className={`${isCollapsed ? 'p-2' : 'px-6 py-4'}`}>
-        {isCollapsed ? (
-          <div className="flex flex-col items-center gap-2" data-tour="logo">
-            <div className="bg-white rounded-lg p-1.5">
-              <div className="w-10 h-10">
-                <Image
-                  src={getAssetPath('/ctm-logo.png')}
-                  alt="CTM"
-                  width={40}
-                  height={40}
-                  className="object-cover object-left"
-                  style={{ objectPosition: 'left center' }}
-                />
-              </div>
-            </div>
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="text-white/60 hover:text-white transition-colors text-lg"
-            >
-              →
-            </button>
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-center" data-tour="logo">
+          <div className="bg-white rounded-lg px-4 py-2">
+            <Image
+              src={getAssetPath('/ctm-logo.png')}
+              alt="CTM"
+              width={160}
+              height={40}
+              className="object-contain"
+            />
           </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center justify-center flex-1" data-tour="logo">
-              <div className="bg-white rounded-lg px-4 py-2">
-                <div className="w-40 h-10">
-                  <Image
-                    src={getAssetPath('/ctm-logo.png')}
-                    alt="CTM"
-                    width={160}
-                    height={40}
-                    className="object-contain"
-                  />
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="text-white/60 hover:text-white transition-colors ml-2"
-            >
-              ←
-            </button>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Navigation */}
@@ -107,7 +73,7 @@ export default function Sidebar() {
                       item.icon
                     )}
                   </span>
-                  {!isCollapsed && <span className="font-medium leading-none">{item.name}</span>}
+                  <span className="font-medium leading-none">{item.name}</span>
                 </Link>
               </li>
             );

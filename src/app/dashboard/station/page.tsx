@@ -91,7 +91,7 @@ export default function StationWorkflowPage() {
 
       <div className="p-6 max-w-6xl mx-auto">
         {/* Station Selection */}
-        <div className="mb-6 bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+        <div className="mb-6 bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10" data-tour="station-selector">
           <label className="block text-[#B0B3B8] mb-2">Select Your Station</label>
           <select
             value={currentStation}
@@ -107,7 +107,7 @@ export default function StationWorkflowPage() {
 
         {!currentWorkOrder ? (
           /* Work Order Scanner */
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-white/10">
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-white/10" data-tour="scan-work-order">
             <h2 className="text-2xl font-bold text-white mb-6">Scan Work Order</h2>
             <div className="flex gap-4 mb-4">
               <input
@@ -187,7 +187,7 @@ export default function StationWorkflowPage() {
             </div>
 
             {/* Station Instructions */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10" data-tour="current-step">
               <h2 className="text-xl font-bold text-white mb-4">Station Instructions</h2>
 
               {currentStep ? (
@@ -230,7 +230,7 @@ export default function StationWorkflowPage() {
                   )}
 
                   {currentWorkOrder.status === 'in_progress' && (
-                    <div className="space-y-3 mt-6">
+                    <div className="space-y-3 mt-6" data-tour="complete-step">
                       <button
                         onClick={handleCompleteStep}
                         className="w-full gradient-button text-white font-semibold py-3 px-6 rounded-lg"

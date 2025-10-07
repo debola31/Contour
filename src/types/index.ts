@@ -126,7 +126,7 @@ export interface WorkOrderTemplate {
 }
 
 // Work Order
-export type WorkOrderStatus = 'requested' | 'approved' | 'rejected' | 'in_progress' | 'finished';
+export type WorkOrderStatus = 'requested' | 'approved' | 'rejected' | 'in_progress' | 'finished' | 'cancelled';
 
 export interface StationHistory {
   stationId: string;
@@ -154,6 +154,9 @@ export interface WorkOrder {
   rejectedAt?: string;
   rejectedBy?: string;
   rejectionReason?: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  cancellationReason?: string;
   finishedAt?: string;
   activeFlowPositions: string[]; // current node IDs in the flow
 }
@@ -250,6 +253,9 @@ export interface AppState {
 
   // Tours
   completedTours: string[];
+
+  // Data version for cache invalidation
+  dataVersion?: number;
 
   // Actions will be defined in the store
 }
