@@ -68,7 +68,7 @@ export default function OperatorsPage() {
 
       <div className="p-6">
         {/* Overall Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" data-tour="operator-stats">
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <div className="text-[#B0B3B8] mb-2">Total Operators</div>
             <div className="text-3xl font-bold text-white">{totalOperators}</div>
@@ -109,7 +109,7 @@ export default function OperatorsPage() {
         </div>
 
         {/* Leaderboard */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden mb-6">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden mb-6" data-tour="operators-list">
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
               <svg className="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
@@ -130,7 +130,7 @@ export default function OperatorsPage() {
                   <th className="text-left p-4 text-[#B0B3B8] font-medium">Accuracy</th>
                   <th className="text-left p-4 text-[#B0B3B8] font-medium">Avg Time</th>
                   <th className="text-left p-4 text-[#B0B3B8] font-medium">Streak</th>
-                  <th className="text-left p-4 text-[#B0B3B8] font-medium">Badges</th>
+                  <th className="text-left p-4 text-[#B0B3B8] font-medium" data-tour="operator-badges">Badges</th>
                 </tr>
               </thead>
               <tbody>

@@ -85,7 +85,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* Search and Filter */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-4 mb-6" data-tour="transaction-filter">
           <input
             type="text"
             placeholder="Search transactions..."
@@ -122,7 +122,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* Transactions Table */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden" data-tour="transactions-log">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/10">

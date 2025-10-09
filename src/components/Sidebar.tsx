@@ -24,7 +24,6 @@ const menuItems = [
 ];
 
 export default function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const currentUser = useStore((state) => state.currentUser);
 
@@ -34,30 +33,21 @@ export default function Sidebar() {
 
   return (
     <div
-      className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 bg-[#111439] h-screen flex flex-col border-r border-white/10`}
+      data-tour="sidebar"
+      className="w-64 bg-[#1a1f3a] h-screen flex flex-col border-r border-white/10"
     >
       {/* Logo */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0">
-              <Image
-                src={getAssetPath('/contour-logo.svg')}
-                alt="Contour"
-                width={40}
-                height={40}
-              />
-            </div>
-            {!isCollapsed && (
-              <span className="text-white font-bold text-lg">CONTOUR</span>
-            )}
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-center" data-tour="logo">
+          <div className="bg-white rounded-lg px-4 py-2">
+            <Image
+              src={getAssetPath('/ctm-logo.png')}
+              alt="CTM"
+              width={160}
+              height={40}
+              className="object-contain"
+            />
           </div>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-white/60 hover:text-white transition-colors"
-          >
-            {isCollapsed ? '→' : '←'}
-          </button>
         </div>
       </div>
 
@@ -83,7 +73,7 @@ export default function Sidebar() {
                       item.icon
                     )}
                   </span>
-                  {!isCollapsed && <span className="font-medium leading-none">{item.name}</span>}
+                  <span className="font-medium leading-none">{item.name}</span>
                 </Link>
               </li>
             );

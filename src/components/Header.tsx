@@ -19,12 +19,23 @@ export default function Header({ title }: { title: string }) {
     <header className="bg-[#111439]/50 backdrop-blur-sm border-b border-white/10 px-6 py-4 relative z-50">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">{title}</h1>
-        <div className="flex items-center gap-4 relative">
+        <div className="flex items-center gap-4 relative" data-tour="user-info">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="text-white font-medium hover:bg-white/5 px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 text-white font-medium bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors border border-white/10"
           >
-            {currentUser?.firstName} {currentUser?.lastName}
+            <div className="w-8 h-8 rounded-full bg-[#4682B4] flex items-center justify-center text-sm font-semibold">
+              {currentUser?.firstName?.[0]}{currentUser?.lastName?.[0]}
+            </div>
+            <span>{currentUser?.firstName} {currentUser?.lastName}</span>
+            <svg
+              className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           {/* User Menu Dropdown */}

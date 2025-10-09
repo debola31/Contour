@@ -47,7 +47,7 @@ export default function CustomersPage() {
         </div>
 
         {/* Search and Filter */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-4 mb-6" data-tour="customer-search">
           <input
             type="text"
             placeholder="Search customers..."
@@ -64,13 +64,13 @@ export default function CustomersPage() {
             <option value="business">Business</option>
             <option value="individual">Individual</option>
           </select>
-          <button className="gradient-button px-6 py-3 rounded-lg text-white font-medium">
+          <button className="gradient-button px-6 py-3 rounded-lg text-white font-medium" data-tour="new-customer">
             + Add Customer
           </button>
         </div>
 
         {/* Customers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-tour="customers-table">
           {filteredCustomers.map((customer) => (
             <div
               key={customer.id}

@@ -75,8 +75,8 @@ export default function InventoryPage() {
 
       <div className="p-6">
         {/* Alerts */}
-        {lowStockMaterials.length > 0 && (
-          <div className="mb-6 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+        {lowStockMaterials.length > 0 ? (
+          <div className="mb-6 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4" data-tour="low-stock-alert">
             <div className="flex items-start gap-3">
               <svg className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -89,6 +89,20 @@ export default function InventoryPage() {
               </div>
             </div>
           </div>
+        ) : (
+          <div className="mb-6 bg-green-500/10 border border-green-500/30 rounded-xl p-4" data-tour="low-stock-alert">
+            <div className="flex items-start gap-3">
+              <svg className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 className="text-green-500 font-semibold mb-1">Stock Levels Healthy</h3>
+                <p className="text-white/80 text-sm">
+                  All materials are at safe stock levels. Low stock alerts will appear here when materials need replenishment.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Stats */}
@@ -97,7 +111,7 @@ export default function InventoryPage() {
             <div className="text-[#B0B3B8] mb-2">Total Items</div>
             <div className="text-3xl font-bold text-white">{materials.length}</div>
           </div>
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10" data-tour="low-stock-stat">
             <div className="text-[#B0B3B8] mb-2">Low Stock Items</div>
             <div className="text-3xl font-bold text-yellow-500">{lowStockMaterials.length}</div>
           </div>
@@ -115,13 +129,14 @@ export default function InventoryPage() {
           <button
             onClick={() => setShowAddModal(true)}
             className="gradient-button px-6 py-3 rounded-lg text-white font-medium"
+            data-tour="add-material"
           >
             + New Material
           </button>
         </div>
 
         {/* Materials Table */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden" data-tour="inventory-table">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/10">

@@ -15,7 +15,7 @@ import {
   TransactionType,
   PersonnelRole,
 } from '@/types';
-import { loadSampleData } from '@/data/loadSampleData';
+import { generateSampleData } from '@/data/sampleData';
 
 interface StoreActions {
   // Auth
@@ -53,7 +53,6 @@ interface StoreActions {
   updateWorkOrder: (id: string, updates: Partial<WorkOrder>) => void;
   approveWorkOrder: (id: string, ownerId: string) => void;
   rejectWorkOrder: (id: string, ownerId: string, reason?: string) => void;
-  cancelWorkOrder: (id: string, userId: string, reason?: string) => void;
   startWorkOrderAtStation: (workOrderId: string, stationId: string, operatorId: string) => void;
   completeStationWork: (workOrderId: string, stationId: string, materialsUsed?: any, notes?: string) => void;
   failQualityCheck: (workOrderId: string, sendBackToStationId: string, notes: string) => void;
@@ -83,17 +82,11 @@ interface StoreActions {
   exportData: (objectType?: string) => any;
   importData: (data: any) => void;
   resetToSampleData: () => void;
-
-  // Tour Management
-  completeTour: (tourId: string) => void;
-  isTourCompleted: (tourId: string) => boolean;
-  resetTours: () => void;
 }
 
 type Store = AppState & StoreActions;
 
-const initialData = loadSampleData();
-const DATA_VERSION = 2; // Increment this to force data reload
+const initialData = generateSampleData();
 
 export const useStore = create<Store>()(
   persist(
@@ -105,14 +98,12 @@ export const useStore = create<Store>()(
       customers: initialData.customers,
       materials: initialData.materials,
       stations: initialData.stations,
-      templates: initialData.templates,
-      workOrders: initialData.workOrders,
-      invoices: initialData.invoices,
-      shipments: initialData.shipments,
-      transactions: initialData.transactions,
+      templates: [],
+      workOrders: [],
+      invoices: [],
+      shipments: [],
+      transactions: [],
       operatorAutoLogoutMinutes: 600, // 10 hours
-      completedTours: [],
-      dataVersion: DATA_VERSION,
 
       // Auth actions
       login: (email: string, password: string) => {
@@ -218,7 +209,7 @@ export const useStore = create<Store>()(
 
       updateMaterial: (id: string, updates: Partial<Material>) => {
         set((state) => ({
-          materials: state.materials.map((m) => (m.id === id ? { ...m, ...updates } as Material : m)),
+          materials: state.materials.map((m) => (m.id === id ? { ...m, ...updates } : m)),
         }));
         get().logTransaction('material', id, 'update', `Updated material`, updates);
       },
@@ -236,7 +227,7 @@ export const useStore = create<Store>()(
 
       updateStation: (id: string, updates: Partial<Station>) => {
         set((state) => ({
-          stations: state.stations.map((s) => (s.id === id ? { ...s, ...updates } as Station : s)),
+          stations: state.stations.map((s) => (s.id === id ? { ...s, ...updates } : s)),
         }));
         get().logTransaction('station', id, 'update', `Updated station`, updates);
       },
@@ -254,7 +245,7 @@ export const useStore = create<Store>()(
 
       updateTemplate: (id: string, updates: Partial<WorkOrderTemplate>) => {
         set((state) => ({
-          templates: state.templates.map((t) => (t.id === id ? { ...t, ...updates } as WorkOrderTemplate : t)),
+          templates: state.templates.map((t) => (t.id === id ? { ...t, ...updates } : t)),
         }));
         get().logTransaction('template', id, 'update', `Updated template`, updates);
       },
@@ -272,7 +263,7 @@ export const useStore = create<Store>()(
 
       updateWorkOrder: (id: string, updates: Partial<WorkOrder>) => {
         set((state) => ({
-          workOrders: state.workOrders.map((wo) => (wo.id === id ? { ...wo, ...updates } as WorkOrder : wo)),
+          workOrders: state.workOrders.map((wo) => (wo.id === id ? { ...wo, ...updates } : wo)),
         }));
       },
 
@@ -295,17 +286,6 @@ export const useStore = create<Store>()(
         };
         get().updateWorkOrder(id, updates);
         get().logTransaction('workorder', id, 'reject', `Rejected work order: ${reason || 'No reason provided'}`);
-      },
-
-      cancelWorkOrder: (id: string, userId: string, reason?: string) => {
-        const updates = {
-          status: 'cancelled' as const,
-          cancelledAt: new Date().toISOString(),
-          cancelledBy: userId,
-          cancellationReason: reason,
-        };
-        get().updateWorkOrder(id, updates);
-        get().logTransaction('workorder', id, 'cancel', `Cancelled work order: ${reason || 'No reason provided'}`);
       },
 
       startWorkOrderAtStation: (workOrderId: string, stationId: string, operatorId: string) => {
@@ -359,7 +339,7 @@ export const useStore = create<Store>()(
 
       updateInvoice: (id: string, updates: Partial<Invoice>) => {
         set((state) => ({
-          invoices: state.invoices.map((inv) => (inv.id === id ? { ...inv, ...updates } as Invoice : inv)),
+          invoices: state.invoices.map((inv) => (inv.id === id ? { ...inv, ...updates } : inv)),
         }));
       },
 
@@ -379,7 +359,7 @@ export const useStore = create<Store>()(
 
       updateShipment: (id: string, updates: Partial<Shipment>) => {
         set((state) => ({
-          shipments: state.shipments.map((s) => (s.id === id ? { ...s, ...updates } as Shipment : s)),
+          shipments: state.shipments.map((s) => (s.id === id ? { ...s, ...updates } : s)),
         }));
         get().logTransaction('shipment', id, 'update', `Updated shipment`, updates);
       },
@@ -441,55 +421,22 @@ export const useStore = create<Store>()(
       },
 
       resetToSampleData: () => {
-        const freshData = loadSampleData();
+        const freshData = generateSampleData();
         set({
           personnel: freshData.personnel,
           customers: freshData.customers,
           materials: freshData.materials,
           stations: freshData.stations,
-          templates: freshData.templates,
-          workOrders: freshData.workOrders,
-          invoices: freshData.invoices,
-          shipments: freshData.shipments,
-          transactions: freshData.transactions,
-          dataVersion: DATA_VERSION,
+          templates: [],
+          workOrders: [],
+          invoices: [],
+          shipments: [],
+          transactions: [],
         });
-      },
-
-      // Tour management
-      completeTour: (tourId: string) => {
-        set((state) => ({
-          completedTours: [...state.completedTours, tourId],
-        }));
-      },
-
-      isTourCompleted: (tourId: string) => {
-        return get().completedTours.includes(tourId);
-      },
-
-      resetTours: () => {
-        set({ completedTours: [] });
       },
     }),
     {
       name: 'contour-erp-storage',
-      version: DATA_VERSION,
-      migrate: (persistedState: any, version: number) => {
-        // If stored version doesn't match, reload all data
-        if (!persistedState.dataVersion || persistedState.dataVersion !== DATA_VERSION) {
-          const freshData = loadSampleData();
-          return {
-            ...persistedState,
-            templates: freshData.templates,
-            workOrders: freshData.workOrders,
-            invoices: freshData.invoices,
-            shipments: freshData.shipments,
-            transactions: freshData.transactions,
-            dataVersion: DATA_VERSION,
-          };
-        }
-        return persistedState;
-      },
     }
   )
 );
