@@ -194,7 +194,7 @@ export default function StationWorkflowPage() {
                 ))}
                 {filteredStations.length === 0 && (
                   <div className="col-span-full text-center py-8 text-[#B0B3B8]">
-                    No stations found matching "{stationSearch}"
+                    No stations found matching &quot;{stationSearch}&quot;
                   </div>
                 )}
               </div>

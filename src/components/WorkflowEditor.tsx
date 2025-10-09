@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { FlowNode, FlowEdge, MaterialConsumption } from '@/types';
+import { FlowNode, FlowEdge, MaterialConsumption, Station } from '@/types';
 
 interface WorkflowEditorProps {
   nodes: FlowNode[];
   edges: FlowEdge[];
   onSave: (nodes: FlowNode[], edges: FlowEdge[]) => void;
-  stations: Array<{ id: string; name: string }>;
+  stations: Station[];
   materials: Array<{ id: string; partName: string }>;
 }
 
@@ -653,7 +653,7 @@ export default function WorkflowEditor({ nodes: initialNodes, edges: initialEdge
               <div className="space-y-2">
                 {pendingMaterials.length === 0 ? (
                   <div className="text-center py-8 text-[#B0B3B8] text-sm">
-                    No materials added. Click "Add Material" to assign materials to this station.
+                    No materials added. Click &quot;Add Material&quot; to assign materials to this station.
                   </div>
                 ) : (
                   pendingMaterials.map((material, index) => (

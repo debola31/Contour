@@ -198,6 +198,7 @@ export type TransactionType =
   | 'delete'
   | 'approve'
   | 'reject'
+  | 'cancel'
   | 'station_start'
   | 'station_complete'
   | 'quality_fail';

@@ -82,7 +82,7 @@ export default function Dashboard() {
                   <svg className="w-8 h-8 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                   </svg>
-                  <h3 className="text-2xl font-bold text-white">Today's Leaderboard</h3>
+                  <h3 className="text-2xl font-bold text-white">Today&apos;s Leaderboard</h3>
                 </div>
                 <p className="text-[#B0B3B8] text-sm mt-2">Top performers of the current shift</p>
               </div>
