@@ -8,6 +8,14 @@ app = FastAPI(
     version="1.0.0",
 )
 
+@app.get("/api/example_name")
+def get_example_name():
+    return {
+        "data": {
+            "name" : "Adebola Akeredolu"
+        }
+    }
+
 
 @app.get("/api/data")
 def get_sample_data():
