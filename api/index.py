@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from mangum import Mangum
 
 app = FastAPI(
     title="Vercel + FastAPI",
@@ -349,3 +350,6 @@ def read_root():
     </body>
     </html>
     """
+
+# Vercel serverless function handler
+handler = Mangum(app)
