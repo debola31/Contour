@@ -8,7 +8,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-@app.get("/api/example_name")
+@app.get("/example_name")
 def get_example_name():
     return {
         "data": {
@@ -17,7 +17,7 @@ def get_example_name():
     }
 
 
-@app.get("/api/data")
+@app.get("/data")
 def get_sample_data():
     return {
         "data": [
@@ -30,7 +30,7 @@ def get_sample_data():
     }
 
 
-@app.get("/api/items/{item_id}")
+@app.get("/items/{item_id}")
 def get_item(item_id: int):
     return {
         "item": {
