@@ -1,8 +1,6 @@
 import os
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
 from supabase import create_client, Client
-from supabase.client import ClientOptions
 from dotenv import load_dotenv
 
 # Load environment variables
