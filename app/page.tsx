@@ -1,42 +1,45 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { getPostLoginRoute } from '@/utils/companyAccess';
 
 export default function Home() {
-  const [name, setName] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
+  const router = useRouter();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const fetchName = async () => {
-      try {
-        const response = await fetch("/api/example_name");
-        if (!response.ok) {
-          throw new Error("Failed to fetch name");
-        }
-        const data = await response.json();
-        setName(data.data.name);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setLoading(false);
+    if (loading) return;
+
+    async function redirect() {
+      if (!user) {
+        // Not logged in, go to login page
+        router.replace('/login');
+        return;
       }
-    };
 
-    fetchName();
-  }, []);
+      // Logged in, determine where to redirect
+      const route = await getPostLoginRoute(user.id);
+      router.replace(route);
+    }
 
+    redirect();
+  }, [user, loading, router]);
+
+  // Show loading spinner while determining redirect
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-center py-32 px-16 bg-white dark:bg-black">
-        <div className="flex flex-col items-center gap-6 text-center">
-          <h1 className="text-5xl font-bold leading-tight tracking-tight text-black dark:text-zinc-50">
-            {loading && "Loading..."}
-            {error && `Error: ${error}`}
-            {!loading && !error && name && `Hello ${name}`}
-          </h1>
-        </div>
-      </main>
-    </div>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+      }}
+    >
+      <CircularProgress />
+    </Box>
   );
 }
