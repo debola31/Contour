@@ -34,7 +34,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             Jigged
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manufacturing Operations System
+            Manufacturing Operations
           </Typography>
         </Box>
 

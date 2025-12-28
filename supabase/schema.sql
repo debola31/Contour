@@ -92,6 +92,22 @@ CREATE POLICY "Admins can update company details"
 -- RLS POLICIES FOR USER COMPANY ACCESS
 -- ============================================
 
+-- Security definer function to check admin status without triggering RLS recursion
+CREATE OR REPLACE FUNCTION is_company_admin(check_company_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM user_company_access
+    WHERE user_id = auth.uid()
+    AND company_id = check_company_id
+    AND role IN ('owner', 'admin')
+  );
+$$;
+
 -- Users can view their own company access records
 CREATE POLICY "Users can view their own company access"
   ON user_company_access
@@ -102,27 +118,25 @@ CREATE POLICY "Users can view their own company access"
 CREATE POLICY "Admins can view all company access"
   ON user_company_access
   FOR SELECT
-  USING (
-    company_id IN (
-      SELECT company_id
-      FROM user_company_access
-      WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin')
-    )
-  );
+  USING (is_company_admin(company_id));
 
--- Admins/owners can manage access for their companies
-CREATE POLICY "Admins can manage company access"
+-- Admins can insert access for their companies
+CREATE POLICY "Admins can insert company access"
   ON user_company_access
-  FOR ALL
-  USING (
-    company_id IN (
-      SELECT company_id
-      FROM user_company_access AS uca
-      WHERE uca.user_id = auth.uid()
-      AND uca.role IN ('owner', 'admin')
-    )
-  );
+  FOR INSERT
+  WITH CHECK (is_company_admin(company_id));
+
+-- Admins can update access for their companies
+CREATE POLICY "Admins can update company access"
+  ON user_company_access
+  FOR UPDATE
+  USING (is_company_admin(company_id));
+
+-- Admins can delete access for their companies
+CREATE POLICY "Admins can delete company access"
+  ON user_company_access
+  FOR DELETE
+  USING (is_company_admin(company_id));
 
 -- ============================================
 -- RLS POLICIES FOR USER PREFERENCES
