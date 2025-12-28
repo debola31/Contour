@@ -70,6 +70,8 @@ export async function setLastCompany(userId: string, companyId: string): Promise
       user_id: userId,
       last_company_id: companyId,
       updated_at: new Date().toISOString(),
+    }, {
+      onConflict: 'user_id',
     });
 
   if (error) {
