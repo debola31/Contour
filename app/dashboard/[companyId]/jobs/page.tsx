@@ -6,23 +6,23 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 
-export default function DashboardPage() {
+export default function JobsPage() {
   const params = useParams();
   const companyId = params.companyId as string;
 
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-        Dashboard
+        Jobs
       </Typography>
 
       <Card elevation={2}>
         <CardContent sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="h6" gutterBottom color="text.secondary">
-            Welcome to Jigged
+            Work Orders & Jobs
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Dashboard features coming soon.
+            Manage your manufacturing jobs and work orders here.
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Company ID: <code>{companyId}</code>

@@ -1,0 +1,112 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname, useParams } from 'next/navigation';
+import Box from '@mui/material/Box';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import WorkIcon from '@mui/icons-material/Work';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+
+const menuItems = [
+  { name: 'Dashboard', path: '', icon: DashboardIcon },
+  { name: 'Jobs', path: '/jobs', icon: WorkIcon },
+  { name: 'Routings', path: '/routings', icon: AccountTreeIcon },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const params = useParams();
+  const companyId = params.companyId as string;
+  const basePath = `/dashboard/${companyId}`;
+
+  return (
+    <Box
+      component="nav"
+      sx={{
+        width: 240,
+        flexShrink: 0,
+        bgcolor: 'rgba(17, 20, 57, 0.8)',
+        backdropFilter: 'blur(10px)',
+        borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Logo */}
+      <Box sx={{ p: 3, borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <Typography
+          variant="h5"
+          component="div"
+          sx={{
+            fontWeight: 700,
+            color: 'primary.main',
+            letterSpacing: '-0.5px',
+          }}
+        >
+          Jigged
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Manufacturing ERP
+        </Typography>
+      </Box>
+
+      {/* Navigation */}
+      <Box sx={{ flex: 1, py: 2, px: 1.5 }}>
+        <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          {menuItems.map((item) => {
+            const fullPath = `${basePath}${item.path}`;
+            const isActive = pathname === fullPath;
+            const IconComponent = item.icon;
+
+            return (
+              <ListItem key={item.path} disablePadding>
+                <ListItemButton
+                  component={Link}
+                  href={fullPath}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.5,
+                    px: 2,
+                    bgcolor: isActive ? 'primary.main' : 'transparent',
+                    color: isActive ? 'white' : 'rgba(255, 255, 255, 0.7)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: isActive ? 'primary.main' : 'rgba(255, 255, 255, 0.08)',
+                      color: 'white',
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 40,
+                      color: 'inherit',
+                    }}
+                  >
+                    <IconComponent />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.name}
+                    slotProps={{
+                      primary: {
+                        sx: {
+                          fontWeight: isActive ? 600 : 500,
+                          fontSize: '0.95rem',
+                        },
+                      },
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+      </Box>
+    </Box>
+  );
+}
