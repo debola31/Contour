@@ -1,201 +1,223 @@
--- Jigged Phase 0 Database Schema
--- Run this in your Supabase SQL Editor
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
--- Enable UUID extension (usually already enabled in Supabase)
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- ============================================
--- COMPANIES TABLE
--- ============================================
--- Stores company/organization information
-CREATE TABLE IF NOT EXISTS companies (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.companies (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text UNIQUE,
+  settings jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT companies_pkey PRIMARY KEY (id)
 );
-
--- Index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(name);
-
--- ============================================
--- USER COMPANY ACCESS TABLE
--- ============================================
--- Junction table linking users to companies with roles
-CREATE TABLE IF NOT EXISTS user_company_access (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  role TEXT DEFAULT 'user' CHECK (role IN ('owner', 'admin', 'user', 'operator', 'bookkeeper', 'engineer', 'quality')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, company_id)
+CREATE TABLE public.customers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  customer_code text NOT NULL,
+  name text NOT NULL,
+  phone text,
+  email text,
+  website text,
+  contact_name text,
+  contact_phone text,
+  contact_email text,
+  address_line1 text,
+  address_line2 text,
+  city text,
+  state text,
+  postal_code text,
+  country text DEFAULT 'USA'::text,
+  is_active boolean DEFAULT true,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT customers_pkey PRIMARY KEY (id),
+  CONSTRAINT customers_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id)
 );
-
--- Indexes for faster lookups
-CREATE INDEX IF NOT EXISTS idx_user_company_access_user_id ON user_company_access(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_company_access_company_id ON user_company_access(company_id);
-
--- ============================================
--- USER PREFERENCES TABLE
--- ============================================
--- Stores user preferences including last accessed company
-CREATE TABLE IF NOT EXISTS user_preferences (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
-  last_company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.job_operations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_id uuid NOT NULL,
+  routing_operation_id uuid,
+  sequence integer NOT NULL,
+  operation_name text NOT NULL,
+  station_id uuid,
+  estimated_setup_hours numeric DEFAULT 0,
+  estimated_run_hours_per_unit numeric DEFAULT 0,
+  actual_setup_hours numeric,
+  actual_run_hours numeric,
+  quantity_completed integer DEFAULT 0,
+  quantity_scrapped integer DEFAULT 0,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'complete'::text, 'skipped'::text])),
+  started_at timestamp with time zone,
+  completed_at timestamp with time zone,
+  assigned_to uuid,
+  completed_by uuid,
+  instructions text,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT job_operations_pkey PRIMARY KEY (id),
+  CONSTRAINT job_operations_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_operations_routing_operation_id_fkey FOREIGN KEY (routing_operation_id) REFERENCES public.routing_operations(id),
+  CONSTRAINT job_operations_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES auth.users(id),
+  CONSTRAINT job_operations_completed_by_fkey FOREIGN KEY (completed_by) REFERENCES auth.users(id),
+  CONSTRAINT job_operations_station_id_fkey FOREIGN KEY (station_id) REFERENCES public.stations(id)
 );
-
--- Index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
-
--- ============================================
--- ROW LEVEL SECURITY (RLS)
--- ============================================
-
--- Enable RLS on all tables
-ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_company_access ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
-
--- ============================================
--- RLS POLICIES FOR COMPANIES
--- ============================================
-
--- Users can only view companies they have access to
-CREATE POLICY "Users can view companies they have access to"
-  ON companies
-  FOR SELECT
-  USING (
-    id IN (
-      SELECT company_id
-      FROM user_company_access
-      WHERE user_id = auth.uid()
-    )
-  );
-
--- Only admins/owners can update company details
-CREATE POLICY "Admins can update company details"
-  ON companies
-  FOR UPDATE
-  USING (
-    id IN (
-      SELECT company_id
-      FROM user_company_access
-      WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin')
-    )
-  );
-
--- ============================================
--- RLS POLICIES FOR USER COMPANY ACCESS
--- ============================================
-
--- Security definer function to check admin status without triggering RLS recursion
-CREATE OR REPLACE FUNCTION is_company_admin(check_company_id UUID)
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM user_company_access
-    WHERE user_id = auth.uid()
-    AND company_id = check_company_id
-    AND role IN ('owner', 'admin')
-  );
-$$;
-
--- Users can view their own company access records
-CREATE POLICY "Users can view their own company access"
-  ON user_company_access
-  FOR SELECT
-  USING (user_id = auth.uid());
-
--- Admins/owners can view all access records for their companies
-CREATE POLICY "Admins can view all company access"
-  ON user_company_access
-  FOR SELECT
-  USING (is_company_admin(company_id));
-
--- Admins can insert access for their companies
-CREATE POLICY "Admins can insert company access"
-  ON user_company_access
-  FOR INSERT
-  WITH CHECK (is_company_admin(company_id));
-
--- Admins can update access for their companies
-CREATE POLICY "Admins can update company access"
-  ON user_company_access
-  FOR UPDATE
-  USING (is_company_admin(company_id));
-
--- Admins can delete access for their companies
-CREATE POLICY "Admins can delete company access"
-  ON user_company_access
-  FOR DELETE
-  USING (is_company_admin(company_id));
-
--- ============================================
--- RLS POLICIES FOR USER PREFERENCES
--- ============================================
-
--- Users can view their own preferences
-CREATE POLICY "Users can view their own preferences"
-  ON user_preferences
-  FOR SELECT
-  USING (user_id = auth.uid());
-
--- Users can insert their own preferences
-CREATE POLICY "Users can insert their own preferences"
-  ON user_preferences
-  FOR INSERT
-  WITH CHECK (user_id = auth.uid());
-
--- Users can update their own preferences
-CREATE POLICY "Users can update their own preferences"
-  ON user_preferences
-  FOR UPDATE
-  USING (user_id = auth.uid());
-
--- Users can delete their own preferences
-CREATE POLICY "Users can delete their own preferences"
-  ON user_preferences
-  FOR DELETE
-  USING (user_id = auth.uid());
-
--- ============================================
--- HELPER FUNCTIONS
--- ============================================
-
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger for companies table
-DROP TRIGGER IF EXISTS update_companies_updated_at ON companies;
-CREATE TRIGGER update_companies_updated_at
-  BEFORE UPDATE ON companies
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
--- Trigger for user_preferences table
-DROP TRIGGER IF EXISTS update_user_preferences_updated_at ON user_preferences;
-CREATE TRIGGER update_user_preferences_updated_at
-  BEFORE UPDATE ON user_preferences
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
--- ============================================
--- SEED DATA (OPTIONAL - FOR TESTING)
--- ============================================
--- Uncomment the following to create a test company
-
--- INSERT INTO companies (name) VALUES ('Contour Tool Inc');
+CREATE TABLE public.jobs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  job_number text NOT NULL,
+  quote_id uuid,
+  routing_id uuid,
+  customer_id uuid NOT NULL,
+  part_id uuid,
+  part_number_text text,
+  description text,
+  quantity_ordered integer NOT NULL,
+  quantity_completed integer DEFAULT 0,
+  quantity_scrapped integer DEFAULT 0,
+  due_date date,
+  priority text DEFAULT 'normal'::text CHECK (priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'rush'::text])),
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'complete'::text, 'shipped'::text, 'cancelled'::text])),
+  status_changed_at timestamp with time zone,
+  current_operation_sequence integer,
+  started_at timestamp with time zone,
+  completed_at timestamp with time zone,
+  shipped_at timestamp with time zone,
+  notes text,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT jobs_pkey PRIMARY KEY (id),
+  CONSTRAINT jobs_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT jobs_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id),
+  CONSTRAINT jobs_routing_id_fkey FOREIGN KEY (routing_id) REFERENCES public.routings(id),
+  CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT jobs_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts(id),
+  CONSTRAINT jobs_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.parts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  customer_id uuid,
+  part_number text NOT NULL,
+  description text,
+  price_tier1_qty integer DEFAULT 1,
+  price_tier1_price numeric,
+  price_tier2_qty integer,
+  price_tier2_price numeric,
+  price_tier3_qty integer,
+  price_tier3_price numeric,
+  material_cost numeric,
+  is_active boolean DEFAULT true,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT parts_pkey PRIMARY KEY (id),
+  CONSTRAINT parts_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT parts_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
+CREATE TABLE public.quotes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  quote_number text NOT NULL,
+  customer_id uuid NOT NULL,
+  part_id uuid,
+  part_number_text text,
+  description text,
+  routing_id uuid,
+  quantity integer NOT NULL DEFAULT 1,
+  unit_price numeric,
+  total_price numeric,
+  estimated_material_cost numeric,
+  estimated_labor_hours numeric,
+  estimated_lead_time_days integer,
+  valid_until date,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'sent'::text, 'accepted'::text, 'declined'::text, 'expired'::text])),
+  status_changed_at timestamp with time zone,
+  converted_to_job_id uuid,
+  converted_at timestamp with time zone,
+  legacy_quote_number text,
+  notes text,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT quotes_pkey PRIMARY KEY (id),
+  CONSTRAINT quotes_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT quotes_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT quotes_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts(id),
+  CONSTRAINT quotes_routing_id_fkey FOREIGN KEY (routing_id) REFERENCES public.routings(id),
+  CONSTRAINT quotes_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id),
+  CONSTRAINT quotes_converted_to_job_id_fkey FOREIGN KEY (converted_to_job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.routing_operations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  routing_id uuid NOT NULL,
+  sequence integer NOT NULL,
+  operation_name text NOT NULL,
+  station_id uuid,
+  estimated_setup_hours numeric DEFAULT 0,
+  estimated_run_hours_per_unit numeric DEFAULT 0,
+  instructions text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT routing_operations_pkey PRIMARY KEY (id),
+  CONSTRAINT routing_operations_routing_id_fkey FOREIGN KEY (routing_id) REFERENCES public.routings(id),
+  CONSTRAINT routing_operations_station_id_fkey FOREIGN KEY (station_id) REFERENCES public.stations(id)
+);
+CREATE TABLE public.routings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  part_id uuid,
+  name text NOT NULL,
+  description text,
+  revision text DEFAULT 'A'::text,
+  estimated_total_hours numeric,
+  estimated_lead_time_days integer,
+  is_active boolean DEFAULT true,
+  is_default boolean DEFAULT false,
+  notes text,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT routings_pkey PRIMARY KEY (id),
+  CONSTRAINT routings_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT routings_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts(id),
+  CONSTRAINT routings_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.stations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  name text NOT NULL,
+  code text,
+  description text,
+  station_type text,
+  hourly_rate numeric,
+  is_active boolean DEFAULT true,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT stations_pkey PRIMARY KEY (id),
+  CONSTRAINT work_centers_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id)
+);
+CREATE TABLE public.user_company_access (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  company_id uuid NOT NULL,
+  role text DEFAULT 'operator'::text CHECK (role = ANY (ARRAY['owner'::text, 'admin'::text, 'operator'::text, 'bookkeeper'::text, 'engineer'::text, 'quality'::text, 'sales'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_company_access_pkey PRIMARY KEY (id),
+  CONSTRAINT user_company_access_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT user_company_access_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id)
+);
+CREATE TABLE public.user_preferences (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE,
+  last_company_id uuid,
+  preferences jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_preferences_pkey PRIMARY KEY (id),
+  CONSTRAINT user_preferences_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT user_preferences_last_company_id_fkey FOREIGN KEY (last_company_id) REFERENCES public.companies(id)
+);
