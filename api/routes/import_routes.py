@@ -374,7 +374,6 @@ async def execute_import(
             # Build customer record
             customer_data = {
                 "company_id": request.company_id,
-                "is_active": True,
             }
 
             for db_field in CUSTOMER_SCHEMA.keys():
@@ -452,8 +451,12 @@ async def execute_import(
 
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        # Log the actual error for debugging
+        import traceback
+        print(f"Import execution error: {str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
-            detail="An unexpected error occurred during import. Please try again or contact support if the problem persists.",
+            detail=f"An unexpected error occurred during import: {str(e)}",
         )

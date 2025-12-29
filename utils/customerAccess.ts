@@ -29,13 +29,6 @@ export async function getCustomers(
     .order(sortField, { ascending: sortDirection === 'asc' })
     .range(offset, offset + limit - 1);
 
-  // Apply filter
-  if (filter === 'active') {
-    query = query.eq('is_active', true);
-  } else if (filter === 'inactive') {
-    query = query.eq('is_active', false);
-  }
-
   // Apply search (name or code)
   if (search.trim()) {
     query = query.or(`name.ilike.%${search}%,customer_code.ilike.%${search}%`);
@@ -69,13 +62,6 @@ export async function getAllCustomers(
     .select('*')
     .eq('company_id', companyId)
     .order(sortField, { ascending: sortDirection === 'asc' });
-
-  // Apply filter
-  if (filter === 'active') {
-    query = query.eq('is_active', true);
-  } else if (filter === 'inactive') {
-    query = query.eq('is_active', false);
-  }
 
   // Apply search (name or code)
   if (search.trim()) {
@@ -220,7 +206,6 @@ export async function createCustomer(
       state: formData.state.trim() || null,
       postal_code: formData.postal_code.trim() || null,
       country: formData.country.trim() || 'USA',
-      is_active: formData.is_active,
       notes: formData.notes.trim() || null,
     })
     .select()
@@ -260,7 +245,6 @@ export async function updateCustomer(
       state: formData.state.trim() || null,
       postal_code: formData.postal_code.trim() || null,
       country: formData.country.trim() || 'USA',
-      is_active: formData.is_active,
       notes: formData.notes.trim() || null,
       updated_at: new Date().toISOString(),
     })
@@ -392,7 +376,6 @@ export async function bulkImportCustomers(
       state: row.state?.trim() || null,
       postal_code: row.postal_code?.trim() || null,
       country: row.country?.trim() || 'USA',
-      is_active: true,
       notes: row.notes?.trim() || null,
     });
 

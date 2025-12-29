@@ -15,7 +15,6 @@ export interface Customer {
   state: string | null;
   postal_code: string | null;
   country: string;
-  is_active: boolean;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -36,7 +35,6 @@ export interface CustomerFormData {
   state: string;
   postal_code: string;
   country: string;
-  is_active: boolean;
   notes: string;
 }
 
@@ -74,7 +72,6 @@ export const EMPTY_CUSTOMER_FORM: CustomerFormData = {
   state: '',
   postal_code: '',
   country: 'USA',
-  is_active: true,
   notes: '',
 };
 
@@ -94,7 +91,6 @@ export function customerToFormData(customer: Customer): CustomerFormData {
     state: customer.state || '',
     postal_code: customer.postal_code || '',
     country: customer.country || 'USA',
-    is_active: customer.is_active,
     notes: customer.notes || '',
   };
 }
