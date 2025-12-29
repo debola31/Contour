@@ -440,7 +440,7 @@ export default function CustomersPage() {
               }}
               // Row selection
               rowSelection="multiple"
-              suppressRowClickSelection={false}
+              suppressRowClickSelection={true}
               onSelectionChanged={handleSelectionChanged}
               // Pagination
               pagination={true}
