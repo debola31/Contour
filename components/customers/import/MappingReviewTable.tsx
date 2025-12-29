@@ -32,8 +32,12 @@ interface MappingReviewTableProps {
   mappings: ColumnMapping[];
   onMappingChange: (csvColumn: string, dbField: string | null) => void;
   unmappedRequired: string[];
+  unmappedOptional: string[];
   discardedColumns: string[];
-  aiProvider: string;
+  onStartOver: () => void;
+  onContinue: () => void;
+  continueDisabled: boolean;
+  rowCount: number;
 }
 
 /**
@@ -47,8 +51,12 @@ export default function MappingReviewTable({
   mappings,
   onMappingChange,
   unmappedRequired,
+  unmappedOptional,
   discardedColumns,
-  aiProvider,
+  onStartOver,
+  onContinue,
+  continueDisabled,
+  rowCount,
 }: MappingReviewTableProps) {
   // State for confirmation dialog
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -100,18 +108,6 @@ export default function MappingReviewTable({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* AI Provider Info */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="body2" color="text.secondary">
-          Analyzed by:
-        </Typography>
-        <Chip
-          label={aiProvider === 'anthropic' ? 'Claude' : aiProvider === 'openai' ? 'GPT' : 'Gemini'}
-          size="small"
-          variant="outlined"
-        />
-      </Box>
-
       {/* Missing Required Fields Alert */}
       {unmappedRequired.length > 0 && (
         <Alert severity="error">
@@ -134,6 +130,68 @@ export default function MappingReviewTable({
           </Typography>
         </Alert>
       )}
+
+      {/* Unmapped Optional Fields */}
+      {unmappedOptional.length > 0 && (
+        <Card elevation={1} sx={{ bgcolor: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+          <CardContent>
+            <Typography variant="subtitle2" color="info.main" gutterBottom>
+              Optional database fields not mapped ({unmappedOptional.length})
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              These fields will be left empty for imported customers. You can proceed without mapping them.
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {unmappedOptional.map((fieldKey) => {
+                const field = CUSTOMER_FIELDS.find((f) => f.key === fieldKey);
+                return (
+                  <Chip
+                    key={fieldKey}
+                    label={field?.label || fieldKey}
+                    size="small"
+                    color="info"
+                    variant="outlined"
+                  />
+                );
+              })}
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Discarded Columns */}
+      {discardedColumns.length > 0 && (
+        <Card elevation={1} sx={{ bgcolor: 'rgba(0, 0, 0, 0.02)' }}>
+          <CardContent>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              CSV columns that will be skipped ({discardedColumns.length})
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {discardedColumns.map((col) => (
+                <Chip
+                  key={col}
+                  label={col}
+                  size="small"
+                  variant="outlined"
+                  sx={{ opacity: 0.7 }}
+                />
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Action Buttons */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Button onClick={onStartOver}>Start Over</Button>
+        <Button
+          variant="contained"
+          onClick={onContinue}
+          disabled={continueDisabled}
+        >
+          Continue to Import ({rowCount} rows)
+        </Button>
+      </Box>
 
       {/* Mapped Columns */}
       <Card elevation={2}>
@@ -213,8 +271,10 @@ export default function MappingReviewTable({
                                       ? `Already assigned to "${assignedTo}"`
                                       : undefined
                                   }
-                                  secondaryTypographyProps={{
-                                    sx: { fontSize: '0.75rem', color: 'warning.main' }
+                                  slotProps={{
+                                    secondary: {
+                                      sx: { fontSize: '0.75rem', color: 'warning.main' }
+                                    }
                                   }}
                                 />
                               </MenuItem>
@@ -239,28 +299,6 @@ export default function MappingReviewTable({
           </TableContainer>
         </CardContent>
       </Card>
-
-      {/* Discarded Columns */}
-      {discardedColumns.length > 0 && (
-        <Card elevation={1} sx={{ bgcolor: 'rgba(0, 0, 0, 0.02)' }}>
-          <CardContent>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Columns that will be skipped ({discardedColumns.length})
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {discardedColumns.map((col) => (
-                <Chip
-                  key={col}
-                  label={col}
-                  size="small"
-                  variant="outlined"
-                  sx={{ opacity: 0.7 }}
-                />
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Confirmation Dialog for Reassignment */}
       <Dialog

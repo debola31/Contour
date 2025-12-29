@@ -25,6 +25,12 @@ import type {
   ExecuteResponse,
   ConflictInfo,
 } from '@/types/import';
+import { CUSTOMER_FIELDS } from '@/types/import';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 // API base URL - adjust for production
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -73,13 +79,14 @@ export default function ImportCustomersPage() {
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [unmappedRequired, setUnmappedRequired] = useState<string[]>([]);
   const [discardedColumns, setDiscardedColumns] = useState<string[]>([]);
-  const [aiProvider, setAiProvider] = useState<string>('');
+  const [unmappedOptional, setUnmappedOptional] = useState<string[]>([]);
   const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
   const [validRowsCount, setValidRowsCount] = useState(0);
   const [importResult, setImportResult] = useState<ExecuteResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [showUnmappedConfirmDialog, setShowUnmappedConfirmDialog] = useState(false);
 
   // Get active step index for stepper
   const getActiveStepIndex = (): number => {
@@ -149,7 +156,12 @@ export default function ImportCustomersPage() {
           setMappings(data.mappings);
           setUnmappedRequired(data.unmapped_required);
           setDiscardedColumns(data.discarded_columns);
-          setAiProvider(data.ai_provider);
+
+          // Calculate unmapped optional fields
+          const mappedFields = new Set(data.mappings.filter((m) => m.db_field).map((m) => m.db_field));
+          const optionalFields = CUSTOMER_FIELDS.filter((f) => !f.required).map((f) => f.key);
+          setUnmappedOptional(optionalFields.filter((f) => !mappedFields.has(f)));
+
           setCurrentStep('review');
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Error analyzing CSV');
@@ -184,13 +196,19 @@ export default function ImportCustomersPage() {
       )
     );
 
-    // Update unmapped required
+    // Calculate mapped fields after this change
     const mappedFields = new Set(
       mappings
         .map((m) => (m.csv_column === csvColumn ? dbField : m.db_field))
         .filter(Boolean)
     );
+
+    // Update unmapped required
     setUnmappedRequired(['customer_code', 'name'].filter((f) => !mappedFields.has(f)));
+
+    // Update unmapped optional
+    const optionalFields = CUSTOMER_FIELDS.filter((f) => !f.required).map((f) => f.key);
+    setUnmappedOptional(optionalFields.filter((f) => !mappedFields.has(f)));
 
     // Update discarded columns
     setDiscardedColumns(
@@ -200,8 +218,19 @@ export default function ImportCustomersPage() {
     );
   };
 
+  // Check for unmapped fields and show confirmation if needed
+  const handleContinueToImport = () => {
+    if (unmappedOptional.length > 0) {
+      setShowUnmappedConfirmDialog(true);
+    } else {
+      handleValidate();
+    }
+  };
+
   // Validate mappings and check for conflicts
   const handleValidate = async () => {
+    setShowUnmappedConfirmDialog(false);
+
     // Check required fields
     const mappedFields = new Set(mappings.filter((m) => m.db_field).map((m) => m.db_field));
     if (!mappedFields.has('customer_code') || !mappedFields.has('name')) {
@@ -324,8 +353,8 @@ export default function ImportCustomersPage() {
     setAllRows([]);
     setMappings([]);
     setUnmappedRequired([]);
+    setUnmappedOptional([]);
     setDiscardedColumns([]);
-    setAiProvider('');
     setConflicts([]);
     setValidRowsCount(0);
     setImportResult(null);
@@ -404,26 +433,17 @@ export default function ImportCustomersPage() {
 
       {/* Step: Review Mappings */}
       {currentStep === 'review' && (
-        <>
-          <MappingReviewTable
-            mappings={mappings}
-            onMappingChange={handleMappingChange}
-            unmappedRequired={unmappedRequired}
-            discardedColumns={discardedColumns}
-            aiProvider={aiProvider}
-          />
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <Button onClick={handleReset}>Start Over</Button>
-            <Button
-              variant="contained"
-              onClick={handleValidate}
-              disabled={loading || unmappedRequired.length > 0}
-            >
-              Continue to Import ({allRows.length} rows)
-            </Button>
-          </Box>
-        </>
+        <MappingReviewTable
+          mappings={mappings}
+          onMappingChange={handleMappingChange}
+          unmappedRequired={unmappedRequired}
+          unmappedOptional={unmappedOptional}
+          discardedColumns={discardedColumns}
+          onStartOver={handleReset}
+          onContinue={handleContinueToImport}
+          continueDisabled={loading || unmappedRequired.length > 0}
+          rowCount={allRows.length}
+        />
       )}
 
       {/* Step: Validating */}
@@ -509,6 +529,53 @@ export default function ImportCustomersPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Unmapped Fields Confirmation Dialog */}
+      <Dialog
+        open={showUnmappedConfirmDialog}
+        onClose={() => setShowUnmappedConfirmDialog(false)}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarningAmberIcon color="info" />
+          Some Fields Not Mapped
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            The following optional database fields are not mapped and will be left empty:
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+            {unmappedOptional.map((fieldKey) => {
+              const field = CUSTOMER_FIELDS.find((f) => f.key === fieldKey);
+              return (
+                <Box
+                  key={fieldKey}
+                  sx={{
+                    px: 1.5,
+                    py: 0.5,
+                    bgcolor: 'info.main',
+                    color: 'info.contrastText',
+                    borderRadius: 1,
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {field?.label || fieldKey}
+                </Box>
+              );
+            })}
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            You can go back to map more columns, or proceed with the import.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowUnmappedConfirmDialog(false)} color="inherit">
+            Go Back
+          </Button>
+          <Button onClick={handleValidate} variant="contained" color="primary">
+            Proceed Anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Conflict Dialog */}
       <ConflictDialog
