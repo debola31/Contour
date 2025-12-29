@@ -110,8 +110,10 @@ export default function CompanySwitcher() {
                 fontWeight: 600,
                 color: 'white',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                lineHeight: 1.3,
               }}
             >
               {companyName}
