@@ -14,6 +14,7 @@ from models.import_models import (
     ColumnMapping,
     ValidateRequest,
     ValidateResponse,
+    ValidationError,
     ConflictInfo,
     ExecuteRequest,
     ExecuteResponse,
@@ -231,12 +232,59 @@ async def validate_import(
         duplicate_codes = {k: v for k, v in code_occurrences.items() if len(v) > 1}
         duplicate_names = {k: v for k, v in name_occurrences.items() if len(v) > 1}
 
+        # Build reverse mappings for validation
+        reverse_mappings = {v: k for k, v in request.mappings.items()}
+
+        # Validate required fields FIRST
+        validation_errors = []
+        validation_error_row_set: set[int] = set()
+
+        for i, row in enumerate(request.rows):
+            row_number = i + 1
+
+            # Build customer data to check required fields
+            customer_data = {}
+            for db_field in CUSTOMER_SCHEMA.keys():
+                csv_column = reverse_mappings.get(db_field)
+                if csv_column and csv_column in row:
+                    value = row[csv_column].strip()
+                    if value:
+                        customer_data[db_field] = value
+
+            # Check required fields
+            if not customer_data.get("customer_code"):
+                validation_errors.append(
+                    ValidationError(
+                        row_number=row_number,
+                        error_type="missing_customer_code",
+                        field="customer_code",
+                    )
+                )
+                validation_error_row_set.add(row_number)
+                continue
+
+            if not customer_data.get("name"):
+                validation_errors.append(
+                    ValidationError(
+                        row_number=row_number,
+                        error_type="missing_name",
+                        field="name",
+                    )
+                )
+                validation_error_row_set.add(row_number)
+                continue
+
         # Second pass: flag ALL rows with conflicts
         conflicts = []
         conflict_row_set: set[int] = set()
 
         for i, row in enumerate(request.rows):
             row_number = i + 1
+
+            # Skip rows with validation errors
+            if row_number in validation_error_row_set:
+                continue
+
             csv_code = row.get(code_column, "").strip() if code_column else ""
             csv_name = row.get(name_column, "").strip() if name_column else ""
 
@@ -307,13 +355,18 @@ async def validate_import(
                 )
                 conflict_row_set.add(row_number)
 
-        valid_rows = len(request.rows) - len(conflict_row_set)
+        # Calculate final counts
+        total_skipped_row_set = conflict_row_set | validation_error_row_set  # Union
+        valid_rows = len(request.rows) - len(total_skipped_row_set)
 
         return ValidateResponse(
             has_conflicts=len(conflicts) > 0,
             conflicts=conflicts,
+            validation_errors=validation_errors,
             valid_rows_count=valid_rows,
-            conflict_rows_count=len(conflicts),
+            conflict_rows_count=len(conflict_row_set),
+            error_rows_count=len(validation_error_row_set),
+            skipped_rows_count=len(total_skipped_row_set),
         )
 
     except Exception as e:
@@ -352,8 +405,9 @@ async def execute_import(
                 detail="Conflicts detected. Set skip_conflicts=true to import non-conflicting rows only.",
             )
 
-        # Get set of conflicting row numbers
-        conflict_row_numbers = {c.row_number for c in validate_response.conflicts}
+        # Build combined set of rows to skip (conflicts + validation errors)
+        skip_row_numbers = {c.row_number for c in validate_response.conflicts}
+        skip_row_numbers |= {e.row_number for e in validate_response.validation_errors}
 
         # Find column mappings
         reverse_mappings = {v: k for k, v in request.mappings.items()}
@@ -366,8 +420,8 @@ async def execute_import(
         for i, row in enumerate(request.rows):
             row_number = i + 1
 
-            # Skip conflicting rows if flag is set
-            if row_number in conflict_row_numbers:
+            # Skip rows that failed validation or have conflicts
+            if row_number in skip_row_numbers:
                 skipped += 1
                 continue
 
@@ -387,27 +441,7 @@ async def execute_import(
             if "country" not in customer_data or not customer_data.get("country"):
                 customer_data["country"] = "USA"
 
-            # Validate required fields
-            if not customer_data.get("customer_code"):
-                errors.append(
-                    ImportError(
-                        row_number=row_number,
-                        reason="Missing required field: customer_code",
-                        data=row,
-                    )
-                )
-                continue
-
-            if not customer_data.get("name"):
-                errors.append(
-                    ImportError(
-                        row_number=row_number,
-                        reason="Missing required field: name",
-                        data=row,
-                    )
-                )
-                continue
-
+            # Trust validation already checked required fields
             rows_to_insert.append(customer_data)
 
         # Bulk insert
@@ -445,8 +479,8 @@ async def execute_import(
         return ExecuteResponse(
             success=True,
             imported_count=imported_count,
-            skipped_count=skipped + len(errors),
-            errors=errors,
+            skipped_count=skipped,  # Now matches validation's skipped_rows_count
+            errors=errors,  # Only unexpected DB errors
         )
 
     except HTTPException:

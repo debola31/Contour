@@ -50,13 +50,24 @@ class ValidateRequest(BaseModel):
     rows: list[dict[str, str]]  # All parsed CSV rows
 
 
+class ValidationError(BaseModel):
+    """A validation error discovered during validation phase."""
+
+    row_number: int
+    error_type: str  # "missing_customer_code" | "missing_name"
+    field: str
+
+
 class ValidateResponse(BaseModel):
     """Response with validation results."""
 
     has_conflicts: bool
     conflicts: list[ConflictInfo]
+    validation_errors: list[ValidationError]
     valid_rows_count: int
     conflict_rows_count: int
+    error_rows_count: int
+    skipped_rows_count: int
 
 
 class ImportError(BaseModel):

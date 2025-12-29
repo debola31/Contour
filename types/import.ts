@@ -46,6 +46,15 @@ export interface ConflictInfo {
 }
 
 /**
+ * A validation error discovered during validation phase.
+ */
+export interface ValidationError {
+  row_number: number;
+  error_type: 'missing_customer_code' | 'missing_name';
+  field: string;
+}
+
+/**
  * Request to validate data before import.
  */
 export interface ValidateRequest {
@@ -60,8 +69,11 @@ export interface ValidateRequest {
 export interface ValidateResponse {
   has_conflicts: boolean;
   conflicts: ConflictInfo[];
+  validation_errors: ValidationError[];
   valid_rows_count: number;
   conflict_rows_count: number;
+  error_rows_count: number;
+  skipped_rows_count: number;
 }
 
 /**

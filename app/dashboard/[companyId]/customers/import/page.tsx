@@ -24,6 +24,7 @@ import type {
   ValidateResponse,
   ExecuteResponse,
   ConflictInfo,
+  ValidationError,
 } from '@/types/import';
 import { CUSTOMER_FIELDS } from '@/types/import';
 import Dialog from '@mui/material/Dialog';
@@ -81,6 +82,7 @@ export default function ImportCustomersPage() {
   const [discardedColumns, setDiscardedColumns] = useState<string[]>([]);
   const [unmappedOptional, setUnmappedOptional] = useState<string[]>([]);
   const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [validRowsCount, setValidRowsCount] = useState(0);
   const [importResult, setImportResult] = useState<ExecuteResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -277,13 +279,14 @@ export default function ImportCustomersPage() {
 
       const data: ValidateResponse = await response.json();
 
-      if (data.has_conflicts) {
+      if (data.has_conflicts || data.validation_errors.length > 0) {
         setConflicts(data.conflicts);
+        setValidationErrors(data.validation_errors);
         setValidRowsCount(data.valid_rows_count);
         setCurrentStep('conflicts');
         setShowConflictDialog(true);
       } else {
-        // No conflicts, proceed to import
+        // No conflicts or validation errors, proceed to import
         await executeImport(false);
       }
     } catch (err) {
@@ -590,6 +593,7 @@ export default function ImportCustomersPage() {
       <ConflictDialog
         open={showConflictDialog}
         conflicts={conflicts}
+        validationErrors={validationErrors}
         validRowsCount={validRowsCount}
         totalRows={allRows.length}
         onCancel={() => {
