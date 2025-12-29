@@ -513,8 +513,7 @@ export default function CustomersPage() {
             )}
           </Alert>
           <Typography variant="body2" color="text.secondary">
-            This will mark the customer{deleteDialog.type === 'bulk' && selectedIds.length > 1 ? 's' : ''} as inactive.
-            They will no longer appear in the active customers list but historical data will be preserved.
+            This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2, pt: 0 }}>

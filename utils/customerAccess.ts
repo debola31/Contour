@@ -277,27 +277,24 @@ export async function updateCustomer(
 }
 
 /**
- * Soft delete a customer (mark as inactive)
+ * Delete a customer permanently
  */
 export async function softDeleteCustomer(customerId: string): Promise<void> {
   const supabase = getSupabase();
 
   const { error } = await supabase
     .from('customers')
-    .update({
-      is_active: false,
-      updated_at: new Date().toISOString(),
-    })
+    .delete()
     .eq('id', customerId);
 
   if (error) {
-    console.error('Error soft deleting customer:', error);
+    console.error('Error deleting customer:', error);
     throw error;
   }
 }
 
 /**
- * Bulk soft delete customers (mark as inactive)
+ * Bulk delete customers permanently
  */
 export async function bulkSoftDeleteCustomers(customerIds: string[]): Promise<void> {
   if (customerIds.length === 0) return;
@@ -306,14 +303,11 @@ export async function bulkSoftDeleteCustomers(customerIds: string[]): Promise<vo
 
   const { error } = await supabase
     .from('customers')
-    .update({
-      is_active: false,
-      updated_at: new Date().toISOString(),
-    })
+    .delete()
     .in('id', customerIds);
 
   if (error) {
-    console.error('Error bulk soft deleting customers:', error);
+    console.error('Error bulk deleting customers:', error);
     throw error;
   }
 }
