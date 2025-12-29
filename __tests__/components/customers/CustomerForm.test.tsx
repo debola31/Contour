@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render, routerMocks, resetRouterMocks } from '../../test-utils';
 import CustomerForm from '@/components/customers/CustomerForm';
@@ -30,11 +30,7 @@ describe('CustomerForm', () => {
   });
 
   describe('Validation', () => {
-    // TODO: These tests are failing due to async validation timing issues.
-    // The form validation works correctly in the browser but the test environment
-    // has difficulty with the async validateForm() + React state updates.
-    // Skipping for now - the core functionality tests below pass successfully.
-    it.skip('shows error when customer_code is empty on submit', async () => {
+    it('shows error when customer_code is empty on submit', async () => {
       render(
         <CustomerForm
           mode="create"
@@ -46,23 +42,19 @@ describe('CustomerForm', () => {
       const customerCodeInput = screen.getByLabelText(/customer code/i);
       expect(customerCodeInput).toHaveValue('');
 
-      // Click save without entering customer code
-      const saveButton = screen.getByRole('button', { name: /save/i });
-      await user.click(saveButton);
+      // Submit the form directly using fireEvent to bypass HTML5 validation
+      // (HTML5 required attribute blocks button click in jsdom when fields are empty)
+      const form = document.querySelector('form');
+      fireEvent.submit(form!);
 
       // Should show validation error in the helper text
-      await waitFor(
-        () => {
-          expect(screen.getByText(/customer code is required/i)).toBeInTheDocument();
-        },
-        { timeout: 3000 }
-      );
+      expect(await screen.findByText(/customer code is required/i)).toBeInTheDocument();
 
       // Should not have called createCustomer
       expect(mockCreateCustomer).not.toHaveBeenCalled();
     });
 
-    it.skip('shows error when name is empty on submit', async () => {
+    it('shows error when name is empty on submit', async () => {
       render(
         <CustomerForm
           mode="create"
@@ -74,17 +66,12 @@ describe('CustomerForm', () => {
       const nameInput = screen.getByLabelText(/company name/i);
       expect(nameInput).toHaveValue('');
 
-      // Click save without entering name
-      const saveButton = screen.getByRole('button', { name: /save/i });
-      await user.click(saveButton);
+      // Submit the form directly using fireEvent to bypass HTML5 validation
+      const form = document.querySelector('form');
+      fireEvent.submit(form!);
 
       // Should show validation error in the helper text
-      await waitFor(
-        () => {
-          expect(screen.getByText(/company name is required/i)).toBeInTheDocument();
-        },
-        { timeout: 3000 }
-      );
+      expect(await screen.findByText(/company name is required/i)).toBeInTheDocument();
 
       // Should not have called createCustomer
       expect(mockCreateCustomer).not.toHaveBeenCalled();
