@@ -39,7 +39,7 @@ export default function Sidebar() {
       }}
     >
       {/* Company Switcher */}
-      <Box sx={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+      <Box>
         <CompanySwitcher />
       </Box>
 
