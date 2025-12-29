@@ -15,8 +15,8 @@ interface ConfidenceChipProps {
 }
 
 /**
- * Visual indicator for AI mapping confidence level or manual selection.
- * - Manual: Blue chip with "Manual" label
+ * Visual indicator for AI mapping confidence level or user selection.
+ * - User selection: Blue chip with "Manual" label
  * - >= 0.8: Green (high confidence)
  * - 0.5 - 0.79: Yellow (medium confidence, review suggested)
  * - < 0.5: Red (low confidence, manual selection needed)
@@ -27,7 +27,7 @@ export default function ConfidenceChip({
   size = 'small',
   isManual = false,
 }: ConfidenceChipProps) {
-  // Manual selection - show different indicator
+  // User selection - show different indicator
   if (isManual) {
     const chip = (
       <Chip
@@ -45,7 +45,7 @@ export default function ConfidenceChip({
     );
 
     return (
-      <Tooltip title="Manually selected by user" arrow>
+      <Tooltip title="Selected by user" arrow>
         {chip}
       </Tooltip>
     );

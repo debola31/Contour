@@ -7,19 +7,24 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import InputAdornment from '@mui/material/InputAdornment';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Alert from '@mui/material/Alert';
+import Tooltip from '@mui/material/Tooltip';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
+import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { CustomerStatusChip } from '@/components/customers';
-import { getCustomers } from '@/utils/customerAccess';
-import type { Customer, CustomerFilter } from '@/types/customer';
+import { getCustomers, softDeleteCustomer, bulkSoftDeleteCustomers } from '@/utils/customerAccess';
+import type { Customer } from '@/types/customer';
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -29,11 +34,22 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
-  const [filter, setFilter] = useState<CustomerFilter>('active');
   const [search, setSearch] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
   const [page, setPage] = useState(0);
   const pageSize = 25;
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Delete dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    type: 'single' | 'bulk';
+    customerId?: string;
+    customerName?: string;
+  }>({ open: false, type: 'single' });
+  const [deleting, setDeleting] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -49,7 +65,7 @@ export default function CustomersPage() {
     try {
       const result = await getCustomers(
         companyId,
-        filter,
+        'all',
         searchDebounced,
         page + 1,
         pageSize
@@ -61,24 +77,54 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [companyId, filter, searchDebounced, page]);
+  }, [companyId, searchDebounced, page]);
 
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
 
-  const handleFilterChange = (
-    _: React.MouseEvent<HTMLElement>,
-    newFilter: CustomerFilter | null
-  ) => {
-    if (newFilter !== null) {
-      setFilter(newFilter);
-      setPage(0);
-    }
-  };
+  // Clear selection when search changes
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [searchDebounced]);
 
   const handleRowClick = (params: { id: string | number }) => {
     router.push(`/dashboard/${companyId}/customers/${params.id}`);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, customer: Customer) => {
+    e.stopPropagation(); // Prevent row click
+    setDeleteDialog({
+      open: true,
+      type: 'single',
+      customerId: customer.id,
+      customerName: customer.name,
+    });
+  };
+
+  const handleBulkDeleteClick = () => {
+    setDeleteDialog({
+      open: true,
+      type: 'bulk',
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleting(true);
+    try {
+      if (deleteDialog.type === 'single' && deleteDialog.customerId) {
+        await softDeleteCustomer(deleteDialog.customerId);
+      } else if (deleteDialog.type === 'bulk') {
+        await bulkSoftDeleteCustomers(selectedIds as string[]);
+        setSelectedIds([]);
+      }
+      await fetchCustomers();
+      setDeleteDialog({ open: false, type: 'single' });
+    } catch (error) {
+      console.error('Error deleting customer(s):', error);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const columns: GridColDef[] = [
@@ -103,7 +149,14 @@ export default function CustomersPage() {
       valueGetter: (value: string | null) => value || '—',
     },
     {
-      field: 'phone',
+      field: 'contact_email',
+      headerName: 'Email',
+      width: 200,
+      sortable: false,
+      valueGetter: (value: string | null) => value || '—',
+    },
+    {
+      field: 'contact_phone',
       headerName: 'Phone',
       width: 140,
       sortable: false,
@@ -120,11 +173,22 @@ export default function CustomersPage() {
       },
     },
     {
-      field: 'is_active',
-      headerName: 'Status',
-      width: 100,
+      field: 'actions',
+      headerName: '',
+      width: 60,
       sortable: false,
-      renderCell: (params) => <CustomerStatusChip isActive={params.value} />,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <Tooltip title="Delete">
+          <IconButton
+            size="small"
+            onClick={(e) => handleDeleteClick(e, params.row)}
+            sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
     },
   ];
 
@@ -157,16 +221,17 @@ export default function CustomersPage() {
           }}
         />
 
-        <ToggleButtonGroup
-          value={filter}
-          exclusive
-          onChange={handleFilterChange}
-          size="small"
-        >
-          <ToggleButton value="all">All</ToggleButton>
-          <ToggleButton value="active">Active</ToggleButton>
-          <ToggleButton value="inactive">Inactive</ToggleButton>
-        </ToggleButtonGroup>
+        {/* Bulk delete button - shows when items selected */}
+        {selectedIds.length > 0 && (
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleBulkDeleteClick}
+          >
+            Delete ({selectedIds.length})
+          </Button>
+        )}
 
         <Box sx={{ flex: 1 }} />
 
@@ -238,9 +303,12 @@ export default function CustomersPage() {
             paginationMode="server"
             onPaginationModelChange={(model) => setPage(model.page)}
             onRowClick={handleRowClick}
+            checkboxSelection
+            rowSelectionModel={{ type: 'include', ids: new Set(selectedIds) }}
+            onRowSelectionModelChange={(model) => setSelectedIds(Array.from(model.ids) as string[])}
+            keepNonExistentRowsSelected
             disableColumnFilter
             disableColumnMenu
-            disableRowSelectionOnClick
             autoHeight
             sx={{
               border: 'none',
@@ -274,6 +342,52 @@ export default function CustomersPage() {
           />
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => !deleting && setDeleteDialog({ open: false, type: 'single' })}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          {deleteDialog.type === 'single' ? 'Delete Customer' : 'Delete Customers'}
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {deleteDialog.type === 'single' ? (
+              <>
+                Are you sure you want to delete <strong>{deleteDialog.customerName}</strong>?
+              </>
+            ) : (
+              <>
+                Are you sure you want to delete <strong>{selectedIds.length}</strong> customer{selectedIds.length > 1 ? 's' : ''}?
+              </>
+            )}
+          </Alert>
+          <Typography variant="body2" color="text.secondary">
+            This will mark the customer{deleteDialog.type === 'bulk' && selectedIds.length > 1 ? 's' : ''} as inactive.
+            They will no longer appear in the active customers list but historical data will be preserved.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button
+            onClick={() => setDeleteDialog({ open: false, type: 'single' })}
+            disabled={deleting}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            color="error"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

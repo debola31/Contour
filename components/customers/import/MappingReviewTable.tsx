@@ -57,6 +57,9 @@ export default function MappingReviewTable({
     existingCsvColumn: string;
   } | null>(null);
 
+  // Track which row has its dropdown open
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
   // Get which db fields are already assigned
   const assignedFields = new Map<string, string>();
   mappings.forEach((m) => {
@@ -185,17 +188,24 @@ export default function MappingReviewTable({
                   <TableCell sx={{ fontWeight: 600 }}>CSV Column</TableCell>
                   <TableCell sx={{ width: 40 }} />
                   <TableCell sx={{ fontWeight: 600 }}>Maps To</TableCell>
-                  <TableCell sx={{ fontWeight: 600, width: 120 }}>Source</TableCell>
+                  <TableCell sx={{ fontWeight: 600, width: 120 }}>Confidence</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {mappings.map((mapping) => (
+                {mappings.map((mapping) => {
+                  const isDropdownOpen = openDropdown === mapping.csv_column;
+                  return (
                   <TableRow
                     key={mapping.csv_column}
                     sx={{
-                      bgcolor: mapping.needs_review && mapping.db_field
-                        ? 'rgba(245, 158, 11, 0.1)'
-                        : 'transparent',
+                      bgcolor: isDropdownOpen
+                        ? 'rgba(70, 130, 180, 0.15)'
+                        : mapping.needs_review && mapping.db_field
+                          ? 'rgba(245, 158, 11, 0.1)'
+                          : 'transparent',
+                      outline: isDropdownOpen ? '2px solid rgba(70, 130, 180, 0.5)' : 'none',
+                      outlineOffset: '-2px',
+                      transition: 'background-color 0.15s, outline 0.15s',
                     }}
                   >
                     <TableCell>
@@ -216,6 +226,8 @@ export default function MappingReviewTable({
                               e.target.value === '' ? null : e.target.value
                             )
                           }
+                          onOpen={() => setOpenDropdown(mapping.csv_column)}
+                          onClose={() => setOpenDropdown(null)}
                           displayEmpty
                           MenuProps={{
                             PaperProps: {
@@ -278,7 +290,8 @@ export default function MappingReviewTable({
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

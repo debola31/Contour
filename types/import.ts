@@ -40,9 +40,9 @@ export interface ConflictInfo {
   row_number: number;
   csv_customer_code: string | null;
   csv_name: string | null;
-  conflict_type: 'duplicate_code' | 'duplicate_name';
-  existing_customer_id: string;
-  existing_value: string;
+  conflict_type: 'duplicate_code' | 'duplicate_name' | 'csv_duplicate_code' | 'csv_duplicate_name';
+  existing_customer_id: string; // Empty string for CSV internal duplicates
+  existing_value: string; // For CSV duplicates, this is "Row N" where N is the first occurrence
 }
 
 /**
@@ -112,8 +112,6 @@ export type ImportState =
 export const CUSTOMER_FIELDS: { key: string; label: string; required: boolean }[] = [
   { key: 'customer_code', label: 'Customer Code', required: true },
   { key: 'name', label: 'Company Name', required: true },
-  { key: 'phone', label: 'Phone', required: false },
-  { key: 'email', label: 'Email', required: false },
   { key: 'website', label: 'Website', required: false },
   { key: 'contact_name', label: 'Contact Name', required: false },
   { key: 'contact_phone', label: 'Contact Phone', required: false },
@@ -124,5 +122,4 @@ export const CUSTOMER_FIELDS: { key: string; label: string; required: boolean }[
   { key: 'state', label: 'State', required: false },
   { key: 'postal_code', label: 'Postal Code', required: false },
   { key: 'country', label: 'Country', required: false },
-  { key: 'notes', label: 'Notes', required: false },
 ];

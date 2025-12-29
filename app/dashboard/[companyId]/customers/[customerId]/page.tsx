@@ -8,7 +8,6 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
-import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
@@ -16,7 +15,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DescriptionIcon from '@mui/icons-material/Description';
 import WorkIcon from '@mui/icons-material/Work';
-import { CustomerStatusChip } from '@/components/customers';
 import { getCustomerWithRelations } from '@/utils/customerAccess';
 import type { CustomerWithRelations } from '@/types/customer';
 
@@ -108,12 +106,9 @@ export default function CustomerDetailPage() {
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                  {customer.name}
-                </Typography>
-                <CustomerStatusChip isActive={customer.is_active} />
-              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                {customer.name}
+              </Typography>
               <Typography variant="body2" color="text.secondary">
                 Code: {customer.customer_code}
               </Typography>
@@ -131,16 +126,9 @@ export default function CustomerDetailPage() {
                 Contact Information
               </Typography>
 
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                Company
-              </Typography>
-              <DetailRow label="Phone" value={customer.phone} />
-              <DetailRow label="Email" value={customer.email} />
               <DetailRow label="Website" value={customer.website} />
 
-              <Divider sx={{ my: 3 }} />
-
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 3, mb: 2 }}>
                 Primary Contact
               </Typography>
               <DetailRow label="Name" value={customer.contact_name} />
@@ -191,20 +179,6 @@ export default function CustomerDetailPage() {
                   variant="outlined"
                 />
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Notes */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                Notes
-              </Typography>
-              <Typography variant="body1" color={customer.notes ? 'text.primary' : 'text.secondary'}>
-                {customer.notes || 'No notes'}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>

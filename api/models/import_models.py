@@ -37,9 +37,9 @@ class ConflictInfo(BaseModel):
     row_number: int
     csv_customer_code: Optional[str]
     csv_name: Optional[str]
-    conflict_type: str  # "duplicate_code" | "duplicate_name"
-    existing_customer_id: str
-    existing_value: str
+    conflict_type: str  # "duplicate_code" | "duplicate_name" | "csv_duplicate_code" | "csv_duplicate_name"
+    existing_customer_id: str  # Empty string for CSV internal duplicates
+    existing_value: str  # For CSV duplicates, this is "Row N" where N is the first occurrence
 
 
 class ValidateRequest(BaseModel):
@@ -97,16 +97,6 @@ CUSTOMER_SCHEMA = {
         "required": True,
         "description": "Company/customer name",
     },
-    "phone": {
-        "type": "string",
-        "required": False,
-        "description": "Main phone number",
-    },
-    "email": {
-        "type": "string",
-        "required": False,
-        "description": "Main email address",
-    },
     "website": {
         "type": "string",
         "required": False,
@@ -156,10 +146,5 @@ CUSTOMER_SCHEMA = {
         "type": "string",
         "required": False,
         "description": "Country (defaults to USA)",
-    },
-    "notes": {
-        "type": "string",
-        "required": False,
-        "description": "Additional notes about the customer",
     },
 }

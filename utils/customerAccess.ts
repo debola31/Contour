@@ -254,6 +254,28 @@ export async function softDeleteCustomer(customerId: string): Promise<void> {
 }
 
 /**
+ * Bulk soft delete customers (mark as inactive)
+ */
+export async function bulkSoftDeleteCustomers(customerIds: string[]): Promise<void> {
+  if (customerIds.length === 0) return;
+
+  const supabase = getSupabase();
+
+  const { error } = await supabase
+    .from('customers')
+    .update({
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', customerIds);
+
+  if (error) {
+    console.error('Error bulk soft deleting customers:', error);
+    throw error;
+  }
+}
+
+/**
  * Bulk import customers from CSV data
  */
 export async function bulkImportCustomers(

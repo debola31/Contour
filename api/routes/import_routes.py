@@ -205,17 +205,78 @@ async def validate_import(
             elif db_field == "name":
                 name_column = csv_col
 
-        conflicts = []
-        valid_rows = 0
+        # First pass: identify ALL values that appear more than once in CSV
+        # Track code -> list of row numbers, name -> list of row numbers
+        code_occurrences: dict[str, list[int]] = {}
+        name_occurrences: dict[str, list[int]] = {}
 
         for i, row in enumerate(request.rows):
-            row_number = i + 1  # 1-indexed for user display
+            row_number = i + 1
             csv_code = row.get(code_column, "").strip() if code_column else ""
             csv_name = row.get(name_column, "").strip() if name_column else ""
 
-            has_conflict = False
+            if csv_code:
+                code_lower = csv_code.lower()
+                if code_lower not in code_occurrences:
+                    code_occurrences[code_lower] = []
+                code_occurrences[code_lower].append(row_number)
 
-            # Check for duplicate code
+            if csv_name:
+                name_lower = csv_name.lower()
+                if name_lower not in name_occurrences:
+                    name_occurrences[name_lower] = []
+                name_occurrences[name_lower].append(row_number)
+
+        # Find duplicate codes and names (values that appear more than once)
+        duplicate_codes = {k: v for k, v in code_occurrences.items() if len(v) > 1}
+        duplicate_names = {k: v for k, v in name_occurrences.items() if len(v) > 1}
+
+        # Second pass: flag ALL rows with conflicts
+        conflicts = []
+        conflict_row_set: set[int] = set()
+
+        for i, row in enumerate(request.rows):
+            row_number = i + 1
+            csv_code = row.get(code_column, "").strip() if code_column else ""
+            csv_name = row.get(name_column, "").strip() if name_column else ""
+
+            # Check for duplicate code within CSV (all occurrences)
+            if csv_code:
+                code_lower = csv_code.lower()
+                if code_lower in duplicate_codes:
+                    other_rows = [r for r in duplicate_codes[code_lower] if r != row_number]
+                    conflicts.append(
+                        ConflictInfo(
+                            row_number=row_number,
+                            csv_customer_code=csv_code,
+                            csv_name=csv_name,
+                            conflict_type="csv_duplicate_code",
+                            existing_customer_id="",
+                            existing_value=f"Rows {', '.join(map(str, other_rows))}",
+                        )
+                    )
+                    conflict_row_set.add(row_number)
+                    continue  # Skip other checks for this row
+
+            # Check for duplicate name within CSV (all occurrences)
+            if csv_name:
+                name_lower = csv_name.lower()
+                if name_lower in duplicate_names:
+                    other_rows = [r for r in duplicate_names[name_lower] if r != row_number]
+                    conflicts.append(
+                        ConflictInfo(
+                            row_number=row_number,
+                            csv_customer_code=csv_code,
+                            csv_name=csv_name,
+                            conflict_type="csv_duplicate_name",
+                            existing_customer_id="",
+                            existing_value=f"Rows {', '.join(map(str, other_rows))}",
+                        )
+                    )
+                    conflict_row_set.add(row_number)
+                    continue  # Skip other checks for this row
+
+            # Check for duplicate code against existing DB records
             if csv_code and csv_code.lower() in existing_codes:
                 existing = existing_codes[csv_code.lower()]
                 conflicts.append(
@@ -228,10 +289,11 @@ async def validate_import(
                         existing_value=existing["customer_code"],
                     )
                 )
-                has_conflict = True
+                conflict_row_set.add(row_number)
+                continue
 
-            # Check for duplicate name (only if code didn't conflict)
-            if not has_conflict and csv_name and csv_name.lower() in existing_names:
+            # Check for duplicate name against existing DB records
+            if csv_name and csv_name.lower() in existing_names:
                 existing = existing_names[csv_name.lower()]
                 conflicts.append(
                     ConflictInfo(
@@ -243,10 +305,9 @@ async def validate_import(
                         existing_value=existing["name"],
                     )
                 )
-                has_conflict = True
+                conflict_row_set.add(row_number)
 
-            if not has_conflict:
-                valid_rows += 1
+        valid_rows = len(request.rows) - len(conflict_row_set)
 
         return ValidateResponse(
             has_conflicts=len(conflicts) > 0,
@@ -357,9 +418,29 @@ async def execute_import(
                 response = supabase.table("customers").insert(rows_to_insert).execute()
                 imported_count = len(response.data) if response.data else 0
             except Exception as e:
+                error_str = str(e)
+                # Check for PostgreSQL unique constraint violation (code 23505)
+                if "23505" in error_str or "duplicate key" in error_str.lower():
+                    # Parse which constraint was violated
+                    if "customer_code" in error_str.lower():
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Import failed: A customer with this code already exists. Please check your CSV for duplicate customer codes.",
+                        )
+                    elif "name" in error_str.lower():
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Import failed: A customer with this name already exists. Please check your CSV for duplicate company names.",
+                        )
+                    else:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Import failed: Duplicate values detected. Please ensure all customer codes and names are unique.",
+                        )
+                # Generic database error with sanitized message
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Database insertion failed: {str(e)}",
+                    detail="Database error occurred during import. Please try again or contact support if the problem persists.",
                 )
 
         return ExecuteResponse(
@@ -371,8 +452,8 @@ async def execute_import(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=500,
-            detail=f"Error executing import: {str(e)}",
+            detail="An unexpected error occurred during import. Please try again or contact support if the problem persists.",
         )

@@ -508,7 +508,7 @@ export default function ImportCustomersPage() {
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="h4" color="error.main">
+                  <Typography variant="h4" color="warning.main">
                     {importResult.skipped_count}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">

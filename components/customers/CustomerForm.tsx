@@ -7,8 +7,6 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -53,12 +51,6 @@ export default function CustomerForm({ mode, initialData, customerId }: Customer
     }
   };
 
-  const handleSwitchChange = (field: keyof CustomerFormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.checked }));
-  };
-
   const validateForm = async (): Promise<boolean> => {
     const errors: Record<string, string> = {};
 
@@ -71,9 +63,6 @@ export default function CustomerForm({ mode, initialData, customerId }: Customer
     }
 
     // Email format
-    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Invalid email format';
-    }
     if (formData.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
       errors.contact_email = 'Invalid email format';
     }
@@ -236,38 +225,6 @@ export default function CustomerForm({ mode, initialData, customerId }: Customer
         </CardContent>
       </Card>
 
-      {/* Company Contact */}
-      <Card elevation={2} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Company Contact
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Phone"
-                value={formData.phone}
-                onChange={handleChange('phone')}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange('email')}
-                error={!!fieldErrors.email}
-                helperText={fieldErrors.email}
-                disabled={loading}
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
       {/* Address */}
       <Card elevation={2} sx={{ mb: 3 }}>
         <CardContent>
@@ -328,41 +285,6 @@ export default function CustomerForm({ mode, initialData, customerId }: Customer
                 value={formData.country}
                 onChange={handleChange('country')}
                 disabled={loading}
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Status & Notes */}
-      <Card elevation={2} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Status & Notes
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.is_active}
-                    onChange={handleSwitchChange('is_active')}
-                    disabled={loading}
-                  />
-                }
-                label="Active"
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Notes"
-                value={formData.notes}
-                onChange={handleChange('notes')}
-                disabled={loading}
-                placeholder="Internal notes about this customer..."
               />
             </Grid>
           </Grid>
