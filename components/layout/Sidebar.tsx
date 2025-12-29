@@ -31,8 +31,12 @@ export default function Sidebar() {
     <Box
       component="nav"
       sx={{
+        position: 'fixed',
+        left: 0,
+        top: 0,
         width: 240,
-        flexShrink: 0,
+        height: '100vh',
+        zIndex: 1200,
         bgcolor: 'rgba(17, 20, 57, 0.8)',
         backdropFilter: 'blur(10px)',
         borderRight: '1px solid rgba(255, 255, 255, 0.1)',

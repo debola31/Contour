@@ -347,7 +347,7 @@ export default function ImportCustomersPage() {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Preview (First {previewRows.length} rows)
               </Typography>
-              <TableContainer>
+              <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -433,7 +433,7 @@ export default function ImportCustomersPage() {
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                   Skipped Rows
                 </Typography>
-                <TableContainer>
+                <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto' }}>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
