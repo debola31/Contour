@@ -364,13 +364,26 @@ export default function ImportCustomersPage() {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Button
+          color="primary"
           startIcon={<ArrowBackIcon />}
           onClick={() => router.push(`/dashboard/${companyId}/customers`)}
         >
           Back
         </Button>
+        {currentStep === 'review' && (
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" color="primary" onClick={handleReset}>Start Over</Button>
+            <Button
+              variant="contained"
+              onClick={handleContinueToImport}
+              disabled={loading || unmappedRequired.length > 0}
+            >
+              Continue to Import ({allRows.length} rows)
+            </Button>
+          </Box>
+        )}
       </Box>
 
       {/* Stepper */}
@@ -439,10 +452,6 @@ export default function ImportCustomersPage() {
           unmappedRequired={unmappedRequired}
           unmappedOptional={unmappedOptional}
           discardedColumns={discardedColumns}
-          onStartOver={handleReset}
-          onContinue={handleContinueToImport}
-          continueDisabled={loading || unmappedRequired.length > 0}
-          rowCount={allRows.length}
         />
       )}
 

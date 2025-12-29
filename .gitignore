@@ -46,3 +46,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
+
+# API cache (dev only)
+api/.cache/

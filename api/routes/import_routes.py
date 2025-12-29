@@ -1,5 +1,10 @@
 """Import routes for customer CSV import with AI-powered mapping."""
 
+import hashlib
+import json
+import os
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Depends
 from supabase import Client
 
@@ -22,6 +27,46 @@ router = APIRouter(prefix="/api/customers/import", tags=["import"])
 
 # Rate limiter: 10 AI calls per minute per company
 ai_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
+
+# Cache directory for AI responses (dev only - avoids repeated API calls)
+CACHE_DIR = Path(__file__).parent.parent / ".cache" / "ai_responses"
+CACHE_ENABLED = os.getenv("AI_CACHE_ENABLED", "true").lower() == "true"
+
+
+def _get_cache_key(company_id: str, headers: list[str]) -> str:
+    """Generate a cache key from company_id and headers."""
+    content = f"{company_id}:{','.join(sorted(headers))}"
+    return hashlib.md5(content.encode()).hexdigest()
+
+
+def _get_cached_response(cache_key: str) -> AnalyzeResponse | None:
+    """Try to get a cached response."""
+    if not CACHE_ENABLED:
+        return None
+
+    cache_file = CACHE_DIR / f"{cache_key}.json"
+    if cache_file.exists():
+        try:
+            with open(cache_file) as f:
+                data = json.load(f)
+            return AnalyzeResponse(**data)
+        except Exception:
+            return None
+    return None
+
+
+def _save_to_cache(cache_key: str, response: AnalyzeResponse) -> None:
+    """Save response to cache."""
+    if not CACHE_ENABLED:
+        return
+
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cache_file = CACHE_DIR / f"{cache_key}.json"
+        with open(cache_file, "w") as f:
+            json.dump(response.model_dump(), f, indent=2)
+    except Exception:
+        pass  # Silently fail cache writes
 
 
 def get_supabase() -> Client:
@@ -46,7 +91,16 @@ async def analyze_csv(
 
     This endpoint sends the CSV structure to an AI provider configured for the
     company and returns suggested mappings with confidence scores.
+
+    Caching: Responses are cached by company_id + headers to avoid repeated
+    API calls during development. Set AI_CACHE_ENABLED=false to disable.
     """
+    # Check cache first
+    cache_key = _get_cache_key(request.company_id, request.headers)
+    cached = _get_cached_response(cache_key)
+    if cached:
+        return cached
+
     # Rate limiting
     if not ai_rate_limiter.check(request.company_id):
         raise HTTPException(
@@ -94,12 +148,17 @@ async def analyze_csv(
         ]
         unmapped_required = [f for f in required_fields if f not in mapped_db_fields]
 
-        return AnalyzeResponse(
+        response = AnalyzeResponse(
             mappings=mappings,
             unmapped_required=unmapped_required,
             discarded_columns=discarded_columns,
             ai_provider=provider.provider_name,
         )
+
+        # Save to cache for future requests
+        _save_to_cache(cache_key, response)
+
+        return response
 
     except ValueError as e:
         # AI provider configuration error

@@ -21,7 +21,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import ListItemText from '@mui/material/ListItemText';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { ColumnMapping } from '@/types/import';
@@ -34,10 +33,6 @@ interface MappingReviewTableProps {
   unmappedRequired: string[];
   unmappedOptional: string[];
   discardedColumns: string[];
-  onStartOver: () => void;
-  onContinue: () => void;
-  continueDisabled: boolean;
-  rowCount: number;
 }
 
 /**
@@ -53,10 +48,6 @@ export default function MappingReviewTable({
   unmappedRequired,
   unmappedOptional,
   discardedColumns,
-  onStartOver,
-  onContinue,
-  continueDisabled,
-  rowCount,
 }: MappingReviewTableProps) {
   // State for confirmation dialog
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -133,10 +124,10 @@ export default function MappingReviewTable({
 
       {/* Unmapped Optional Fields */}
       {unmappedOptional.length > 0 && (
-        <Card elevation={1} sx={{ bgcolor: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+        <Card elevation={1} sx={{ bgcolor: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
           <CardContent>
-            <Typography variant="subtitle2" color="info.main" gutterBottom>
-              Optional database fields not mapped ({unmappedOptional.length})
+            <Typography variant="subtitle2" color="warning.main" gutterBottom>
+              Optional fields that are missing ({unmappedOptional.length})
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
               These fields will be left empty for imported customers. You can proceed without mapping them.
@@ -149,7 +140,7 @@ export default function MappingReviewTable({
                     key={fieldKey}
                     label={field?.label || fieldKey}
                     size="small"
-                    color="info"
+                    color="warning"
                     variant="outlined"
                   />
                 );
@@ -180,18 +171,6 @@ export default function MappingReviewTable({
           </CardContent>
         </Card>
       )}
-
-      {/* Action Buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-        <Button onClick={onStartOver}>Start Over</Button>
-        <Button
-          variant="contained"
-          onClick={onContinue}
-          disabled={continueDisabled}
-        >
-          Continue to Import ({rowCount} rows)
-        </Button>
-      </Box>
 
       {/* Mapped Columns */}
       <Card elevation={2}>
@@ -238,6 +217,15 @@ export default function MappingReviewTable({
                             )
                           }
                           displayEmpty
+                          MenuProps={{
+                            PaperProps: {
+                              sx: {
+                                bgcolor: '#1a1f4a',
+                                backgroundImage: 'none',
+                                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                              },
+                            },
+                          }}
                           renderValue={(selected) => {
                             if (!selected) {
                               return <em>Skip (don&apos;t import)</em>;
@@ -262,21 +250,18 @@ export default function MappingReviewTable({
                                   bgcolor: isAssigned && !isCurrentlySelected
                                     ? 'rgba(245, 158, 11, 0.1)'
                                     : 'transparent',
+                                  flexDirection: 'column',
+                                  alignItems: 'flex-start',
                                 }}
                               >
-                                <ListItemText
-                                  primary={`${field.label}${field.required ? ' *' : ''}`}
-                                  secondary={
-                                    isAssigned && !isCurrentlySelected
-                                      ? `Already assigned to "${assignedTo}"`
-                                      : undefined
-                                  }
-                                  slotProps={{
-                                    secondary: {
-                                      sx: { fontSize: '0.75rem', color: 'warning.main' }
-                                    }
-                                  }}
-                                />
+                                <Typography variant="body1">
+                                  {field.label}{field.required ? ' *' : ''}
+                                </Typography>
+                                {isAssigned && !isCurrentlySelected && (
+                                  <Typography variant="caption" sx={{ color: 'warning.main' }}>
+                                    Already assigned to &quot;{assignedTo}&quot;
+                                  </Typography>
+                                )}
                               </MenuItem>
                             );
                           })}
