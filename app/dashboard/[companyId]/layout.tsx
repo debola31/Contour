@@ -17,7 +17,7 @@ export default function DashboardLayout({
     <AuthGuard companyId={companyId} requireCompany>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         <Sidebar />
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', ml: '240px', minWidth: 0 }}>
           <Header />
           <Box component="main" sx={{ flex: 1, p: 3, overflow: 'auto' }}>
             {children}

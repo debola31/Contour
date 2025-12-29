@@ -102,6 +102,15 @@ const jiggedTheme = createTheme({
         },
       },
     },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1a1f4a',  // Fully opaque Deep Indigo
+          backgroundImage: 'none',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+        },
+      },
+    },
     MuiListItemButton: {
       styleOverrides: {
         root: {

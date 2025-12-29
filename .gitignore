@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# MCP configuration (contains API tokens)
+.mcp.json
+
 # vercel
 .vercel
 
@@ -46,3 +49,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
+
+# API cache (dev only)
+api/.cache/

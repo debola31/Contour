@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -19,10 +20,24 @@ else:
     supabase: Client = create_client(supabase_url, supabase_key)
 
 app = FastAPI(
-    title="Vercel + FastAPI",
-    description="Vercel + FastAPI",
+    title="Jigged API",
+    description="Jigged Manufacturing ERP API",
     version="1.0.0",
 )
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Import and register routes
+from routes.import_routes import router as import_router
+
+app.include_router(import_router)
 
 
 @app.get("/api/example_name")

@@ -15,6 +15,8 @@
     "@mui/material": "^7.3.6",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
+    "ag-grid-community": "^35.0.0",
+    "ag-grid-react": "^35.0.0",
     "next": "16.1.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"

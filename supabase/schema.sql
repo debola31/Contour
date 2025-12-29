@@ -1,6 +1,19 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.ai_config (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  feature text NOT NULL,  -- 'csv_mapping', 'chat', 'embeddings', etc.
+  provider text NOT NULL DEFAULT 'anthropic'::text,  -- 'anthropic', 'openai', 'gemini'
+  model text,  -- Optional: specific model override (e.g., 'claude-sonnet-4-20250514')
+  settings jsonb DEFAULT '{}'::jsonb,  -- Additional provider-specific settings
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT ai_config_pkey PRIMARY KEY (id),
+  CONSTRAINT ai_config_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT ai_config_unique_company_feature UNIQUE (company_id, feature)
+);
 CREATE TABLE public.companies (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -15,8 +28,6 @@ CREATE TABLE public.customers (
   company_id uuid NOT NULL,
   customer_code text NOT NULL,
   name text NOT NULL,
-  phone text,
-  email text,
   website text,
   contact_name text,
   contact_phone text,
@@ -27,8 +38,6 @@ CREATE TABLE public.customers (
   state text,
   postal_code text,
   country text DEFAULT 'USA'::text,
-  is_active boolean DEFAULT true,
-  notes text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT customers_pkey PRIMARY KEY (id),
@@ -109,7 +118,6 @@ CREATE TABLE public.parts (
   price_tier3_qty integer,
   price_tier3_price numeric,
   material_cost numeric,
-  is_active boolean DEFAULT true,
   notes text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
@@ -174,7 +182,6 @@ CREATE TABLE public.routings (
   revision text DEFAULT 'A'::text,
   estimated_total_hours numeric,
   estimated_lead_time_days integer,
-  is_active boolean DEFAULT true,
   is_default boolean DEFAULT false,
   notes text,
   created_by uuid,
@@ -193,7 +200,6 @@ CREATE TABLE public.stations (
   description text,
   station_type text,
   hourly_rate numeric,
-  is_active boolean DEFAULT true,
   notes text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
