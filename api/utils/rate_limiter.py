@@ -1,6 +1,6 @@
 """Rate limiting utilities."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from threading import Lock
 
@@ -33,7 +33,7 @@ class RateLimiter:
         Returns:
             True if request is allowed, False if rate limited
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         cutoff = now - self.window
 
         with self.lock:
@@ -57,7 +57,7 @@ class RateLimiter:
         Returns:
             Number of requests remaining
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         cutoff = now - self.window
 
         with self.lock:
