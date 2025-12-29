@@ -1,9 +1,20 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 export default function Header() {
-  // Sign Out moved to drawer in this design
+  const router = useRouter();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/login');
+  };
+
   return (
     <Box
       component="header"
@@ -19,7 +30,20 @@ export default function Header() {
         minHeight: 64,
       }}
     >
-      {/* Actions moved to drawer - header kept for layout consistency */}
+      <Button
+        onClick={handleSignOut}
+        startIcon={<LogoutIcon />}
+        sx={{
+          color: 'rgba(255, 255, 255, 0.7)',
+          textTransform: 'none',
+          '&:hover': {
+            bgcolor: 'rgba(239, 68, 68, 0.1)',
+            color: '#ef4444',
+          },
+        }}
+      >
+        Sign Out
+      </Button>
     </Box>
   );
 }

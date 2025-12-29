@@ -16,9 +16,7 @@ import Divider from '@mui/material/Divider';
 import Skeleton from '@mui/material/Skeleton';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CheckIcon from '@mui/icons-material/Check';
-import LogoutIcon from '@mui/icons-material/Logout';
 import { useCompanies } from '@/hooks/useCompanies';
-import { useAuth } from '@/components/providers/AuthProvider';
 
 function getInitials(name: string): string {
   return name
@@ -43,14 +41,18 @@ export default function CompanySwitcher() {
   const params = useParams();
   const currentCompanyId = params.companyId as string;
   const { companies, loading } = useCompanies();
-  const { signOut } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const hasMultipleCompanies = companies.length > 1;
 
   const currentCompany = companies.find(
     (c) => c.company_id === currentCompanyId
   );
 
-  const handleOpen = () => setDrawerOpen(true);
+  const handleOpen = () => {
+    if (hasMultipleCompanies) {
+      setDrawerOpen(true);
+    }
+  };
   const handleClose = () => setDrawerOpen(false);
 
   const handleSelectCompany = (companyId: string) => {
@@ -58,12 +60,6 @@ export default function CompanySwitcher() {
     if (companyId !== currentCompanyId) {
       router.push(`/dashboard/${companyId}`);
     }
-  };
-
-  const handleSignOut = async () => {
-    handleClose();
-    await signOut();
-    router.replace('/login');
   };
 
   if (loading) {
@@ -81,6 +77,7 @@ export default function CompanySwitcher() {
       <Box sx={{ p: 1.5 }}>
         <ButtonBase
           onClick={handleOpen}
+          disabled={!hasMultipleCompanies}
           sx={{
             width: '100%',
             display: 'flex',
@@ -89,8 +86,9 @@ export default function CompanySwitcher() {
             p: 1.5,
             borderRadius: 2,
             transition: 'background-color 0.2s',
+            cursor: hasMultipleCompanies ? 'pointer' : 'default',
             '&:hover': {
-              bgcolor: 'rgba(255, 255, 255, 0.08)',
+              bgcolor: hasMultipleCompanies ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
             },
           }}
         >
@@ -119,7 +117,9 @@ export default function CompanySwitcher() {
               {companyName}
             </Typography>
           </Box>
-          <KeyboardArrowDownIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+          {hasMultipleCompanies && (
+            <KeyboardArrowDownIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+          )}
         </ButtonBase>
       </Box>
 
@@ -232,23 +232,6 @@ export default function CompanySwitcher() {
           >
             Jigged
           </Typography>
-          <ListItemButton
-            onClick={handleSignOut}
-            sx={{
-              borderRadius: 2,
-              py: 1.5,
-              color: 'rgba(255, 255, 255, 0.7)',
-              '&:hover': {
-                bgcolor: 'rgba(239, 68, 68, 0.1)',
-                color: '#ef4444',
-              },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
-              <LogoutIcon />
-            </ListItemIcon>
-            <ListItemText primary="Sign Out" />
-          </ListItemButton>
         </Box>
       </Drawer>
     </>
