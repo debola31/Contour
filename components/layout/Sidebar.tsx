@@ -10,11 +10,13 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import WorkIcon from '@mui/icons-material/Work';
+import PeopleIcon from '@mui/icons-material/People';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import CompanySwitcher from './CompanySwitcher';
 
 const menuItems = [
   { name: 'Dashboard', path: '', icon: DashboardIcon },
+  { name: 'Customers', path: '/customers', icon: PeopleIcon },
   { name: 'Jobs', path: '/jobs', icon: WorkIcon },
   { name: 'Routings', path: '/routings', icon: AccountTreeIcon },
 ];
@@ -48,7 +50,10 @@ export default function Sidebar() {
         <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {menuItems.map((item) => {
             const fullPath = `${basePath}${item.path}`;
-            const isActive = pathname === fullPath;
+            // For root path (Dashboard), check exact match; for others, check if pathname starts with the path
+            const isActive = item.path === ''
+              ? pathname === fullPath
+              : pathname.startsWith(fullPath);
             const IconComponent = item.icon;
 
             return (

@@ -9,21 +9,33 @@ import { useAuth } from '@/components/providers/AuthProvider';
 
 function getPageTitle(pathname: string): string {
   const segments = pathname.split('/').filter(Boolean);
-  // pathname like /dashboard/[companyId]/jobs -> segments = ['dashboard', companyId, 'jobs']
-  const lastSegment = segments[segments.length - 1];
+  // pathname like /dashboard/[companyId]/customers/new -> segments = ['dashboard', companyId, 'customers', 'new']
 
   // Map route segments to display titles
   const titleMap: Record<string, string> = {
     jobs: 'Jobs',
     routings: 'Routings',
+    customers: 'Customers',
+    new: 'New Customer',
+    edit: 'Edit Customer',
+    import: 'Import Customers',
   };
 
-  // If last segment is in titleMap, use that; otherwise it's the dashboard
-  if (titleMap[lastSegment]) {
-    return titleMap[lastSegment];
+  // Check from the end backwards for known segments
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const segment = segments[i];
+    if (titleMap[segment]) {
+      return titleMap[segment];
+    }
   }
 
-  // Default to Dashboard (when on /dashboard/[companyId])
+  // If we found 'customers' in the path but didn't match a specific action,
+  // it's likely a customer detail page (e.g., /customers/[id])
+  if (segments.includes('customers')) {
+    return 'Customer Details';
+  }
+
+  // Default to Dashboard
   return 'Dashboard';
 }
 
