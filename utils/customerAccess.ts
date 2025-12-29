@@ -15,7 +15,9 @@ export async function getCustomers(
   filter: CustomerFilter = 'all',
   search: string = '',
   page: number = 1,
-  limit: number = 25
+  limit: number = 25,
+  sortField: string = 'name',
+  sortDirection: 'asc' | 'desc' = 'asc'
 ): Promise<{ data: Customer[]; total: number }> {
   const supabase = getSupabase();
   const offset = (page - 1) * limit;
@@ -24,7 +26,7 @@ export async function getCustomers(
     .from('customers')
     .select('*', { count: 'exact' })
     .eq('company_id', companyId)
-    .order('name', { ascending: true })
+    .order(sortField, { ascending: sortDirection === 'asc' })
     .range(offset, offset + limit - 1);
 
   // Apply filter

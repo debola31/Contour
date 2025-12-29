@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -22,7 +22,64 @@ import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+
+import { AgGridReact } from 'ag-grid-react';
+import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community';
+import type {
+  ColDef,
+  GridReadyEvent,
+  RowClickedEvent,
+  SelectionChangedEvent,
+  SortChangedEvent,
+  ICellRendererParams,
+} from 'ag-grid-community';
+
+// Register AG Grid modules (required for v35+)
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+// Create custom dark theme for Jigged using new Theming API
+const jiggedDarkTheme = themeQuartz.withParams({
+  // Background colors
+  backgroundColor: 'transparent',
+  oddRowBackgroundColor: 'rgba(255, 255, 255, 0.02)',
+  headerBackgroundColor: 'rgba(255, 255, 255, 0.05)',
+
+  // Text colors
+  foregroundColor: '#ffffff',
+  textColor: '#ffffff',
+  secondaryForegroundColor: '#B0B3B8',
+  headerTextColor: '#ffffff',
+
+  // Borders
+  borderColor: 'rgba(255, 255, 255, 0.12)',
+  rowBorder: true,
+
+  // Selection and interaction
+  rowHoverColor: 'rgba(255, 255, 255, 0.04)',
+  selectedRowBackgroundColor: 'rgba(90, 150, 201, 0.2)',
+  rangeSelectionBackgroundColor: 'rgba(90, 150, 201, 0.3)',
+
+  // Accent color (Steel Blue)
+  accentColor: '#4682B4',
+
+  // Typography
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  fontSize: 16,
+
+  // Spacing
+  spacing: 8,
+  cellHorizontalPadding: 16,
+
+  // Row and header heights
+  rowHeight: 52,
+  headerHeight: 56,
+
+  // Icons
+  iconSize: 20,
+});
+
 import { getCustomers, softDeleteCustomer, bulkSoftDeleteCustomers } from '@/utils/customerAccess';
 import type { Customer } from '@/types/customer';
 
@@ -38,9 +95,16 @@ export default function CustomersPage() {
   const [searchDebounced, setSearchDebounced] = useState('');
   const [page, setPage] = useState(0);
   const pageSize = 25;
+  const [sortModel, setSortModel] = useState<{ field: string; sort: 'asc' | 'desc' }>({
+    field: 'name',
+    sort: 'asc',
+  });
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Grid ref for API access
+  const gridRef = useRef<AgGridReact<Customer>>(null);
 
   // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -68,7 +132,9 @@ export default function CustomersPage() {
         'all',
         searchDebounced,
         page + 1,
-        pageSize
+        pageSize,
+        sortModel.field,
+        sortModel.sort
       );
       setCustomers(result.data);
       setTotal(result.total);
@@ -77,19 +143,86 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [companyId, searchDebounced, page]);
+  }, [companyId, searchDebounced, page, sortModel]);
 
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
 
+  // Debug: Log customers data
+  useEffect(() => {
+    console.log('Customers data:', customers);
+    console.log('Total:', total);
+    console.log('Loading:', loading);
+  }, [customers, total, loading]);
+
   // Clear selection when search changes
   useEffect(() => {
     setSelectedIds([]);
+    if (gridRef.current?.api) {
+      gridRef.current.api.deselectAll();
+    }
   }, [searchDebounced]);
 
-  const handleRowClick = (params: { id: string | number }) => {
-    router.push(`/dashboard/${companyId}/customers/${params.id}`);
+  // Restore selection after data changes (pagination, search, etc.)
+  useEffect(() => {
+    if (gridRef.current?.api && customers.length > 0) {
+      gridRef.current.api.forEachNode((node) => {
+        if (node.data && selectedIds.includes(node.data.id)) {
+          node.setSelected(true);
+        }
+      });
+    }
+  }, [customers, selectedIds]);
+
+  // Calculate grid height dynamically
+  const gridHeight = useMemo(() => {
+    if (loading || customers.length === 0) return 600; // Increased from 400 for better visibility
+
+    const headerHeight = 56;
+    const rowHeight = 52;
+    const paginationHeight = 56;
+    const rowCount = Math.min(customers.length, pageSize);
+
+    return Math.max(
+      headerHeight + (rowHeight * rowCount) + paginationHeight,
+      400 // Ensure minimum height
+    );
+  }, [loading, customers.length, pageSize]);
+
+  const handleRowClick = (event: RowClickedEvent<Customer>) => {
+    if (event.data?.id) {
+      router.push(`/dashboard/${companyId}/customers/${event.data.id}`);
+    }
+  };
+
+  const handleGridReady = (event: GridReadyEvent<Customer>) => {
+    event.api.applyColumnState({
+      state: [{ colId: 'name', sort: 'asc' }],
+      defaultState: { sort: null },
+    });
+  };
+
+  const handleSortChanged = (event: SortChangedEvent) => {
+    const columnState = event.api.getColumnState();
+    const sortedColumn = columnState.find((col) => col.sort !== null);
+
+    if (sortedColumn && sortedColumn.sort) {
+      setSortModel({
+        field: sortedColumn.colId || 'name',
+        sort: sortedColumn.sort as 'asc' | 'desc',
+      });
+    } else {
+      setSortModel({ field: 'name', sort: 'asc' });
+    }
+  };
+
+  const handleSelectionChanged = (event: SelectionChangedEvent<Customer>) => {
+    const selectedNodes = event.api.getSelectedNodes();
+    const selectedData = selectedNodes
+      .map((node) => node.data?.id)
+      .filter((id): id is string => id !== undefined);
+    setSelectedIds(selectedData);
   };
 
   const handleDeleteClick = (e: React.MouseEvent, customer: Customer) => {
@@ -109,6 +242,31 @@ export default function CustomersPage() {
     });
   };
 
+  const handleSelectAllPage = () => {
+    if (!gridRef.current?.api) return;
+
+    const api = gridRef.current.api;
+    const displayedRowCount = api.getDisplayedRowCount();
+    const startRow = api.paginationGetCurrentPage() * pageSize;
+    const endRow = Math.min(startRow + pageSize, displayedRowCount);
+
+    let allSelected = true;
+    for (let i = startRow; i < endRow; i++) {
+      const node = api.getDisplayedRowAtIndex(i);
+      if (node && !node.isSelected()) {
+        allSelected = false;
+        break;
+      }
+    }
+
+    for (let i = startRow; i < endRow; i++) {
+      const node = api.getDisplayedRowAtIndex(i);
+      if (node) {
+        node.setSelected(!allSelected);
+      }
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     setDeleting(true);
     try {
@@ -117,6 +275,10 @@ export default function CustomersPage() {
       } else if (deleteDialog.type === 'bulk') {
         await bulkSoftDeleteCustomers(selectedIds as string[]);
         setSelectedIds([]);
+        // Clear grid selection
+        if (gridRef.current?.api) {
+          gridRef.current.api.deselectAll();
+        }
       }
       await fetchCustomers();
       setDeleteDialog({ open: false, type: 'single' });
@@ -127,68 +289,68 @@ export default function CustomersPage() {
     }
   };
 
-  const columns: GridColDef[] = [
+  const columnDefs: ColDef<Customer>[] = [
     {
       field: 'customer_code',
       headerName: 'Code',
       width: 120,
-      sortable: false,
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
     },
     {
       field: 'name',
       headerName: 'Name',
       flex: 1,
       minWidth: 200,
-      sortable: false,
     },
     {
       field: 'contact_name',
       headerName: 'Contact',
       width: 150,
-      sortable: false,
-      valueGetter: (value: string | null) => value || '—',
+      valueFormatter: (params) => params.value ?? '—',
     },
     {
       field: 'contact_email',
       headerName: 'Email',
       width: 200,
-      sortable: false,
-      valueGetter: (value: string | null) => value || '—',
+      valueFormatter: (params) => params.value ?? '—',
     },
     {
       field: 'contact_phone',
       headerName: 'Phone',
       width: 140,
-      sortable: false,
-      valueGetter: (value: string | null) => value || '—',
+      valueFormatter: (params) => params.value ?? '—',
     },
     {
-      field: 'location',
+      colId: 'location',
       headerName: 'Location',
       width: 150,
       sortable: false,
-      valueGetter: (_, row) => {
-        const parts = [row.city, row.state].filter(Boolean);
+      valueGetter: (params) => {
+        if (!params.data) return '—';
+        const parts = [params.data.city, params.data.state].filter(Boolean);
         return parts.length > 0 ? parts.join(', ') : '—';
       },
     },
     {
-      field: 'actions',
+      colId: 'actions',
       headerName: '',
       width: 60,
       sortable: false,
-      disableColumnMenu: true,
-      renderCell: (params) => (
-        <Tooltip title="Delete">
-          <IconButton
-            size="small"
-            onClick={(e) => handleDeleteClick(e, params.row)}
-            sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      ),
+      cellRenderer: (params: ICellRendererParams<Customer>) => {
+        if (!params.data) return null;
+        return (
+          <Tooltip title="Delete">
+            <IconButton
+              size="small"
+              onClick={(e) => handleDeleteClick(e, params.data!)}
+              sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        );
+      },
     },
   ];
 
@@ -221,10 +383,29 @@ export default function CustomersPage() {
           }}
         />
 
+        {/* Select all page button - shows when there are customers */}
+        {!loading && customers.length > 0 && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={
+              customers.every((c) => selectedIds.includes(c.id)) ? (
+                <CheckBoxIcon />
+              ) : (
+                <CheckBoxOutlineBlankIcon />
+              )
+            }
+            onClick={handleSelectAllPage}
+            sx={{ color: 'text.secondary' }}
+          >
+            Select All Page
+          </Button>
+        )}
+
         {/* Bulk delete button - shows when items selected */}
         {selectedIds.length > 0 && (
           <Button
-            variant="outlined"
+            variant="contained"
             color="error"
             startIcon={<DeleteIcon />}
             onClick={handleBulkDeleteClick}
@@ -292,54 +473,82 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card elevation={2}>
-          <DataGrid
-            rows={customers}
-            columns={columns}
-            loading={loading}
-            rowCount={total}
-            pageSizeOptions={[25]}
-            paginationModel={{ page, pageSize }}
-            paginationMode="server"
-            onPaginationModelChange={(model) => setPage(model.page)}
-            onRowClick={handleRowClick}
-            checkboxSelection
-            rowSelectionModel={{ type: 'include', ids: new Set(selectedIds) }}
-            onRowSelectionModelChange={(model) => setSelectedIds(Array.from(model.ids) as string[])}
-            keepNonExistentRowsSelected
-            disableColumnFilter
-            disableColumnMenu
-            autoHeight
+        <Card elevation={2} sx={{ position: 'relative', minHeight: 600 }}>
+          <Box
             sx={{
-              border: 'none',
-              '& .MuiDataGrid-row': {
+              width: '100%',
+              height: gridHeight,
+              minHeight: 500,
+              // Additional style overrides
+              '& .ag-root-wrapper': {
+                border: 'none',
+              },
+              '& .ag-row': {
                 cursor: 'pointer',
               },
-              '& .MuiDataGrid-row:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.04)',
-              },
-              '& .MuiDataGrid-cell:focus': {
-                outline: 'none',
-              },
-              '& .MuiDataGrid-columnHeader:focus': {
-                outline: 'none',
+              '& .ag-cell:focus, & .ag-header-cell:focus': {
+                outline: 'none !important',
+                border: 'none !important',
               },
             }}
-            slots={{
-              loadingOverlay: () => (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100%',
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              ),
-            }}
-          />
+          >
+            <AgGridReact<Customer>
+              ref={gridRef}
+              rowData={customers}
+              columnDefs={columnDefs}
+              theme={jiggedDarkTheme}
+              defaultColDef={{
+                sortable: true,
+                resizable: true,
+              }}
+              // Row selection
+              rowSelection="multiple"
+              suppressRowClickSelection={false}
+              onSelectionChanged={handleSelectionChanged}
+              // Pagination
+              pagination={true}
+              paginationPageSize={pageSize}
+              paginationPageSizeSelector={[25]}
+              suppressPaginationPanel={false}
+              domLayout="normal"
+              // Sorting
+              onSortChanged={handleSortChanged}
+              // Row click
+              onRowClicked={handleRowClick}
+              // Grid ready
+              onGridReady={handleGridReady}
+              // Loading
+              loading={loading}
+              // Misc
+              suppressCellFocus={true}
+              suppressMenuHide={false}
+              getRowId={(params) => params.data.id}
+              // Accessibility
+              enableCellTextSelection={true}
+              ensureDomOrder={true}
+            />
+          </Box>
+          {/* Custom loading overlay */}
+          {loading && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 10,
+                borderRadius: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
         </Card>
       )}
 
