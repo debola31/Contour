@@ -347,37 +347,55 @@ export default function ImportCustomersPage() {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Preview (First {previewRows.length} rows)
               </Typography>
-              <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto' }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      {headers.map((header) => (
-                        <TableCell key={header}>
-                          <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                            {header}
-                          </Typography>
-                          {columnMapping[header] && (
-                            <Chip
-                              size="small"
-                              label={CUSTOMER_FIELDS.find((f) => f.key === columnMapping[header])?.label}
-                              sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                            />
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {previewRows.map((row, i) => (
-                      <TableRow key={i}>
-                        {row.map((cell, j) => (
-                          <TableCell key={j}>{cell || '—'}</TableCell>
+              <Box sx={{ position: 'relative' }}>
+                <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto' }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        {headers.map((header) => (
+                          <TableCell key={header}>
+                            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                              {header}
+                            </Typography>
+                            {columnMapping[header] && (
+                              <Chip
+                                size="small"
+                                label={CUSTOMER_FIELDS.find((f) => f.key === columnMapping[header])?.label}
+                                sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
+                              />
+                            )}
+                          </TableCell>
                         ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {previewRows.map((row, i) => (
+                        <TableRow key={i}>
+                          {row.map((cell, j) => (
+                            <TableCell key={j}>{cell || '—'}</TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                {/* Scroll indicator fade on right edge */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: 40,
+                    height: '100%',
+                    background: (theme) =>
+                      `linear-gradient(to right, transparent, ${theme.palette.mode === 'dark' ? 'rgba(17, 20, 57, 0.95)' : 'rgba(255, 255, 255, 0.95)'})`,
+                    pointerEvents: 'none',
+                  }}
+                />
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                Scroll horizontally to see all columns →
+              </Typography>
             </CardContent>
           </Card>
 
