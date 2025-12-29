@@ -15,7 +15,6 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -497,30 +496,33 @@ export default function CustomersPage() {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>
+        <DialogTitle sx={{ pb: 2 }}>
           {deleteDialog.type === 'single' ? 'Delete Customer' : 'Delete Customers'}
         </DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {deleteDialog.type === 'single' ? (
-              <>
-                Are you sure you want to delete <strong>{deleteDialog.customerName}</strong>?
-              </>
-            ) : (
-              <>
-                Are you sure you want to delete <strong>{selectedIds.length}</strong> customer{selectedIds.length > 1 ? 's' : ''}?
-              </>
-            )}
-          </Alert>
-          <Typography variant="body2" color="text.secondary">
-            This action cannot be undone.
-          </Typography>
+        <DialogContent sx={{ pt: 0 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              {deleteDialog.type === 'single' ? (
+                <>
+                  Are you sure you want to delete <strong>{deleteDialog.customerName}</strong>?
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete <strong>{selectedIds.length}</strong> customer{selectedIds.length > 1 ? 's' : ''}?
+                </>
+              )}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              This action cannot be undone.
+            </Typography>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0 }}>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button
             onClick={() => setDeleteDialog({ open: false, type: 'single' })}
             disabled={deleting}
             color="inherit"
+            size="large"
           >
             Cancel
           </Button>
@@ -529,6 +531,8 @@ export default function CustomersPage() {
             variant="contained"
             color="error"
             disabled={deleting}
+            size="large"
+            startIcon={deleting ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>
