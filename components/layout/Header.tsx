@@ -1,23 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import { useAuth } from '@/components/providers/AuthProvider';
 
 export default function Header() {
-  const router = useRouter();
-  const { signOut } = useAuth();
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace('/login');
-  };
-
-  const handleSwitchCompany = () => {
-    router.push('/select-company');
-  };
-
+  // Sign Out moved to drawer in this design
   return (
     <Box
       component="header"
@@ -30,22 +16,10 @@ export default function Header() {
         borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         bgcolor: 'rgba(17, 20, 57, 0.4)',
         backdropFilter: 'blur(8px)',
+        minHeight: 64,
       }}
     >
-      <Button
-        color="inherit"
-        onClick={handleSwitchCompany}
-        sx={{ mr: 1, color: 'text.secondary' }}
-      >
-        Switch Company
-      </Button>
-      <Button
-        color="inherit"
-        onClick={handleSignOut}
-        sx={{ color: 'text.secondary' }}
-      >
-        Sign Out
-      </Button>
+      {/* Actions moved to drawer - header kept for layout consistency */}
     </Box>
   );
 }

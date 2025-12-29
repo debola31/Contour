@@ -8,10 +8,10 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import Typography from '@mui/material/Typography';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import WorkIcon from '@mui/icons-material/Work';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import CompanySwitcher from './CompanySwitcher';
 
 const menuItems = [
   { name: 'Dashboard', path: '', icon: DashboardIcon },
@@ -38,22 +38,9 @@ export default function Sidebar() {
         flexDirection: 'column',
       }}
     >
-      {/* Logo */}
-      <Box sx={{ p: 3, borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-        <Typography
-          variant="h5"
-          component="div"
-          sx={{
-            fontWeight: 700,
-            color: 'primary.main',
-            letterSpacing: '-0.5px',
-          }}
-        >
-          Jigged
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Manufacturing ERP
-        </Typography>
+      {/* Company Switcher */}
+      <Box sx={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <CompanySwitcher />
       </Box>
 
       {/* Navigation */}
