@@ -12,10 +12,6 @@ export default function JobsPage() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-        Jobs
-      </Typography>
-
       <Card elevation={2}>
         <CardContent sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="h6" gutterBottom color="text.secondary">
