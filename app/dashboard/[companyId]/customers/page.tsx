@@ -22,8 +22,6 @@ import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
 
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community';
@@ -49,7 +47,6 @@ const jiggedDarkTheme = themeQuartz.withParams({
   // Text colors
   foregroundColor: '#ffffff',
   textColor: '#ffffff',
-  secondaryForegroundColor: '#B0B3B8',
   headerTextColor: '#ffffff',
 
   // Borders
@@ -80,7 +77,7 @@ const jiggedDarkTheme = themeQuartz.withParams({
   iconSize: 20,
 });
 
-import { getCustomers, softDeleteCustomer, bulkSoftDeleteCustomers } from '@/utils/customerAccess';
+import { getAllCustomers, softDeleteCustomer, bulkSoftDeleteCustomers } from '@/utils/customerAccess';
 import type { Customer } from '@/types/customer';
 
 export default function CustomersPage() {
@@ -90,11 +87,8 @@ export default function CustomersPage() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
-  const [page, setPage] = useState(0);
-  const pageSize = 25;
   const [sortModel, setSortModel] = useState<{ field: string; sort: 'asc' | 'desc' }>({
     field: 'name',
     sort: 'asc',
@@ -119,7 +113,6 @@ export default function CustomersPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchDebounced(search);
-      setPage(0); // Reset to first page on search
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
@@ -127,23 +120,20 @@ export default function CustomersPage() {
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getCustomers(
+      const data = await getAllCustomers(
         companyId,
         'all',
         searchDebounced,
-        page + 1,
-        pageSize,
         sortModel.field,
         sortModel.sort
       );
-      setCustomers(result.data);
-      setTotal(result.total);
+      setCustomers(data);
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {
       setLoading(false);
     }
-  }, [companyId, searchDebounced, page, sortModel]);
+  }, [companyId, searchDebounced, sortModel]);
 
   useEffect(() => {
     fetchCustomers();
@@ -152,9 +142,9 @@ export default function CustomersPage() {
   // Debug: Log customers data
   useEffect(() => {
     console.log('Customers data:', customers);
-    console.log('Total:', total);
+    console.log('Total customers loaded:', customers.length);
     console.log('Loading:', loading);
-  }, [customers, total, loading]);
+  }, [customers, loading]);
 
   // Clear selection when search changes
   useEffect(() => {
@@ -164,31 +154,20 @@ export default function CustomersPage() {
     }
   }, [searchDebounced]);
 
-  // Restore selection after data changes (pagination, search, etc.)
-  useEffect(() => {
-    if (gridRef.current?.api && customers.length > 0) {
-      gridRef.current.api.forEachNode((node) => {
-        if (node.data && selectedIds.includes(node.data.id)) {
-          node.setSelected(true);
-        }
-      });
-    }
-  }, [customers, selectedIds]);
-
   // Calculate grid height dynamically
   const gridHeight = useMemo(() => {
-    if (loading || customers.length === 0) return 600; // Increased from 400 for better visibility
+    if (loading || customers.length === 0) return 600;
 
     const headerHeight = 56;
     const rowHeight = 52;
     const paginationHeight = 56;
-    const rowCount = Math.min(customers.length, pageSize);
+    const displayedRows = Math.min(customers.length, 25); // Show max 25 rows per page (default)
 
     return Math.max(
-      headerHeight + (rowHeight * rowCount) + paginationHeight,
-      400 // Ensure minimum height
+      headerHeight + (rowHeight * displayedRows) + paginationHeight,
+      400
     );
-  }, [loading, customers.length, pageSize]);
+  }, [loading, customers.length]);
 
   const handleRowClick = (event: RowClickedEvent<Customer>) => {
     if (event.data?.id) {
@@ -242,31 +221,6 @@ export default function CustomersPage() {
     });
   };
 
-  const handleSelectAllPage = () => {
-    if (!gridRef.current?.api) return;
-
-    const api = gridRef.current.api;
-    const displayedRowCount = api.getDisplayedRowCount();
-    const startRow = api.paginationGetCurrentPage() * pageSize;
-    const endRow = Math.min(startRow + pageSize, displayedRowCount);
-
-    let allSelected = true;
-    for (let i = startRow; i < endRow; i++) {
-      const node = api.getDisplayedRowAtIndex(i);
-      if (node && !node.isSelected()) {
-        allSelected = false;
-        break;
-      }
-    }
-
-    for (let i = startRow; i < endRow; i++) {
-      const node = api.getDisplayedRowAtIndex(i);
-      if (node) {
-        node.setSelected(!allSelected);
-      }
-    }
-  };
-
   const handleDeleteConfirm = async () => {
     setDeleting(true);
     try {
@@ -296,35 +250,38 @@ export default function CustomersPage() {
       width: 120,
       checkboxSelection: true,
       headerCheckboxSelection: true,
+      headerCheckboxSelectionFilteredOnly: false, // Select all across all pages
     },
     {
       field: 'name',
       headerName: 'Name',
-      flex: 1,
+      flex: 2,
       minWidth: 200,
     },
     {
       field: 'contact_name',
       headerName: 'Contact',
-      width: 150,
+      width: 250,
       valueFormatter: (params) => params.value ?? '—',
     },
     {
       field: 'contact_email',
       headerName: 'Email',
-      width: 200,
+      flex: 2,
+      minWidth: 200,
       valueFormatter: (params) => params.value ?? '—',
     },
     {
       field: 'contact_phone',
       headerName: 'Phone',
-      width: 140,
+      width: 180,
       valueFormatter: (params) => params.value ?? '—',
     },
     {
       colId: 'location',
       headerName: 'Location',
-      width: 150,
+      flex: 1.5,
+      minWidth: 180,
       sortable: false,
       valueGetter: (params) => {
         if (!params.data) return '—';
@@ -382,25 +339,6 @@ export default function CustomersPage() {
             },
           }}
         />
-
-        {/* Select all page button - shows when there are customers */}
-        {!loading && customers.length > 0 && (
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={
-              customers.every((c) => selectedIds.includes(c.id)) ? (
-                <CheckBoxIcon />
-              ) : (
-                <CheckBoxOutlineBlankIcon />
-              )
-            }
-            onClick={handleSelectAllPage}
-            sx={{ color: 'text.secondary' }}
-          >
-            Select All Page
-          </Button>
-        )}
 
         {/* Bulk delete button - shows when items selected */}
         {selectedIds.length > 0 && (
@@ -507,8 +445,8 @@ export default function CustomersPage() {
               onSelectionChanged={handleSelectionChanged}
               // Pagination
               pagination={true}
-              paginationPageSize={pageSize}
-              paginationPageSizeSelector={[25]}
+              paginationPageSize={25}
+              paginationPageSizeSelector={[25, 50, 100]}
               suppressPaginationPanel={false}
               domLayout="normal"
               // Sorting

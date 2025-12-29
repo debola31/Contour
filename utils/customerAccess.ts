@@ -52,6 +52,47 @@ export async function getCustomers(
 }
 
 /**
+ * Get all customers for a company (no pagination)
+ * Use this for client-side pagination in AG Grid
+ */
+export async function getAllCustomers(
+  companyId: string,
+  filter: CustomerFilter = 'all',
+  search: string = '',
+  sortField: string = 'name',
+  sortDirection: 'asc' | 'desc' = 'asc'
+): Promise<Customer[]> {
+  const supabase = getSupabase();
+
+  let query = supabase
+    .from('customers')
+    .select('*')
+    .eq('company_id', companyId)
+    .order(sortField, { ascending: sortDirection === 'asc' });
+
+  // Apply filter
+  if (filter === 'active') {
+    query = query.eq('is_active', true);
+  } else if (filter === 'inactive') {
+    query = query.eq('is_active', false);
+  }
+
+  // Apply search (name or code)
+  if (search.trim()) {
+    query = query.or(`name.ilike.%${search}%,customer_code.ilike.%${search}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching all customers:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
  * Get a single customer by ID
  */
 export async function getCustomer(customerId: string): Promise<Customer | null> {
