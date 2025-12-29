@@ -1,6 +1,19 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.ai_config (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  feature text NOT NULL,  -- 'csv_mapping', 'chat', 'embeddings', etc.
+  provider text NOT NULL DEFAULT 'anthropic'::text,  -- 'anthropic', 'openai', 'gemini'
+  model text,  -- Optional: specific model override (e.g., 'claude-sonnet-4-20250514')
+  settings jsonb DEFAULT '{}'::jsonb,  -- Additional provider-specific settings
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT ai_config_pkey PRIMARY KEY (id),
+  CONSTRAINT ai_config_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT ai_config_unique_company_feature UNIQUE (company_id, feature)
+);
 CREATE TABLE public.companies (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,

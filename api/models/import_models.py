@@ -1,0 +1,165 @@
+"""Pydantic models for CSV import API."""
+
+from typing import Optional
+from pydantic import BaseModel
+
+
+class ColumnMapping(BaseModel):
+    """A single column mapping suggestion from AI."""
+
+    csv_column: str
+    db_field: Optional[str]  # None means skip/discard
+    confidence: float  # 0.0 to 1.0
+    reasoning: str
+    needs_review: bool  # True if confidence < 0.7
+
+
+class AnalyzeRequest(BaseModel):
+    """Request to analyze CSV and get mapping suggestions."""
+
+    company_id: str
+    headers: list[str]
+    sample_rows: list[list[str]]  # First 5 rows of data
+
+
+class AnalyzeResponse(BaseModel):
+    """Response with AI-suggested column mappings."""
+
+    mappings: list[ColumnMapping]
+    unmapped_required: list[str]  # Required DB fields with no mapping
+    discarded_columns: list[str]  # CSV columns that won't be imported
+    ai_provider: str  # Which AI was used
+
+
+class ConflictInfo(BaseModel):
+    """Information about a conflicting row."""
+
+    row_number: int
+    csv_customer_code: Optional[str]
+    csv_name: Optional[str]
+    conflict_type: str  # "duplicate_code" | "duplicate_name"
+    existing_customer_id: str
+    existing_value: str
+
+
+class ValidateRequest(BaseModel):
+    """Request to validate data before import."""
+
+    company_id: str
+    mappings: dict[str, str]  # csv_column -> db_field
+    rows: list[dict[str, str]]  # All parsed CSV rows
+
+
+class ValidateResponse(BaseModel):
+    """Response with validation results."""
+
+    has_conflicts: bool
+    conflicts: list[ConflictInfo]
+    valid_rows_count: int
+    conflict_rows_count: int
+
+
+class ImportError(BaseModel):
+    """An error that occurred during import."""
+
+    row_number: int
+    reason: str
+    data: dict[str, str]
+
+
+class ExecuteRequest(BaseModel):
+    """Request to execute the import."""
+
+    company_id: str
+    mappings: dict[str, str]  # csv_column -> db_field
+    rows: list[dict[str, str]]  # CSV rows to import
+    skip_conflicts: bool = False  # If True, skip rows with conflicts
+
+
+class ExecuteResponse(BaseModel):
+    """Response with import results."""
+
+    success: bool
+    imported_count: int
+    skipped_count: int
+    errors: list[ImportError]
+
+
+# Target schema for customers table
+CUSTOMER_SCHEMA = {
+    "customer_code": {
+        "type": "string",
+        "required": True,
+        "description": "Unique customer identifier code",
+    },
+    "name": {
+        "type": "string",
+        "required": True,
+        "description": "Company/customer name",
+    },
+    "phone": {
+        "type": "string",
+        "required": False,
+        "description": "Main phone number",
+    },
+    "email": {
+        "type": "string",
+        "required": False,
+        "description": "Main email address",
+    },
+    "website": {
+        "type": "string",
+        "required": False,
+        "description": "Company website URL",
+    },
+    "contact_name": {
+        "type": "string",
+        "required": False,
+        "description": "Primary contact person name",
+    },
+    "contact_phone": {
+        "type": "string",
+        "required": False,
+        "description": "Primary contact phone number",
+    },
+    "contact_email": {
+        "type": "string",
+        "required": False,
+        "description": "Primary contact email address",
+    },
+    "address_line1": {
+        "type": "string",
+        "required": False,
+        "description": "Street address line 1",
+    },
+    "address_line2": {
+        "type": "string",
+        "required": False,
+        "description": "Street address line 2 (suite, unit, etc.)",
+    },
+    "city": {
+        "type": "string",
+        "required": False,
+        "description": "City name",
+    },
+    "state": {
+        "type": "string",
+        "required": False,
+        "description": "State or province",
+    },
+    "postal_code": {
+        "type": "string",
+        "required": False,
+        "description": "ZIP or postal code",
+    },
+    "country": {
+        "type": "string",
+        "required": False,
+        "description": "Country (defaults to USA)",
+    },
+    "notes": {
+        "type": "string",
+        "required": False,
+        "description": "Additional notes about the customer",
+    },
+}
