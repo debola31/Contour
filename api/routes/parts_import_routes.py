@@ -84,6 +84,7 @@ def _detect_pricing_columns(headers: list[str]) -> list[PricingColumnPair]:
     """
     pricing_pairs: list[tuple[int, str, str]] = []  # (tier_num, qty_col, price_col)
     headers_lower = {h.lower().replace(" ", ""): h for h in headers}
+    matched_columns: set[str] = set()  # Track already matched columns to avoid duplicates
 
     # Try each pattern
     for qty_pattern, price_pattern in PRICING_COLUMN_PATTERNS:
@@ -92,14 +93,24 @@ def _detect_pricing_columns(headers: list[str]) -> list[PricingColumnPair]:
 
         # Find all qty columns matching this pattern
         for header_lower, original in headers_lower.items():
+            # Skip if this column was already matched
+            if original in matched_columns:
+                continue
+
             qty_match = qty_regex.match(header_lower)
             if qty_match:
                 tier_num = int(qty_match.group(1))
                 # Look for matching price column
                 for price_lower, price_original in headers_lower.items():
+                    # Skip if price column was already matched
+                    if price_original in matched_columns:
+                        continue
+
                     price_match = price_regex.match(price_lower)
                     if price_match and int(price_match.group(1)) == tier_num:
                         pricing_pairs.append((tier_num, original, price_original))
+                        matched_columns.add(original)
+                        matched_columns.add(price_original)
                         break
 
     # Sort by tier number and return as PricingColumnPair objects
