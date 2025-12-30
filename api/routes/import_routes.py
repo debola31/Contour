@@ -29,6 +29,9 @@ router = APIRouter(prefix="/api/customers/import", tags=["import"])
 # Rate limiter: 10 AI calls per minute per company
 ai_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
+# Column limit for AI analysis (reduces token usage and improves reliability)
+MAX_COLUMNS_FOR_AI = 30
+
 # Cache directory for AI responses (dev only - avoids repeated API calls)
 CACHE_DIR = Path(__file__).parent.parent / ".cache" / "ai_responses"
 CACHE_ENABLED = os.getenv("AI_CACHE_ENABLED", "true").lower() == "true"
@@ -70,6 +73,58 @@ def _save_to_cache(cache_key: str, response: AnalyzeResponse) -> None:
         pass  # Silently fail cache writes
 
 
+def _prefilter_columns(
+    headers: list[str],
+    sample_rows: list[list[str]],
+) -> tuple[list[str], list[list[str]], list[str]]:
+    """Pre-filter columns before AI analysis.
+
+    Removes columns that are 100% empty in sample data and limits
+    to MAX_COLUMNS_FOR_AI to reduce token usage and improve AI reliability.
+
+    Args:
+        headers: Original CSV column headers
+        sample_rows: Sample data rows
+
+    Returns:
+        Tuple of:
+        - filtered_headers: Non-empty column headers (max MAX_COLUMNS_FOR_AI)
+        - filtered_sample_rows: Sample data for filtered columns only
+        - auto_skipped_columns: Column names that were auto-skipped
+    """
+    auto_skipped_columns: list[str] = []
+
+    # Identify columns to keep (non-empty)
+    non_empty_indices: list[int] = []
+
+    for i, header in enumerate(headers):
+        # Check if column has any non-empty values in sample data
+        sample_values = [row[i] if i < len(row) else "" for row in sample_rows]
+        non_empty = [v for v in sample_values if v and v.strip()]
+
+        if not non_empty:
+            # Column is 100% empty - auto-skip
+            auto_skipped_columns.append(header)
+        else:
+            non_empty_indices.append(i)
+
+    # Limit to MAX_COLUMNS_FOR_AI
+    if len(non_empty_indices) > MAX_COLUMNS_FOR_AI:
+        # Track columns that exceed the limit
+        for idx in non_empty_indices[MAX_COLUMNS_FOR_AI:]:
+            auto_skipped_columns.append(headers[idx])
+        non_empty_indices = non_empty_indices[:MAX_COLUMNS_FOR_AI]
+
+    # Build filtered headers and sample data
+    filtered_headers = [headers[i] for i in non_empty_indices]
+    filtered_sample_rows = [
+        [row[i] if i < len(row) else "" for i in non_empty_indices]
+        for row in sample_rows
+    ]
+
+    return filtered_headers, filtered_sample_rows, auto_skipped_columns
+
+
 def get_supabase() -> Client:
     """Get Supabase client from the main app."""
     from index import supabase
@@ -109,14 +164,20 @@ async def analyze_csv(
             detail="Too many requests. Please wait before trying again.",
         )
 
+    # Pre-filter: remove empty columns and limit to MAX_COLUMNS_FOR_AI
+    filtered_headers, filtered_sample_rows, auto_skipped = _prefilter_columns(
+        headers=request.headers,
+        sample_rows=request.sample_rows,
+    )
+
     try:
         # Get the configured AI provider for this company
         provider = await get_provider(supabase, request.company_id, "csv_mapping")
 
-        # Get AI suggestions
+        # Get AI suggestions for filtered columns only
         suggestions = await provider.suggest_column_mappings(
-            csv_headers=request.headers,
-            sample_rows=request.sample_rows,
+            csv_headers=filtered_headers,
+            sample_rows=filtered_sample_rows,
             target_schema=CUSTOMER_SCHEMA,
         )
 
@@ -142,6 +203,11 @@ async def analyze_csv(
                     needs_review=needs_review,
                 )
             )
+
+        # Add auto-skipped columns (empty or beyond limit) to discarded list
+        for col in auto_skipped:
+            if col not in discarded_columns:
+                discarded_columns.append(col)
 
         # Check for unmapped required fields
         required_fields = [
