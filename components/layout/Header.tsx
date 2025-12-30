@@ -11,14 +11,36 @@ function getPageTitle(pathname: string): string {
   const segments = pathname.split('/').filter(Boolean);
   // pathname like /dashboard/[companyId]/customers/new -> segments = ['dashboard', companyId, 'customers', 'new']
 
-  // Map route segments to display titles
+  // Check for parts routes first (more specific matching)
+  if (segments.includes('parts')) {
+    if (segments.includes('new')) return 'New Part';
+    if (segments.includes('edit')) return 'Edit Part';
+    if (segments.includes('import')) return 'Import Parts';
+    // Check if there's a partId (detail page)
+    const partsIndex = segments.indexOf('parts');
+    if (partsIndex < segments.length - 1 && !['new', 'edit', 'import'].includes(segments[partsIndex + 1])) {
+      return 'Part Details';
+    }
+    return 'Parts';
+  }
+
+  // Check for customers routes
+  if (segments.includes('customers')) {
+    if (segments.includes('new')) return 'New Customer';
+    if (segments.includes('edit')) return 'Edit Customer';
+    if (segments.includes('import')) return 'Import Customers';
+    // Check if there's a customerId (detail page)
+    const customersIndex = segments.indexOf('customers');
+    if (customersIndex < segments.length - 1 && !['new', 'edit', 'import'].includes(segments[customersIndex + 1])) {
+      return 'Customer Details';
+    }
+    return 'Customers';
+  }
+
+  // Map other route segments to display titles
   const titleMap: Record<string, string> = {
     jobs: 'Jobs',
     routings: 'Routings',
-    customers: 'Customers',
-    new: 'New Customer',
-    edit: 'Edit Customer',
-    import: 'Import Customers',
   };
 
   // Check from the end backwards for known segments
@@ -27,12 +49,6 @@ function getPageTitle(pathname: string): string {
     if (titleMap[segment]) {
       return titleMap[segment];
     }
-  }
-
-  // If we found 'customers' in the path but didn't match a specific action,
-  // it's likely a customer detail page (e.g., /customers/[id])
-  if (segments.includes('customers')) {
-    return 'Customer Details';
   }
 
   // Default to Dashboard
