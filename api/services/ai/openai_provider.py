@@ -91,7 +91,7 @@ class OpenAIProvider(AIProvider):
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=2048,
+            max_tokens=4096,
             response_format={"type": "json_object"},
         )
 

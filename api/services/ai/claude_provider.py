@@ -90,7 +90,7 @@ class ClaudeProvider(AIProvider):
         # Call Claude API (sync for now, can be made async with httpx)
         response = self.client.messages.create(
             model=self.model,
-            max_tokens=2048,
+            max_tokens=4096,
             messages=[{"role": "user", "content": prompt}],
         )
 

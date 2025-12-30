@@ -91,6 +91,7 @@ class GeminiProvider(AIProvider):
         response = self.client.models.generate_content(
             model=self.model_name,
             contents=prompt,
+            config={"max_output_tokens": 4096},
         )
         response_text = response.text.strip()
 
