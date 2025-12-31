@@ -28,6 +28,7 @@ import type {
   ValidationError,
 } from '@/types/import';
 import { CUSTOMER_FIELDS } from '@/types/import';
+import { parseCSV } from '@/utils/csvParser';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -40,34 +41,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 // Maximum file size: 10MB
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-
-function parseCSV(text: string): string[][] {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  return lines.map((line) => {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  });
-}
 
 const steps = ['Upload CSV', 'AI Analysis', 'Review Mappings', 'Validate', 'Import'];
 

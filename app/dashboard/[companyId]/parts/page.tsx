@@ -234,7 +234,7 @@ export default function PartsPage() {
     {
       field: 'part_number',
       headerName: 'Part Number',
-      width: 150,
+      width: 180,
     },
     {
       field: 'description',
@@ -250,7 +250,7 @@ export default function PartsPage() {
       minWidth: 150,
       valueGetter: (params) => {
         if (!params.data) return '';
-        if (!params.data.customer_id) return 'Generic';
+        if (!params.data.customer_id) return '—';
         // Customer was deleted (SET NULL fired but we still have stale reference)
         if (!params.data.customer) return 'Unknown (deleted)';
         return `${params.data.customer.customer_code} - ${params.data.customer.name}`;
@@ -272,7 +272,7 @@ export default function PartsPage() {
     {
       field: 'material_cost',
       headerName: 'Material Cost',
-      width: 130,
+      width: 150,
       valueFormatter: (params) => (params.value != null ? `$${params.value.toFixed(2)}` : '—'),
     },
     {
