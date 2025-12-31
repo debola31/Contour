@@ -14,13 +14,6 @@ Jigged is a web-based ERP system designed for small-scale precision manufacturin
 
 ---
 
-## AI Assistant Guidelines
-
-**Context7 Usage:**
-Always use Context7 when code generation, setup or configuration steps, or library/API documentation is needed. This means automatically using the Context7 MCP tools to resolve library IDs and get library docs without requiring explicit requests.
-
----
-
 ## Design System: Jigged Manufacturing ERP (Material-UI)
 
 **Framework:** Material-UI (MUI) v7+ with Material Design 3 principles
