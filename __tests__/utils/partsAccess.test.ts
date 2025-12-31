@@ -194,7 +194,7 @@ describe('partsAccess utilities', () => {
   describe('getPartWithRelations', () => {
     it('returns part with customer and counts', async () => {
       // This function makes 3 Supabase calls, so we need to track them
-      let callCount = 0;
+      let _callCount = 0;
       const partDataFromSupabase = {
         ...mockPart,
         customers: mockPart.customer, // Supabase returns 'customers' from join
@@ -202,7 +202,7 @@ describe('partsAccess utilities', () => {
 
       // Override from() to return different data based on table
       (mockSupabase.from as ReturnType<typeof vi.fn>).mockImplementation((table) => {
-        callCount++;
+        _callCount++;
         if (table === 'parts') {
           return {
             ...mockQueryBuilder,

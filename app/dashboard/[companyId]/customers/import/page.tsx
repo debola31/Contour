@@ -18,7 +18,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { MappingReviewTable, ConflictDialog } from '@/components/import';
-import type { FieldDefinition, ConflictColumn } from '@/components/import';
+import type { FieldDefinition } from '@/components/import';
 import type {
   ColumnMapping,
   AnalyzeResponse,

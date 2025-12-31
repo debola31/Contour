@@ -1,8 +1,15 @@
 import os
+import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from dotenv import load_dotenv
+
+from logging_config import setup_logging
+
+# Configure logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -12,9 +19,7 @@ supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_SECRET_KEY")
 
 if not supabase_url or not supabase_key:
-    print("Warning: SUPABASE_URL or SUPABASE_SECRET_KEY not set")
-    print(supabase_url)
-    print(supabase_key)
+    logger.warning("SUPABASE_URL or SUPABASE_SECRET_KEY not set - database features disabled")
     supabase: Client = None
 else:
     supabase: Client = create_client(supabase_url, supabase_key)
@@ -25,12 +30,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configure CORS
+# Configure CORS - handle empty string edge case properly
+_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+ALLOWED_ORIGINS = [o.strip() for o in _origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

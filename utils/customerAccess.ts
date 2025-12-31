@@ -12,7 +12,7 @@ import type {
  */
 export async function getCustomers(
   companyId: string,
-  filter: CustomerFilter = 'all',
+  _filter: CustomerFilter = 'all',
   search: string = '',
   page: number = 1,
   limit: number = 25,
@@ -51,7 +51,7 @@ export async function getCustomers(
  */
 export async function getAllCustomers(
   companyId: string,
-  filter: CustomerFilter = 'all',
+  _filter: CustomerFilter = 'all',
   search: string = '',
   sortField: string = 'name',
   sortDirection: 'asc' | 'desc' = 'asc'

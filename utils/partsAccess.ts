@@ -3,6 +3,24 @@ import type { Part, PartFormData, PricingTier } from '@/types/part';
 import { sortPricingTiers } from '@/types/part';
 
 /**
+ * Interface for part data as returned from Supabase with joined customer data.
+ * The 'customers' field uses plural because Supabase uses the table name for joins.
+ */
+interface PartWithCustomerJoin {
+  id: string;
+  company_id: string;
+  customer_id: string | null;
+  part_number: string;
+  description: string | null;
+  pricing: PricingTier[];
+  material_cost: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  customers: { id: string; name: string; customer_code: string } | null;
+}
+
+/**
  * Get all parts for a company with optional filters.
  * Fetches in batches of 1000 to bypass Supabase's default row limit.
  * Use this for client-side pagination in AG Grid.
@@ -16,8 +34,7 @@ export async function getAllParts(
 ): Promise<Part[]> {
   const supabase = getSupabase();
   const BATCH_SIZE = 1000;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let allData: any[] = [];
+  let allData: PartWithCustomerJoin[] = [];
   let offset = 0;
   let hasMore = true;
 
@@ -66,8 +83,7 @@ export async function getAllParts(
   }
 
   // Transform the joined data and sort pricing tiers
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return allData.map((part: any) => ({
+  return allData.map((part: PartWithCustomerJoin) => ({
     ...part,
     customer: part.customers || null,
     pricing: sortPricingTiers(part.pricing || []),
@@ -118,8 +134,7 @@ export async function getPartsPaginated(
   }
 
   // Transform the joined data and sort pricing tiers
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((part: any) => ({
+  return (data || []).map((part: PartWithCustomerJoin) => ({
     ...part,
     customer: part.customers || null,
     pricing: sortPricingTiers(part.pricing || []),

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import logging
 import os
 import re
 from pathlib import Path
@@ -28,6 +29,8 @@ from models.parts_import_models import (
 )
 from services.ai import get_provider
 from utils.rate_limiter import RateLimiter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/parts/import", tags=["parts-import"])
 
@@ -700,10 +703,7 @@ async def execute_import(
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-
-        print(f"Parts import execution error: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Parts import execution error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"An unexpected error occurred during import: {str(e)}",

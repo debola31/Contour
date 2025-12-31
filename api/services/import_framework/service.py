@@ -7,6 +7,7 @@ providing consistent caching, rate limiting, and error handling.
 
 import hashlib
 import json
+import logging
 import os
 import re
 from pathlib import Path
@@ -19,6 +20,7 @@ from services.ai import get_provider
 from .config import ImportModuleConfig, ColumnPairConfig
 from .classifier import classify_columns_generic, detect_column_pairs, ColumnClassification
 
+logger = logging.getLogger(__name__)
 
 # Column limit for AI analysis (reduces token usage and improves reliability)
 MAX_COLUMNS_FOR_AI = 30
@@ -635,9 +637,7 @@ class GenericImportService:
         except HTTPException:
             raise
         except Exception as e:
-            import traceback
-            print(f"Import execution error: {str(e)}")
-            print(traceback.format_exc())
+            logger.error(f"Import execution error: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail=f"An unexpected error occurred during import: {str(e)}",
