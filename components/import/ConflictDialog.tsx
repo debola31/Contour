@@ -13,72 +13,49 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import type { ConflictInfo, ValidationError } from '@/types/import';
-
-interface ConflictDialogProps {
-  open: boolean;
-  conflicts: ConflictInfo[];
-  validationErrors: ValidationError[];
-  validRowsCount: number;
-  totalRows: number;
-  onCancel: () => void;
-  onSkipConflicts: () => void;
-}
+import type { ConflictDialogProps } from './types';
 
 /**
- * Dialog showing import conflicts and options for handling them.
+ * Shared dialog for displaying import conflicts and validation errors.
+ * Works for both customers and parts imports.
  */
-export default function ConflictDialog({
+export default function ConflictDialog<
+  TConflict extends { row_number: number },
+  TError extends { row_number: number; message?: string; field?: string }
+>({
   open,
   conflicts,
   validationErrors,
   validRowsCount,
   totalRows,
   onCancel,
-  onSkipConflicts,
-}: ConflictDialogProps) {
+  onConfirm,
+  entityName,
+  conflictColumns,
+  getConflictLabel,
+  getErrorMessage,
+}: ConflictDialogProps<TConflict, TError>) {
   // Calculate unique rows with issues
   const conflictRowNumbers = new Set(conflicts.map((c) => c.row_number));
   const errorRowNumbers = new Set(validationErrors.map((e) => e.row_number));
   const totalSkippedRows = new Set([...conflictRowNumbers, ...errorRowNumbers]).size;
 
-  // Limit displayed conflicts
-  const displayedConflicts = conflicts.slice(0, 20);
-  const hasMoreConflicts = conflicts.length > 20;
-
-  // Separate CSV internal duplicates from DB duplicates for clearer messaging
-  const csvDuplicates = conflicts.filter(
-    (c) => c.conflict_type === 'csv_duplicate_code' || c.conflict_type === 'csv_duplicate_name'
-  );
-  const dbDuplicates = conflicts.filter(
-    (c) => c.conflict_type === 'duplicate_code' || c.conflict_type === 'duplicate_name'
-  );
-
-  // Helper to get user-friendly conflict type label
-  const getConflictLabel = (type: ConflictInfo['conflict_type']) => {
-    switch (type) {
-      case 'csv_duplicate_code':
-        return 'Duplicate Code in CSV';
-      case 'csv_duplicate_name':
-        return 'Duplicate Name in CSV';
-      case 'duplicate_code':
-        return 'Code Exists in Database';
-      case 'duplicate_name':
-        return 'Name Exists in Database';
-      default:
-        return 'Duplicate';
-    }
-  };
+  // Limit displayed items
+  const maxDisplayed = 8;
+  const displayedConflicts = conflicts.slice(0, maxDisplayed);
+  const hasMoreConflicts = conflicts.length > maxDisplayed;
+  const displayedErrors = validationErrors.slice(0, 5);
+  const hasMoreErrors = validationErrors.length > 5;
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <WarningAmberIcon color="warning" />
-        Conflicts Detected
+        Issues Detected
       </DialogTitle>
       <DialogContent>
+        {/* Stats Row */}
         <Box sx={{ display: 'flex', gap: 4, mb: 3 }}>
           <Box>
             <Typography variant="h4" fontWeight={600}>
@@ -106,51 +83,59 @@ export default function ConflictDialog({
           </Box>
         </Box>
 
+        {/* Conflicts Table */}
         {conflicts.length > 0 && (
           <>
             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
               Conflicting Rows ({conflicts.length})
             </Typography>
-        <TableContainer sx={{ maxHeight: 300 }}>
-          <Table size="small" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Row</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Customer Code</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Company Name</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Conflict</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Conflicting With</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {displayedConflicts.map((conflict) => (
-                <TableRow key={conflict.row_number}>
-                  <TableCell>{conflict.row_number}</TableCell>
-                  <TableCell>{conflict.csv_customer_code || '—'}</TableCell>
-                  <TableCell>{conflict.csv_name || '—'}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {getConflictLabel(conflict.conflict_type)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {conflict.existing_value}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        {hasMoreConflicts && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            ... and {conflicts.length - 20} more conflicts
-          </Typography>
-        )}
+            <TableContainer sx={{ maxHeight: 300 }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Row</TableCell>
+                    {conflictColumns.map((col) => (
+                      <TableCell key={col.key} sx={{ fontWeight: 600 }}>
+                        {col.label}
+                      </TableCell>
+                    ))}
+                    <TableCell sx={{ fontWeight: 600 }}>Conflict</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Conflicting With</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {displayedConflicts.map((conflict, idx) => (
+                    <TableRow key={`${conflict.row_number}-${idx}`}>
+                      <TableCell>{conflict.row_number}</TableCell>
+                      {conflictColumns.map((col) => (
+                        <TableCell key={col.key}>
+                          {(conflict as Record<string, unknown>)[col.key] as string || '—'}
+                        </TableCell>
+                      ))}
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {getConflictLabel(conflict)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {(conflict as Record<string, unknown>).existing_value as string || '—'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {hasMoreConflicts && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                ... and {conflicts.length - maxDisplayed} more conflicts
+              </Typography>
+            )}
           </>
         )}
 
+        {/* Validation Errors Table */}
         {validationErrors.length > 0 && (
           <>
             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mt: 3 }}>
@@ -165,12 +150,12 @@ export default function ConflictDialog({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {validationErrors.slice(0, 20).map((error) => (
-                    <TableRow key={error.row_number}>
+                  {displayedErrors.map((error, idx) => (
+                    <TableRow key={`${error.row_number}-${idx}`}>
                       <TableCell>{error.row_number}</TableCell>
                       <TableCell>
                         <Typography variant="body2" color="error.main">
-                          Missing: {error.field === 'customer_code' ? 'Customer Code' : 'Company Name'}
+                          {getErrorMessage(error)}
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -178,9 +163,9 @@ export default function ConflictDialog({
                 </TableBody>
               </Table>
             </TableContainer>
-            {validationErrors.length > 20 && (
+            {hasMoreErrors && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                ... and {validationErrors.length - 20} more errors
+                ... and {validationErrors.length - 5} more errors
               </Typography>
             )}
           </>
@@ -191,12 +176,12 @@ export default function ConflictDialog({
           Cancel Import
         </Button>
         <Button
-          onClick={onSkipConflicts}
+          onClick={onConfirm}
           variant="contained"
           color="primary"
           disabled={validRowsCount === 0}
         >
-          Import {validRowsCount} Customers
+          Import {validRowsCount} {entityName}
         </Button>
       </DialogActions>
     </Dialog>

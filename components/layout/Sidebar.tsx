@@ -11,12 +11,14 @@ import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import WorkIcon from '@mui/icons-material/Work';
 import PeopleIcon from '@mui/icons-material/People';
+import CategoryIcon from '@mui/icons-material/Category';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import CompanySwitcher from './CompanySwitcher';
 
 const menuItems = [
   { name: 'Dashboard', path: '', icon: DashboardIcon },
   { name: 'Customers', path: '/customers', icon: PeopleIcon },
+  { name: 'Parts', path: '/parts', icon: CategoryIcon },
   { name: 'Jobs', path: '/jobs', icon: WorkIcon },
   { name: 'Routings', path: '/routings', icon: AccountTreeIcon },
 ];

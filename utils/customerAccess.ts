@@ -45,8 +45,9 @@ export async function getCustomers(
 }
 
 /**
- * Get all customers for a company (no pagination)
- * Use this for client-side pagination in AG Grid
+ * Get all customers for a company (no pagination).
+ * Fetches in batches of 1000 to bypass Supabase's default row limit.
+ * Use this for client-side pagination in AG Grid.
  */
 export async function getAllCustomers(
   companyId: string,
@@ -56,26 +57,40 @@ export async function getAllCustomers(
   sortDirection: 'asc' | 'desc' = 'asc'
 ): Promise<Customer[]> {
   const supabase = getSupabase();
+  const BATCH_SIZE = 1000;
+  let allData: Customer[] = [];
+  let offset = 0;
+  let hasMore = true;
 
-  let query = supabase
-    .from('customers')
-    .select('*')
-    .eq('company_id', companyId)
-    .order(sortField, { ascending: sortDirection === 'asc' });
+  // Fetch in batches until we get all data
+  while (hasMore) {
+    let query = supabase
+      .from('customers')
+      .select('*')
+      .eq('company_id', companyId)
+      .order(sortField, { ascending: sortDirection === 'asc' })
+      .range(offset, offset + BATCH_SIZE - 1);
 
-  // Apply search (name or code)
-  if (search.trim()) {
-    query = query.or(`name.ilike.%${search}%,customer_code.ilike.%${search}%`);
+    // Apply search (name or code)
+    if (search.trim()) {
+      query = query.or(`name.ilike.%${search}%,customer_code.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching customers batch:', error);
+      throw error;
+    }
+
+    allData = [...allData, ...(data || [])];
+
+    // If we got fewer than BATCH_SIZE, we've reached the end
+    hasMore = (data?.length || 0) === BATCH_SIZE;
+    offset += BATCH_SIZE;
   }
 
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching all customers:', error);
-    throw error;
-  }
-
-  return data || [];
+  return allData;
 }
 
 /**
@@ -278,21 +293,45 @@ export async function softDeleteCustomer(customerId: string): Promise<void> {
 }
 
 /**
- * Bulk delete customers permanently
+ * Bulk delete customers permanently.
+ * Deletes in batches to avoid URL length limits.
+ * CRITICAL: Catches FK constraint error and throws user-friendly message.
  */
 export async function bulkSoftDeleteCustomers(customerIds: string[]): Promise<void> {
   if (customerIds.length === 0) return;
 
+  // Filter out any undefined/null values
+  const validIds = customerIds.filter((id) => id && typeof id === 'string');
+  if (validIds.length === 0) return;
+
   const supabase = getSupabase();
+  const BATCH_SIZE = 100; // Delete in batches to avoid URL length limits
 
-  const { error } = await supabase
-    .from('customers')
-    .delete()
-    .in('id', customerIds);
+  // Process in batches
+  for (let i = 0; i < validIds.length; i += BATCH_SIZE) {
+    const batch = validIds.slice(i, i + BATCH_SIZE);
 
-  if (error) {
-    console.error('Error bulk deleting customers:', error);
-    throw error;
+    const { error } = await supabase
+      .from('customers')
+      .delete()
+      .in('id', batch);
+
+    if (error) {
+      // FK constraint violation
+      if (error.code === '23503') {
+        throw new Error(
+          'Cannot delete some customers because they have associated parts, quotes, or jobs. Remove those references first.'
+        );
+      }
+      // RLS policy violation
+      if (error.code === '42501' || error.message?.includes('policy')) {
+        throw new Error(
+          'Permission denied. You may not have permission to delete these customers.'
+        );
+      }
+      console.error('Error bulk deleting customers:', error);
+      throw new Error(error.message || 'Failed to delete customers');
+    }
   }
 }
 

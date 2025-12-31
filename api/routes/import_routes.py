@@ -29,6 +29,7 @@ router = APIRouter(prefix="/api/customers/import", tags=["import"])
 # Rate limiter: 10 AI calls per minute per company
 ai_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
+
 # Cache directory for AI responses (dev only - avoids repeated API calls)
 CACHE_DIR = Path(__file__).parent.parent / ".cache" / "ai_responses"
 CACHE_ENABLED = os.getenv("AI_CACHE_ENABLED", "true").lower() == "true"
@@ -70,6 +71,42 @@ def _save_to_cache(cache_key: str, response: AnalyzeResponse) -> None:
         pass  # Silently fail cache writes
 
 
+def _get_column_samples(
+    headers: list[str],
+    sample_rows: list[list[str]],
+) -> dict[str, str]:
+    """Get one sample value per non-empty column.
+
+    Efficiently collects the first non-empty value found for each column.
+    This minimizes token usage while giving AI context about data format.
+
+    Args:
+        headers: All column headers
+        sample_rows: First 5 rows of sample data
+
+    Returns:
+        Dict mapping column name to one sample value (non-empty columns only)
+    """
+    samples: dict[str, str] = {}
+
+    for row in sample_rows:
+        for i, header in enumerate(headers):
+            # Skip if we already have a sample for this column
+            if header in samples:
+                continue
+
+            # Get value if exists and is non-empty
+            value = row[i].strip() if i < len(row) else ""
+            if value:
+                samples[header] = value
+
+        # Early exit if we have samples for all columns
+        if len(samples) == len(headers):
+            break
+
+    return samples
+
+
 def get_supabase() -> Client:
     """Get Supabase client from the main app."""
     from index import supabase
@@ -109,15 +146,22 @@ async def analyze_csv(
             detail="Too many requests. Please wait before trying again.",
         )
 
+    # Get sample values for non-empty columns (efficient token usage)
+    column_samples = _get_column_samples(
+        headers=request.headers,
+        sample_rows=request.sample_rows,
+    )
+
     try:
         # Get the configured AI provider for this company
         provider = await get_provider(supabase, request.company_id, "csv_mapping")
 
-        # Get AI suggestions
+        # Get AI suggestions for ALL columns, with sample data for non-empty ones
         suggestions = await provider.suggest_column_mappings(
             csv_headers=request.headers,
             sample_rows=request.sample_rows,
             target_schema=CUSTOMER_SCHEMA,
+            column_samples=column_samples,
         )
 
         # Convert to response format

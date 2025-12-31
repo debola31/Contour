@@ -17,7 +17,8 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import { MappingReviewTable, ConflictDialog } from '@/components/customers/import';
+import { MappingReviewTable, ConflictDialog } from '@/components/import';
+import type { FieldDefinition, ConflictColumn } from '@/components/import';
 import type {
   ColumnMapping,
   AnalyzeResponse,
@@ -27,6 +28,7 @@ import type {
   ValidationError,
 } from '@/types/import';
 import { CUSTOMER_FIELDS } from '@/types/import';
+import { parseCSV } from '@/utils/csvParser';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -36,33 +38,9 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 // API base URL - adjust for production
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-function parseCSV(text: string): string[][] {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  return lines.map((line) => {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  });
-}
+// Maximum file size: 10MB
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const steps = ['Upload CSV', 'AI Analysis', 'Review Mappings', 'Validate', 'Import'];
 
@@ -115,6 +93,13 @@ export default function ImportCustomersPage() {
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
+      // Check file size
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+        setError(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB (your file is ${fileSizeMB}MB)`);
+        return;
+      }
 
       setError(null);
       const reader = new FileReader();
@@ -451,6 +436,7 @@ export default function ImportCustomersPage() {
       {currentStep === 'review' && (
         <MappingReviewTable
           mappings={mappings}
+          fields={CUSTOMER_FIELDS as FieldDefinition[]}
           onMappingChange={handleMappingChange}
           unmappedRequired={unmappedRequired}
           unmappedOptional={unmappedOptional}
@@ -600,7 +586,29 @@ export default function ImportCustomersPage() {
           setShowConflictDialog(false);
           setCurrentStep('review');
         }}
-        onSkipConflicts={() => executeImport(true)}
+        onConfirm={() => executeImport(true)}
+        entityName="Customers"
+        conflictColumns={[
+          { key: 'csv_customer_code', label: 'Customer Code' },
+          { key: 'csv_name', label: 'Company Name' },
+        ]}
+        getConflictLabel={(conflict) => {
+          switch (conflict.conflict_type) {
+            case 'csv_duplicate_code':
+              return 'Duplicate Code in CSV';
+            case 'csv_duplicate_name':
+              return 'Duplicate Name in CSV';
+            case 'duplicate_code':
+              return 'Code Exists in Database';
+            case 'duplicate_name':
+              return 'Name Exists in Database';
+            default:
+              return 'Duplicate';
+          }
+        }}
+        getErrorMessage={(error) => {
+          return `Missing: ${error.field === 'customer_code' ? 'Customer Code' : 'Company Name'}`;
+        }}
       />
     </Box>
   );

@@ -6,13 +6,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import PersonIcon from '@mui/icons-material/Person';
-
-interface ConfidenceChipProps {
-  confidence: number;
-  reasoning?: string;
-  size?: 'small' | 'medium';
-  isManual?: boolean;
-}
+import type { ConfidenceChipProps } from './types';
 
 /**
  * Visual indicator for AI mapping confidence level or user selection.

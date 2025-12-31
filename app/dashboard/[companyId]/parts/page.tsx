@@ -22,7 +22,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
+import CategoryIcon from '@mui/icons-material/Category';
 
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community';
@@ -40,58 +40,41 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 // Create custom dark theme for Jigged using new Theming API
 const jiggedDarkTheme = themeQuartz.withParams({
-  // Background colors
   backgroundColor: 'transparent',
   oddRowBackgroundColor: 'rgba(255, 255, 255, 0.02)',
   headerBackgroundColor: 'rgba(255, 255, 255, 0.05)',
-
-  // Text colors
   foregroundColor: '#ffffff',
   textColor: '#ffffff',
   headerTextColor: '#ffffff',
-
-  // Borders
   borderColor: 'rgba(255, 255, 255, 0.12)',
   rowBorder: true,
-
-  // Selection and interaction
   rowHoverColor: 'rgba(255, 255, 255, 0.04)',
   selectedRowBackgroundColor: 'rgba(90, 150, 201, 0.2)',
   rangeSelectionBackgroundColor: 'rgba(90, 150, 201, 0.3)',
-
-  // Accent color (Steel Blue)
   accentColor: '#4682B4',
-
-  // Typography
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   fontSize: 16,
-
-  // Spacing
   spacing: 8,
   cellHorizontalPadding: 16,
-
-  // Row and header heights
   rowHeight: 52,
   headerHeight: 56,
-
-  // Icons
   iconSize: 20,
 });
 
-import { getAllCustomers, softDeleteCustomer, bulkSoftDeleteCustomers } from '@/utils/customerAccess';
-import type { Customer } from '@/types/customer';
+import { getAllParts, deletePart, bulkDeleteParts } from '@/utils/partsAccess';
+import type { Part } from '@/types/part';
 
-export default function CustomersPage() {
+export default function PartsPage() {
   const router = useRouter();
   const params = useParams();
   const companyId = params.companyId as string;
 
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
   const [sortModel, setSortModel] = useState<{ field: string; sort: 'asc' | 'desc' }>({
-    field: 'name',
+    field: 'part_number',
     sort: 'asc',
   });
 
@@ -99,14 +82,14 @@ export default function CustomersPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Grid ref for API access
-  const gridRef = useRef<AgGridReact<Customer>>(null);
+  const gridRef = useRef<AgGridReact<Part>>(null);
 
   // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     type: 'single' | 'bulk';
-    customerId?: string;
-    customerName?: string;
+    partId?: string;
+    partNumber?: string;
   }>({ open: false, type: 'single' });
   const [deleting, setDeleting] = useState(false);
 
@@ -125,34 +108,28 @@ export default function CustomersPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const fetchCustomers = useCallback(async () => {
+  // Fetch parts - uses batch fetching to get all data
+  const fetchParts = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAllCustomers(
+      const data = await getAllParts(
         companyId,
-        'all',
+        undefined, // All customers
         searchDebounced,
         sortModel.field,
         sortModel.sort
       );
-      setCustomers(data);
+      setParts(data);
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.error('Error fetching parts:', error);
     } finally {
       setLoading(false);
     }
   }, [companyId, searchDebounced, sortModel]);
 
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
-
-  // Debug: Log customers data
-  useEffect(() => {
-    console.log('Customers data:', customers);
-    console.log('Total customers loaded:', customers.length);
-    console.log('Loading:', loading);
-  }, [customers, loading]);
+    fetchParts();
+  }, [fetchParts]);
 
   // Clear selection when search changes
   useEffect(() => {
@@ -164,28 +141,25 @@ export default function CustomersPage() {
 
   // Calculate grid height dynamically
   const gridHeight = useMemo(() => {
-    if (loading || customers.length === 0) return 600;
+    if (loading || parts.length === 0) return 600;
 
     const headerHeight = 56;
     const rowHeight = 52;
     const paginationHeight = 56;
-    const displayedRows = Math.min(customers.length, 25); // Show max 25 rows per page (default)
+    const displayedRows = Math.min(parts.length, 25);
 
-    return Math.max(
-      headerHeight + (rowHeight * displayedRows) + paginationHeight,
-      400
-    );
-  }, [loading, customers.length]);
+    return Math.max(headerHeight + rowHeight * displayedRows + paginationHeight, 400);
+  }, [loading, parts.length]);
 
-  const handleRowClick = (event: RowClickedEvent<Customer>) => {
+  const handleRowClick = (event: RowClickedEvent<Part>) => {
     if (event.data?.id) {
-      router.push(`/dashboard/${companyId}/customers/${event.data.id}`);
+      router.push(`/dashboard/${companyId}/parts/${event.data.id}`);
     }
   };
 
-  const handleGridReady = (event: GridReadyEvent<Customer>) => {
+  const handleGridReady = (event: GridReadyEvent<Part>) => {
     event.api.applyColumnState({
-      state: [{ colId: 'name', sort: 'asc' }],
+      state: [{ colId: 'part_number', sort: 'asc' }],
       defaultState: { sort: null },
     });
   };
@@ -196,15 +170,15 @@ export default function CustomersPage() {
 
     if (sortedColumn && sortedColumn.sort) {
       setSortModel({
-        field: sortedColumn.colId || 'name',
+        field: sortedColumn.colId || 'part_number',
         sort: sortedColumn.sort as 'asc' | 'desc',
       });
     } else {
-      setSortModel({ field: 'name', sort: 'asc' });
+      setSortModel({ field: 'part_number', sort: 'asc' });
     }
   };
 
-  const handleSelectionChanged = (event: SelectionChangedEvent<Customer>) => {
+  const handleSelectionChanged = (event: SelectionChangedEvent<Part>) => {
     const selectedNodes = event.api.getSelectedNodes();
     const selectedData = selectedNodes
       .map((node) => node.data?.id)
@@ -212,13 +186,13 @@ export default function CustomersPage() {
     setSelectedIds(selectedData);
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, customer: Customer) => {
-    e.stopPropagation(); // Prevent row click
+  const handleDeleteClick = (e: React.MouseEvent, part: Part) => {
+    e.stopPropagation();
     setDeleteDialog({
       open: true,
       type: 'single',
-      customerId: customer.id,
-      customerName: customer.name,
+      partId: part.id,
+      partNumber: part.part_number,
     });
   };
 
@@ -232,17 +206,16 @@ export default function CustomersPage() {
   const handleDeleteConfirm = async () => {
     setDeleting(true);
     try {
-      if (deleteDialog.type === 'single' && deleteDialog.customerId) {
-        await softDeleteCustomer(deleteDialog.customerId);
+      if (deleteDialog.type === 'single' && deleteDialog.partId) {
+        await deletePart(deleteDialog.partId);
       } else if (deleteDialog.type === 'bulk') {
-        await bulkSoftDeleteCustomers(selectedIds as string[]);
+        await bulkDeleteParts(selectedIds as string[]);
         setSelectedIds([]);
-        // Clear grid selection
         if (gridRef.current?.api) {
           gridRef.current.api.deselectAll();
         }
       }
-      await fetchCustomers();
+      await fetchParts();
       setDeleteDialog({ open: false, type: 'single' });
     } catch (error) {
       // Show error in snackbar
@@ -257,55 +230,77 @@ export default function CustomersPage() {
     }
   };
 
-  const columnDefs: ColDef<Customer>[] = [
+  const columnDefs: ColDef<Part>[] = [
     {
-      field: 'customer_code',
-      headerName: 'Code',
-      width: 120,
-    },
-    {
-      field: 'name',
-      headerName: 'Name',
-      flex: 2,
-      minWidth: 200,
-    },
-    {
-      field: 'contact_name',
-      headerName: 'Contact',
-      width: 250,
-      valueFormatter: (params) => params.value ?? '—',
-    },
-    {
-      field: 'contact_email',
-      headerName: 'Email',
-      flex: 2,
-      minWidth: 200,
-      valueFormatter: (params) => params.value ?? '—',
-    },
-    {
-      field: 'contact_phone',
-      headerName: 'Phone',
+      field: 'part_number',
+      headerName: 'Part Number',
       width: 180,
+    },
+    {
+      field: 'description',
+      headerName: 'Description',
+      flex: 2,
+      minWidth: 200,
       valueFormatter: (params) => params.value ?? '—',
     },
     {
-      colId: 'location',
-      headerName: 'Location',
-      flex: 1.5,
-      minWidth: 180,
-      sortable: false,
+      colId: 'customer',
+      headerName: 'Customer',
+      flex: 1,
+      minWidth: 150,
       valueGetter: (params) => {
-        if (!params.data) return '—';
-        const parts = [params.data.city, params.data.state].filter(Boolean);
-        return parts.length > 0 ? parts.join(', ') : '—';
+        if (!params.data) return '';
+        if (!params.data.customer_id) return '—';
+        // Customer was deleted (SET NULL fired but we still have stale reference)
+        if (!params.data.customer) return 'Unknown (deleted)';
+        return `${params.data.customer.customer_code} - ${params.data.customer.name}`;
       },
+    },
+    {
+      colId: 'pricing',
+      headerName: 'Qty/Price',
+      flex: 1,
+      minWidth: 200,
+      sortable: false,
+      cellRenderer: (params: ICellRendererParams<Part>) => {
+        const pricing = params.data?.pricing;
+        if (!pricing || pricing.length === 0) return '—';
+
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              overflow: 'hidden',
+              fontSize: '0.875rem',
+            }}
+          >
+            {pricing.map((tier, idx) => (
+              <Box key={idx} component="span" sx={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                {idx > 0 && (
+                  <Box component="span" sx={{ color: 'text.disabled', mx: 0.5 }}>•</Box>
+                )}
+                <Box component="span" sx={{ color: 'text.secondary', mr: 0.5 }}>×{tier.qty}</Box>
+                <Box component="span" sx={{ fontWeight: 500 }}>${tier.price.toFixed(2)}</Box>
+              </Box>
+            ))}
+          </Box>
+        );
+      },
+    },
+    {
+      field: 'material_cost',
+      headerName: 'Material Cost',
+      width: 150,
+      valueFormatter: (params) => (params.value != null ? `$${params.value.toFixed(2)}` : '—'),
     },
     {
       colId: 'actions',
       headerName: '',
       width: 60,
       sortable: false,
-      cellRenderer: (params: ICellRendererParams<Customer>) => {
+      cellRenderer: (params: ICellRendererParams<Part>) => {
         if (!params.data) return null;
         return (
           <Tooltip title="Delete">
@@ -335,7 +330,7 @@ export default function CustomersPage() {
         }}
       >
         <TextField
-          placeholder="Search customers..."
+          placeholder="Search parts..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           size="small"
@@ -368,7 +363,7 @@ export default function CustomersPage() {
         <Button
           variant="outlined"
           startIcon={<UploadIcon />}
-          onClick={() => router.push(`/dashboard/${companyId}/customers/import`)}
+          onClick={() => router.push(`/dashboard/${companyId}/parts/import`)}
         >
           Import
         </Button>
@@ -376,46 +371,40 @@ export default function CustomersPage() {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => router.push(`/dashboard/${companyId}/customers/new`)}
+          onClick={() => router.push(`/dashboard/${companyId}/parts/new`)}
         >
-          New Customer
+          New Part
         </Button>
       </Box>
 
       {/* Data Grid or Empty State */}
-      {!loading && customers.length === 0 ? (
+      {!loading && parts.length === 0 ? (
         <Card elevation={2}>
           <CardContent sx={{ p: 6, textAlign: 'center' }}>
-            <PeopleOutlineIcon
-              sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
-            />
+            <CategoryIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              No customers yet
+              No parts yet
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               {searchDebounced
-                ? 'No customers match your search.'
-                : 'Create your first customer or import from CSV.'}
+                ? 'No parts match your search.'
+                : 'Create your first part or import from CSV.'}
             </Typography>
             {!searchDebounced && (
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                 <Button
                   variant="outlined"
                   startIcon={<UploadIcon />}
-                  onClick={() =>
-                    router.push(`/dashboard/${companyId}/customers/import`)
-                  }
+                  onClick={() => router.push(`/dashboard/${companyId}/parts/import`)}
                 >
                   Import CSV
                 </Button>
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() =>
-                    router.push(`/dashboard/${companyId}/customers/new`)
-                  }
+                  onClick={() => router.push(`/dashboard/${companyId}/parts/new`)}
                 >
-                  Add Customer
+                  Add Part
                 </Button>
               </Box>
             )}
@@ -428,7 +417,6 @@ export default function CustomersPage() {
               width: '100%',
               height: gridHeight,
               minHeight: 500,
-              // Additional style overrides
               '& .ag-root-wrapper': {
                 border: 'none',
               },
@@ -441,16 +429,15 @@ export default function CustomersPage() {
               },
             }}
           >
-            <AgGridReact<Customer>
+            <AgGridReact<Part>
               ref={gridRef}
-              rowData={customers}
+              rowData={parts}
               columnDefs={columnDefs}
               theme={jiggedDarkTheme}
               defaultColDef={{
                 sortable: true,
                 resizable: true,
               }}
-              // Row selection
               rowSelection={{
                 mode: 'multiRow',
                 checkboxes: true,
@@ -459,25 +446,18 @@ export default function CustomersPage() {
                 selectAll: 'all',
               }}
               onSelectionChanged={handleSelectionChanged}
-              // Pagination
               pagination={true}
               paginationPageSize={25}
               paginationPageSizeSelector={[25, 50, 100]}
               suppressPaginationPanel={false}
               domLayout="normal"
-              // Sorting
               onSortChanged={handleSortChanged}
-              // Row click
               onRowClicked={handleRowClick}
-              // Grid ready
               onGridReady={handleGridReady}
-              // Loading
               loading={loading}
-              // Misc
               suppressCellFocus={true}
               suppressMenuHide={false}
               getRowId={(params) => params.data.id}
-              // Accessibility
               enableCellTextSelection={true}
               ensureDomOrder={true}
             />
@@ -514,18 +494,19 @@ export default function CustomersPage() {
         fullWidth
       >
         <DialogTitle sx={{ pb: 2 }}>
-          {deleteDialog.type === 'single' ? 'Delete Customer' : 'Delete Customers'}
+          {deleteDialog.type === 'single' ? 'Delete Part' : 'Delete Parts'}
         </DialogTitle>
         <DialogContent sx={{ pt: 0 }}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body1" sx={{ mb: 1 }}>
               {deleteDialog.type === 'single' ? (
                 <>
-                  Are you sure you want to delete <strong>{deleteDialog.customerName}</strong>?
+                  Are you sure you want to delete <strong>{deleteDialog.partNumber}</strong>?
                 </>
               ) : (
                 <>
-                  Are you sure you want to delete <strong>{selectedIds.length}</strong> customer{selectedIds.length > 1 ? 's' : ''}?
+                  Are you sure you want to delete <strong>{selectedIds.length}</strong> part
+                  {selectedIds.length > 1 ? 's' : ''}?
                 </>
               )}
             </Typography>

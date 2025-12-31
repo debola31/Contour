@@ -30,14 +30,16 @@ class AIProvider(ABC):
         csv_headers: list[str],
         sample_rows: list[list[str]],
         target_schema: dict[str, dict],
+        column_samples: Optional[dict[str, str]] = None,
     ) -> list[MappingSuggestion]:
         """
         Analyze CSV headers and sample data to suggest column mappings.
 
         Args:
             csv_headers: List of column headers from the CSV
-            sample_rows: First few rows of data for context
+            sample_rows: First few rows of data for context (legacy, ignored if column_samples provided)
             target_schema: Dictionary describing target database fields
+            column_samples: Optional dict mapping column name to one sample value (preferred format)
 
         Returns:
             List of MappingSuggestion objects with confidence scores
