@@ -21,7 +21,7 @@ class MockAIProvider:
 
     provider_name = "mock-ai"
 
-    async def suggest_column_mappings(self, csv_headers, sample_rows, target_schema):
+    async def suggest_column_mappings(self, csv_headers, sample_rows, target_schema, column_samples=None):
         """Return mock column mapping suggestions."""
         suggestions = []
 

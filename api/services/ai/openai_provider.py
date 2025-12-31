@@ -14,11 +14,13 @@ MAPPING_PROMPT_TEMPLATE = """You are analyzing a CSV file to map columns to a cu
 ## Target Database Schema:
 {schema_json}
 
-## CSV Headers:
+## CSV Headers ({header_count} columns):
 {headers_json}
 
-## Sample Data (first few rows):
+## Sample Values (one example per non-empty column):
 {sample_data}
+
+Note: Columns not listed in sample values are empty (no data in sample rows).
 
 ## Instructions:
 1. Map each CSV column to a database field, or null if it should be skipped
@@ -29,8 +31,9 @@ MAPPING_PROMPT_TEMPLATE = """You are analyzing a CSV file to map columns to a cu
    - 0.1-0.49: Uncertain, needs human review
    - 0.0: No reasonable mapping, should be skipped
 
-3. Consider the sample data to help determine mappings
-4. Only use database fields from the schema - do not invent new fields
+3. For columns WITHOUT sample data, use the column name semantically to determine mapping
+4. For empty columns, suggest skipping them with reasoning "Column is empty"
+5. Only use database fields from the schema - do not invent new fields
 
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {{
@@ -67,23 +70,34 @@ class OpenAIProvider(AIProvider):
         csv_headers: list[str],
         sample_rows: list[list[str]],
         target_schema: dict[str, dict],
+        column_samples: Optional[dict[str, str]] = None,
     ) -> list[MappingSuggestion]:
         """Analyze CSV and suggest column mappings using OpenAI."""
 
-        # Format sample data as a readable table
-        sample_data_lines = []
-        for i, row in enumerate(sample_rows[:5]):
-            row_data = ", ".join(
-                f"{csv_headers[j]}: {row[j]}" if j < len(row) else f"{csv_headers[j]}: (empty)"
-                for j in range(len(csv_headers))
-            )
-            sample_data_lines.append(f"Row {i + 1}: {row_data}")
-        sample_data = "\n".join(sample_data_lines)
+        # Format sample data based on which parameter is provided
+        if column_samples is not None:
+            # New format: dict of column -> sample value
+            sample_data_lines = [
+                f"  {col}: \"{val}\""
+                for col, val in column_samples.items()
+            ]
+            sample_data = "\n".join(sample_data_lines) if sample_data_lines else "(no sample data)"
+        else:
+            # Legacy format: rows of data (backward compatibility)
+            sample_data_lines = []
+            for i, row in enumerate(sample_rows[:5]):
+                row_data = ", ".join(
+                    f"{csv_headers[j]}: {row[j]}" if j < len(row) else f"{csv_headers[j]}: (empty)"
+                    for j in range(len(csv_headers))
+                )
+                sample_data_lines.append(f"Row {i + 1}: {row_data}")
+            sample_data = "\n".join(sample_data_lines)
 
         # Build the prompt
         prompt = MAPPING_PROMPT_TEMPLATE.format(
             schema_json=json.dumps(target_schema, indent=2),
             headers_json=json.dumps(csv_headers),
+            header_count=len(csv_headers),
             sample_data=sample_data,
         )
 
@@ -91,7 +105,7 @@ class OpenAIProvider(AIProvider):
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=4096,
+            max_tokens=8192,
             response_format={"type": "json_object"},
         )
 

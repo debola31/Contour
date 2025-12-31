@@ -108,6 +108,7 @@ export default function PartsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Fetch parts - uses batch fetching to get all data
   const fetchParts = useCallback(async () => {
     setLoading(true);
     try {
@@ -234,9 +235,6 @@ export default function PartsPage() {
       field: 'part_number',
       headerName: 'Part Number',
       width: 150,
-      checkboxSelection: true,
-      headerCheckboxSelection: true,
-      headerCheckboxSelectionFilteredOnly: false,
     },
     {
       field: 'description',
@@ -420,8 +418,13 @@ export default function PartsPage() {
                 sortable: true,
                 resizable: true,
               }}
-              rowSelection="multiple"
-              suppressRowClickSelection={true}
+              rowSelection={{
+                mode: 'multiRow',
+                checkboxes: true,
+                headerCheckbox: true,
+                enableClickSelection: false,
+                selectAll: 'all',
+              }}
               onSelectionChanged={handleSelectionChanged}
               pagination={true}
               paginationPageSize={25}

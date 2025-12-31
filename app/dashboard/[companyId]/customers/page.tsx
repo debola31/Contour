@@ -16,6 +16,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Tooltip from '@mui/material/Tooltip';
+import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
@@ -107,6 +109,13 @@ export default function CustomersPage() {
     customerName?: string;
   }>({ open: false, type: 'single' });
   const [deleting, setDeleting] = useState(false);
+
+  // Snackbar for errors
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'error' | 'success' }>({
+    open: false,
+    message: '',
+    severity: 'error',
+  });
 
   // Debounce search input
   useEffect(() => {
@@ -236,7 +245,13 @@ export default function CustomersPage() {
       await fetchCustomers();
       setDeleteDialog({ open: false, type: 'single' });
     } catch (error) {
-      console.error('Error deleting customer(s):', error);
+      // Show error in snackbar
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'An error occurred',
+        severity: 'error',
+      });
+      setDeleteDialog({ open: false, type: 'single' });
     } finally {
       setDeleting(false);
     }
@@ -247,9 +262,6 @@ export default function CustomersPage() {
       field: 'customer_code',
       headerName: 'Code',
       width: 120,
-      checkboxSelection: true,
-      headerCheckboxSelection: true,
-      headerCheckboxSelectionFilteredOnly: false, // Select all across all pages
     },
     {
       field: 'name',
@@ -439,8 +451,13 @@ export default function CustomersPage() {
                 resizable: true,
               }}
               // Row selection
-              rowSelection="multiple"
-              suppressRowClickSelection={true}
+              rowSelection={{
+                mode: 'multiRow',
+                checkboxes: true,
+                headerCheckbox: true,
+                enableClickSelection: false,
+                selectAll: 'all',
+              }}
               onSelectionChanged={handleSelectionChanged}
               // Pagination
               pagination={true}
@@ -538,6 +555,22 @@ export default function CustomersPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

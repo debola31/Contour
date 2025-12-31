@@ -12,11 +12,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import InputLabel from '@mui/material/InputLabel';
@@ -24,8 +19,6 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
-import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -35,14 +28,13 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { MappingReviewTable, PricingTierCard, ConflictDialog } from '@/components/import';
+import type { FieldDefinition, ColumnMapping } from '@/components/import';
 import type {
   CustomerMatchMode,
   PricingColumnPair,
-  PartColumnMapping,
   PartAnalyzeResponse,
   PartValidateResponse,
   PartExecuteResponse,
@@ -55,6 +47,10 @@ import type { Customer } from '@/types/customer';
 
 // API base URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Maximum file size: 10MB
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 function parseCSV(text: string): string[][] {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
@@ -88,19 +84,6 @@ const steps = ['Upload & Settings', 'AI Analysis', 'Review Mappings', 'Validate'
 
 type ImportStep = 'upload' | 'analyzing' | 'review' | 'validating' | 'conflicts' | 'importing' | 'complete';
 
-// Confidence chip component
-function ConfidenceChip({ confidence }: { confidence: number }) {
-  const color = confidence >= 0.9 ? 'success' : confidence >= 0.7 ? 'warning' : 'error';
-  return (
-    <Chip
-      label={`${Math.round(confidence * 100)}%`}
-      size="small"
-      color={color}
-      sx={{ minWidth: 50 }}
-    />
-  );
-}
-
 export default function ImportPartsPage() {
   const router = useRouter();
   const params = useParams();
@@ -110,14 +93,14 @@ export default function ImportPartsPage() {
   const [currentStep, setCurrentStep] = useState<ImportStep>('upload');
   const [headers, setHeaders] = useState<string[]>([]);
   const [allRows, setAllRows] = useState<string[][]>([]);
-  const [mappings, setMappings] = useState<PartColumnMapping[]>([]);
+  const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [pricingColumns, setPricingColumns] = useState<PricingColumnPair[]>([]);
   const [unmappedRequired, setUnmappedRequired] = useState<string[]>([]);
   const [discardedColumns, setDiscardedColumns] = useState<string[]>([]);
   const [unmappedOptional, setUnmappedOptional] = useState<string[]>([]);
 
   // Customer matching
-  const [customerMatchMode, setCustomerMatchMode] = useState<CustomerMatchMode>('all_generic');
+  const [customerMatchMode, setCustomerMatchMode] = useState<CustomerMatchMode>('by_column');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
@@ -174,6 +157,13 @@ export default function ImportPartsPage() {
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+      setError(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB (your file is ${fileSizeMB}MB)`);
+      return;
+    }
 
     setError(null);
     const reader = new FileReader();
@@ -481,7 +471,7 @@ export default function ImportPartsPage() {
     setImportResult(null);
     setError(null);
     setPendingFile(null);
-    setCustomerMatchMode('all_generic');
+    setCustomerMatchMode('by_column');
     setSelectedCustomerId('');
   };
 
@@ -571,13 +561,13 @@ export default function ImportPartsPage() {
                     onChange={(e) => setCustomerMatchMode(e.target.value as CustomerMatchMode)}
                   >
                     <FormControlLabel
-                      value="all_generic"
+                      value="by_column"
                       control={<Radio />}
                       label={
                         <Box>
-                          <Typography variant="body1">Generic Parts (No Customer)</Typography>
+                          <Typography variant="body1">Match by Customer Code Column</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            All imported parts will be generic, not tied to any customer
+                            Use a CSV column to match parts to existing customers
                           </Typography>
                         </Box>
                       }
@@ -595,13 +585,13 @@ export default function ImportPartsPage() {
                       }
                     />
                     <FormControlLabel
-                      value="by_column"
+                      value="all_generic"
                       control={<Radio />}
                       label={
                         <Box>
-                          <Typography variant="body1">Match by Customer Code Column</Typography>
+                          <Typography variant="body1">Generic Parts (No Customer)</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Use a CSV column to match parts to existing customers
+                            All imported parts will be generic, not tied to any customer
                           </Typography>
                         </Box>
                       }
@@ -663,179 +653,33 @@ export default function ImportPartsPage() {
       {/* Step: Review Mappings */}
       {currentStep === 'review' && (
         <>
-          {/* Mapping Status Alerts */}
-          {unmappedRequired.length > 0 && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              Required fields not mapped: {unmappedRequired.join(', ')}
-            </Alert>
-          )}
-
           {customerMatchMode === 'by_column' && !mappings.some((m) => m.db_field === 'customer_code') && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              Customer Code column not mapped. Required for "Match by column" mode.
+              Customer Code column not mapped. Required for &quot;Match by column&quot; mode.
             </Alert>
           )}
 
-          {/* Column Mappings Table */}
-          <Card elevation={2} sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Column Mappings
-              </Typography>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>CSV Column</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Maps To</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Confidence</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Reasoning</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {mappings.map((mapping) => (
-                    <TableRow key={mapping.csv_column}>
-                      <TableCell>{mapping.csv_column}</TableCell>
-                      <TableCell>
-                        <FormControl size="small" sx={{ minWidth: 180 }}>
-                          <Select
-                            value={mapping.db_field || ''}
-                            onChange={(e) =>
-                              handleMappingChange(
-                                mapping.csv_column,
-                                e.target.value || null
-                              )
-                            }
-                            displayEmpty
-                          >
-                            <MenuItem value="">
-                              <em>Skip this column</em>
-                            </MenuItem>
-                            {PART_FIELDS.map((field) => (
-                              <MenuItem
-                                key={field.key}
-                                value={field.key}
-                                disabled={
-                                  field.key === 'customer_code' && customerMatchMode !== 'by_column'
-                                }
-                              >
-                                {field.label}
-                                {field.required && ' *'}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </TableCell>
-                      <TableCell>
-                        <ConfidenceChip confidence={mapping.confidence} />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {mapping.reasoning}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <MappingReviewTable
+            mappings={mappings}
+            fields={PART_FIELDS.map((f) => ({
+              ...f,
+              disabled: f.key === 'customer_code' && customerMatchMode !== 'by_column',
+            })) as FieldDefinition[]}
+            unmappedRequired={unmappedRequired}
+            unmappedOptional={unmappedOptional}
+            discardedColumns={discardedColumns}
+            onMappingChange={handleMappingChange}
+          />
 
-          {/* Pricing Tier Mappings */}
-          <Card elevation={2} sx={{ mb: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Pricing Tier Mappings
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Map quantity and price column pairs for each pricing tier
-                  </Typography>
-                </Box>
-                <Button startIcon={<AddIcon />} onClick={handleAddPricingPair} size="small">
-                  Add Tier
-                </Button>
-              </Box>
-
-              {pricingColumns.length === 0 ? (
-                <Alert severity="info">
-                  No pricing columns detected. Click "Add Tier" to manually map pricing columns,
-                  or leave empty if parts don't have volume pricing.
-                </Alert>
-              ) : (
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600, width: 80 }}>Tier</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Quantity Column</TableCell>
-                      <TableCell sx={{ fontWeight: 600, width: 40 }}></TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Price Column</TableCell>
-                      <TableCell sx={{ fontWeight: 600, width: 60 }}></TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {pricingColumns.map((pair, index) => (
-                      <TableRow key={index}>
-                        <TableCell>Tier {index + 1}</TableCell>
-                        <TableCell>
-                          <FormControl size="small" fullWidth>
-                            <Select
-                              value={pair.qty_column}
-                              onChange={(e) =>
-                                handlePricingPairChange(index, 'qty_column', e.target.value)
-                              }
-                              displayEmpty
-                            >
-                              <MenuItem value="">
-                                <em>Select column</em>
-                              </MenuItem>
-                              {headers.map((h) => (
-                                <MenuItem key={h} value={h}>
-                                  {h}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-                        <TableCell>
-                          <ArrowForwardIcon color="disabled" />
-                        </TableCell>
-                        <TableCell>
-                          <FormControl size="small" fullWidth>
-                            <Select
-                              value={pair.price_column}
-                              onChange={(e) =>
-                                handlePricingPairChange(index, 'price_column', e.target.value)
-                              }
-                              displayEmpty
-                            >
-                              <MenuItem value="">
-                                <em>Select column</em>
-                              </MenuItem>
-                              {headers.map((h) => (
-                                <MenuItem key={h} value={h}>
-                                  {h}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemovePricingPair(index)}
-                            color="error"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <Box sx={{ mt: 3 }}>
+            <PricingTierCard
+              pricingTiers={pricingColumns}
+              csvHeaders={headers}
+              onPricingTierChange={handlePricingPairChange}
+              onPricingTierAdd={handleAddPricingPair}
+              onPricingTierRemove={handleRemovePricingPair}
+            />
+          </Box>
         </>
       )}
 
@@ -971,107 +815,36 @@ export default function ImportPartsPage() {
       </Dialog>
 
       {/* Conflict Dialog */}
-      <Dialog
+      <ConflictDialog
         open={showConflictDialog}
-        onClose={() => {
+        conflicts={conflicts}
+        validationErrors={validationErrors}
+        validRowsCount={validRowsCount}
+        totalRows={allRows.length}
+        onCancel={() => {
           setShowConflictDialog(false);
           setCurrentStep('review');
         }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <WarningAmberIcon color="warning" />
-          Conflicts & Errors Found
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Found {conflicts.length + validationErrors.length} issues that need attention.
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 3, mb: 2 }}>
-              <Box>
-                <Typography variant="h5" color="success.main">
-                  {validRowsCount}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Valid rows
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="h5" color="error.main">
-                  {conflicts.length + validationErrors.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  With issues
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Conflicts List */}
-          {conflicts.length > 0 && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Conflicts
-              </Typography>
-              <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                {conflicts.slice(0, 10).map((conflict, i) => (
-                  <Alert key={i} severity="warning" sx={{ mb: 1 }}>
-                    Row {conflict.row_number}: {conflict.existing_value}
-                  </Alert>
-                ))}
-                {conflicts.length > 10 && (
-                  <Typography variant="body2" color="text.secondary">
-                    ...and {conflicts.length - 10} more
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
-
-          {/* Validation Errors List */}
-          {validationErrors.length > 0 && (
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Validation Errors
-              </Typography>
-              <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                {validationErrors.slice(0, 10).map((error, i) => (
-                  <Alert key={i} severity="error" sx={{ mb: 1 }}>
-                    Row {error.row_number}: {error.message}
-                  </Alert>
-                ))}
-                {validationErrors.length > 10 && (
-                  <Typography variant="body2" color="text.secondary">
-                    ...and {validationErrors.length - 10} more
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setShowConflictDialog(false);
-              setCurrentStep('review');
-            }}
-            color="inherit"
-          >
-            Go Back
-          </Button>
-          {validRowsCount > 0 && (
-            <Button
-              onClick={() => executeImport(true)}
-              variant="contained"
-              color="warning"
-            >
-              Import {validRowsCount} Valid Rows
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
+        onConfirm={() => executeImport(true)}
+        entityName="Parts"
+        conflictColumns={[
+          { key: 'csv_part_number', label: 'Part Number' },
+          { key: 'csv_customer_code', label: 'Customer Code' },
+        ]}
+        getConflictLabel={(conflict) => {
+          switch (conflict.conflict_type) {
+            case 'duplicate_part_number':
+              return 'Duplicate Part Number';
+            case 'customer_not_found':
+              return 'Customer Not Found';
+            case 'csv_duplicate':
+              return 'Duplicate in CSV';
+            default:
+              return 'Conflict';
+          }
+        }}
+        getErrorMessage={(error) => error.message}
+      />
     </Box>
   );
 }

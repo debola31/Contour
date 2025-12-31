@@ -3,12 +3,86 @@ import type { Part, PartFormData, PricingTier } from '@/types/part';
 import { sortPricingTiers } from '@/types/part';
 
 /**
- * Get all parts for a company with optional filters
- * Use this for client-side pagination in AG Grid
+ * Get all parts for a company with optional filters.
+ * Fetches in batches of 1000 to bypass Supabase's default row limit.
+ * Use this for client-side pagination in AG Grid.
  */
 export async function getAllParts(
   companyId: string,
   customerId?: string | null, // undefined=all, null/'generic'=generic only, string=specific customer
+  search: string = '',
+  sortField: string = 'part_number',
+  sortDirection: 'asc' | 'desc' = 'asc'
+): Promise<Part[]> {
+  const supabase = getSupabase();
+  const BATCH_SIZE = 1000;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let allData: any[] = [];
+  let offset = 0;
+  let hasMore = true;
+
+  // Fetch in batches until we get all data
+  while (hasMore) {
+    let query = supabase
+      .from('parts')
+      .select(
+        `
+        *,
+        customers!left (
+          id,
+          name,
+          customer_code
+        )
+      `
+      )
+      .eq('company_id', companyId)
+      .order(sortField, { ascending: sortDirection === 'asc' })
+      .range(offset, offset + BATCH_SIZE - 1);
+
+    // Filter by customer
+    if (customerId === null || customerId === 'generic') {
+      query = query.is('customer_id', null);
+    } else if (customerId) {
+      query = query.eq('customer_id', customerId);
+    }
+
+    // Apply search (part_number or description)
+    if (search.trim()) {
+      query = query.or(`part_number.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching parts batch:', error);
+      throw error;
+    }
+
+    allData = [...allData, ...(data || [])];
+
+    // If we got fewer than BATCH_SIZE, we've reached the end
+    hasMore = (data?.length || 0) === BATCH_SIZE;
+    offset += BATCH_SIZE;
+  }
+
+  // Transform the joined data and sort pricing tiers
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return allData.map((part: any) => ({
+    ...part,
+    customer: part.customers || null,
+    pricing: sortPricingTiers(part.pricing || []),
+  }));
+}
+
+/**
+ * Get parts with server-side pagination for AG Grid infinite row model.
+ * Uses Supabase .range() to fetch only the requested slice.
+ * Sorting is applied server-side before range, so it works across entire dataset.
+ */
+export async function getPartsPaginated(
+  companyId: string,
+  offset: number,
+  limit: number,
   search: string = '',
   sortField: string = 'part_number',
   sortDirection: 'asc' | 'desc' = 'asc'
@@ -28,14 +102,8 @@ export async function getAllParts(
     `
     )
     .eq('company_id', companyId)
-    .order(sortField, { ascending: sortDirection === 'asc' });
-
-  // Filter by customer
-  if (customerId === null || customerId === 'generic') {
-    query = query.is('customer_id', null);
-  } else if (customerId) {
-    query = query.eq('customer_id', customerId);
-  }
+    .order(sortField, { ascending: sortDirection === 'asc' })
+    .range(offset, offset + limit - 1); // Supabase range is inclusive
 
   // Apply search (part_number or description)
   if (search.trim()) {
@@ -45,16 +113,47 @@ export async function getAllParts(
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching all parts:', error);
+    console.error('Error fetching paginated parts:', error);
     throw error;
   }
 
   // Transform the joined data and sort pricing tiers
-  return (data || []).map((part) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((part: any) => ({
     ...part,
     customer: part.customers || null,
     pricing: sortPricingTiers(part.pricing || []),
   }));
+}
+
+/**
+ * Get total count of parts for a company (for AG Grid row count).
+ * Uses Supabase head:true with count:'exact' for efficient counting.
+ */
+export async function getPartsCount(
+  companyId: string,
+  search: string = ''
+): Promise<number> {
+  const supabase = getSupabase();
+
+  let query = supabase
+    .from('parts')
+    .select('*', { count: 'exact', head: true })
+    .eq('company_id', companyId);
+
+  // Apply search (part_number or description)
+  if (search.trim()) {
+    query = query.or(`part_number.ilike.%${search}%,description.ilike.%${search}%`);
+  }
+
+  const { count, error } = await query;
+
+  if (error) {
+    console.error('Error fetching parts count:', error);
+    throw error;
+  }
+
+  return count || 0;
 }
 
 /**
@@ -292,23 +391,43 @@ export async function deletePart(partId: string): Promise<void> {
 
 /**
  * Bulk delete parts permanently.
+ * Deletes in batches to avoid URL length limits.
  * CRITICAL: Catches FK constraint error and throws user-friendly message.
  */
 export async function bulkDeleteParts(partIds: string[]): Promise<void> {
   if (partIds.length === 0) return;
 
+  // Filter out any undefined/null values
+  const validIds = partIds.filter((id) => id && typeof id === 'string');
+  if (validIds.length === 0) return;
+
   const supabase = getSupabase();
+  const BATCH_SIZE = 100; // Delete in batches to avoid URL length limits
 
-  const { error } = await supabase.from('parts').delete().in('id', partIds);
+  // Process in batches
+  for (let i = 0; i < validIds.length; i += BATCH_SIZE) {
+    const batch = validIds.slice(i, i + BATCH_SIZE);
 
-  if (error) {
-    // FK constraint violation
-    if (error.code === '23503') {
-      throw new Error(
-        'Cannot delete some parts because they are referenced by quotes or jobs. Remove those references first.'
-      );
+    const { error } = await supabase
+      .from('parts')
+      .delete()
+      .in('id', batch);
+
+    if (error) {
+      // FK constraint violation
+      if (error.code === '23503') {
+        throw new Error(
+          'Cannot delete some parts because they are referenced by quotes or jobs. Remove those references first.'
+        );
+      }
+      // RLS policy violation
+      if (error.code === '42501' || error.message?.includes('policy')) {
+        throw new Error(
+          'Permission denied. You may not have permission to delete these parts.'
+        );
+      }
+      console.error('Error bulk deleting parts:', error);
+      throw new Error(error.message || 'Failed to delete parts');
     }
-    console.error('Error bulk deleting parts:', error);
-    throw error;
   }
 }
