@@ -257,17 +257,37 @@ export default function PartsPage() {
       },
     },
     {
-      colId: 'base_price',
-      headerName: 'Base Price',
-      width: 120,
-      valueGetter: (params) => {
+      colId: 'pricing',
+      headerName: 'Qty/Price',
+      flex: 1,
+      minWidth: 200,
+      sortable: false,
+      cellRenderer: (params: ICellRendererParams<Part>) => {
         const pricing = params.data?.pricing;
-        if (!pricing || pricing.length === 0) return null;
-        // Find qty=1 tier first, else use first tier
-        const tier1 = pricing.find((t) => t.qty === 1);
-        return tier1?.price ?? pricing[0]?.price ?? null;
+        if (!pricing || pricing.length === 0) return '—';
+
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              overflow: 'hidden',
+              fontSize: '0.875rem',
+            }}
+          >
+            {pricing.map((tier, idx) => (
+              <Box key={idx} component="span" sx={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                {idx > 0 && (
+                  <Box component="span" sx={{ color: 'text.disabled', mx: 0.5 }}>•</Box>
+                )}
+                <Box component="span" sx={{ color: 'text.secondary', mr: 0.5 }}>×{tier.qty}</Box>
+                <Box component="span" sx={{ fontWeight: 500 }}>${tier.price.toFixed(2)}</Box>
+              </Box>
+            ))}
+          </Box>
+        );
       },
-      valueFormatter: (params) => (params.value != null ? `$${params.value.toFixed(2)}` : '—'),
     },
     {
       field: 'material_cost',
