@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -23,6 +24,8 @@ from models.import_models import (
 )
 from services.ai import get_provider
 from utils.rate_limiter import RateLimiter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/customers/import", tags=["import"])
 
@@ -531,9 +534,7 @@ async def execute_import(
         raise
     except Exception as e:
         # Log the actual error for debugging
-        import traceback
-        print(f"Import execution error: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Import execution error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"An unexpected error occurred during import: {str(e)}",

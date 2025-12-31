@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -28,7 +28,7 @@ import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import type { Part, PartFormData, PricingTier } from '@/types/part';
+import type { Part, PartFormData } from '@/types/part';
 import { validatePricingTiers } from '@/types/part';
 import { createPart, updatePart, deletePart, checkPartNumberExists } from '@/utils/partsAccess';
 import { getAllCustomers } from '@/utils/customerAccess';
@@ -383,7 +383,7 @@ export default function PartForm({
 
           {formData.pricing.length === 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-              No pricing tiers defined. Click "Add Tier" to add one.
+              {`No pricing tiers defined. Click "Add Tier" to add one.`}
             </Typography>
           )}
         </CardContent>
@@ -463,7 +463,7 @@ export default function PartForm({
         <DialogTitle>Delete Part?</DialogTitle>
         <DialogContent>
           <Typography sx={{ mb: 2 }}>
-            Are you sure you want to delete "{formData.part_number}"?
+            {`Are you sure you want to delete "${formData.part_number}"?`}
           </Typography>
           {part && (part.quotes_count! > 0 || part.jobs_count! > 0) && (
             <Alert severity="error">

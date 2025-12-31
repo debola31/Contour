@@ -16,7 +16,7 @@ import type { ReassignmentDialogProps } from './types';
 export default function ReassignmentDialog({
   open,
   csvColumn,
-  newDbField,
+  newDbField: _newDbField,
   existingCsvColumn,
   fieldLabel,
   onCancel,
