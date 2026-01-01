@@ -655,7 +655,8 @@ async def execute_import(
                 csv_column = reverse_mappings.get(db_field)
                 if csv_column and csv_column in row:
                     value = row[csv_column].strip()
-                    if value:
+                    # Filter out empty values and literal "undefined" string from frontend
+                    if value and value.lower() != "undefined":
                         part_data[db_field] = value
 
             # Handle material_cost (numeric)

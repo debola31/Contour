@@ -283,7 +283,7 @@ export default function PartForm({
                   disabled={loading || customersLoading}
                 >
                   <MenuItem value="">
-                    <em>Generic Part (No Customer)</em>
+                    <em>No Customer</em>
                   </MenuItem>
                   {customers.map((customer) => (
                     <MenuItem key={customer.id} value={customer.id}>

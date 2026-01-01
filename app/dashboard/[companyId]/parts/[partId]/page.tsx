@@ -85,7 +85,7 @@ export default function PartDetailPage() {
     ? `${part.customer.customer_code} - ${part.customer.name}`
     : part.customer_id
       ? 'Unknown (deleted)'
-      : 'Generic Part';
+      : '—';
 
   return (
     <Box>
