@@ -201,7 +201,7 @@ describe('PartForm', () => {
   });
 
   describe('Customer Selection', () => {
-    it('shows customer dropdown with "Generic Part" option', async () => {
+    it('shows customer dropdown with "No Customer" option', async () => {
       render(
         <PartForm
           mode="create"

@@ -562,9 +562,9 @@ export default function ImportPartsPage() {
                       control={<Radio />}
                       label={
                         <Box>
-                          <Typography variant="body1">Generic Parts (No Customer)</Typography>
+                          <Typography variant="body1">No Customer</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            All imported parts will be generic, not tied to any customer
+                            All imported parts will not be tied to any customer
                           </Typography>
                         </Box>
                       }
