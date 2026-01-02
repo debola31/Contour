@@ -37,6 +37,14 @@ function getPageTitle(pathname: string): string {
     return 'Customers';
   }
 
+  // Check for operations routes
+  if (segments.includes('operations')) {
+    if (segments.includes('new')) return 'New Operation';
+    if (segments.includes('edit')) return 'Edit Operation';
+    if (segments.includes('import')) return 'Import Operations';
+    return 'Operations';
+  }
+
   // Map other route segments to display titles
   const titleMap: Record<string, string> = {
     jobs: 'Jobs',

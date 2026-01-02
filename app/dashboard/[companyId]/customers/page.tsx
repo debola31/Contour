@@ -22,6 +22,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 
 import { AgGridReact } from 'ag-grid-react';
@@ -29,7 +30,6 @@ import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-communi
 import type {
   ColDef,
   GridReadyEvent,
-  RowClickedEvent,
   SelectionChangedEvent,
   SortChangedEvent,
   ICellRendererParams,
@@ -170,12 +170,6 @@ export default function CustomersPage() {
     );
   }, [loading, customers.length]);
 
-  const handleRowClick = (event: RowClickedEvent<Customer>) => {
-    if (event.data?.id) {
-      router.push(`/dashboard/${companyId}/customers/${event.data.id}`);
-    }
-  };
-
   const handleGridReady = (event: GridReadyEvent<Customer>) => {
     event.api.applyColumnState({
       state: [{ colId: 'name', sort: 'asc' }],
@@ -203,6 +197,11 @@ export default function CustomersPage() {
       .map((node) => node.data?.id)
       .filter((id): id is string => id !== undefined);
     setSelectedIds(selectedData);
+  };
+
+  const handleEditCustomer = (e: React.MouseEvent, customer: Customer) => {
+    e.stopPropagation();
+    router.push(`/dashboard/${companyId}/customers/${customer.id}`);
   };
 
   const handleDeleteClick = (e: React.MouseEvent, customer: Customer) => {
@@ -296,20 +295,31 @@ export default function CustomersPage() {
     {
       colId: 'actions',
       headerName: '',
-      width: 60,
+      width: 100,
       sortable: false,
       cellRenderer: (params: ICellRendererParams<Customer>) => {
         if (!params.data) return null;
         return (
-          <Tooltip title="Delete">
-            <IconButton
-              size="small"
-              onClick={(e) => handleDeleteClick(e, params.data!)}
-              sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={(e) => handleEditCustomer(e, params.data!)}
+                sx={{ color: 'text.secondary' }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                onClick={(e) => handleDeleteClick(e, params.data!)}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
         );
       },
     },
@@ -460,8 +470,6 @@ export default function CustomersPage() {
               domLayout="normal"
               // Sorting
               onSortChanged={handleSortChanged}
-              // Row click
-              onRowClicked={handleRowClick}
               // Grid ready
               onGridReady={handleGridReady}
               // Loading

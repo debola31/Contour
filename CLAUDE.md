@@ -96,6 +96,34 @@ The design system uses MUI's `createTheme()` with custom palette and component o
 - `body1`: 1rem (16px) - Primary body text
 - `body2`: 0.875rem (14px) - Secondary body text
 
+### Page Layout Patterns
+
+**IMPORTANT:** All dashboard pages must follow consistent layout patterns. The page title is displayed in the top Header component, so pages should NOT include redundant inline titles.
+
+**List Pages (e.g., Parts, Customers, Resources):**
+```tsx
+<Box>
+  {/* Toolbar - single row */}
+  <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+    <TextField placeholder="Search..." size="small" sx={{ width: 300 }} />
+    <Box sx={{ flex: 1 }} />  {/* Spacer */}
+    <Button variant="outlined">Import</Button>
+    <Button variant="contained">New Item</Button>
+  </Box>
+  {/* Content (cards, tables, etc.) */}
+</Box>
+```
+
+**Create/Edit Pages:**
+- Use `<Box>` container with NO padding (layout provides padding)
+- Do NOT add inline page titles - the Header component displays the title
+- Render the form component directly
+
+**Import Pages:**
+- Use `<Box>` container with NO padding
+- Include a simple "Back" button at top left (no redundant page title)
+- Content follows below
+
 ### Mobile/Shop Floor Requirements
 
 1. **Large Touch Targets:** Minimum 48px height for buttons/inputs

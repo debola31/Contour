@@ -118,6 +118,24 @@ const jiggedTheme = createTheme({
         },
       },
     },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1a1f4a',  // Solid Deep Indigo for dropdown menus
+          backgroundImage: 'none',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+        },
+      },
+    },
+    MuiPopover: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1a1f4a',  // Solid Deep Indigo for popovers (Select menus)
+          backgroundImage: 'none',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+        },
+      },
+    },
   },
 });
 
