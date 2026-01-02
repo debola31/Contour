@@ -79,6 +79,7 @@ const jiggedDarkTheme = themeQuartz.withParams({
 });
 
 import { getAllCustomers, softDeleteCustomer, bulkSoftDeleteCustomers } from '@/utils/customerAccess';
+import ExportCsvButton from '@/components/common/ExportCsvButton';
 import type { Customer } from '@/types/customer';
 
 export default function CustomersPage() {
@@ -354,16 +355,23 @@ export default function CustomersPage() {
           }}
         />
 
-        {/* Bulk delete button - shows when items selected */}
+        {/* Export and Delete buttons - show when items selected */}
         {selectedIds.length > 0 && (
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={handleBulkDeleteClick}
-          >
-            Delete ({selectedIds.length})
-          </Button>
+          <>
+            <ExportCsvButton
+              gridRef={gridRef}
+              fileName="customers-export"
+              selectedCount={selectedIds.length}
+            />
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={handleBulkDeleteClick}
+            >
+              Delete ({selectedIds.length})
+            </Button>
+          </>
         )}
 
         <Box sx={{ flex: 1 }} />

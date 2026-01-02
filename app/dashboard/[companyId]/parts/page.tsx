@@ -62,6 +62,7 @@ const jiggedDarkTheme = themeQuartz.withParams({
 });
 
 import { getAllParts, deletePart, bulkDeleteParts } from '@/utils/partsAccess';
+import ExportCsvButton from '@/components/common/ExportCsvButton';
 import type { Part } from '@/types/part';
 
 export default function PartsPage() {
@@ -356,16 +357,23 @@ export default function PartsPage() {
           }}
         />
 
-        {/* Bulk delete button - shows when items selected */}
+        {/* Export and Delete buttons - show when items selected */}
         {selectedIds.length > 0 && (
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={handleBulkDeleteClick}
-          >
-            Delete ({selectedIds.length})
-          </Button>
+          <>
+            <ExportCsvButton
+              gridRef={gridRef}
+              fileName="parts-export"
+              selectedCount={selectedIds.length}
+            />
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={handleBulkDeleteClick}
+            >
+              Delete ({selectedIds.length})
+            </Button>
+          </>
         )}
 
         <Box sx={{ flex: 1 }} />
