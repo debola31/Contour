@@ -106,17 +106,6 @@ export default function MappingReviewTable({
     };
   };
 
-  // Menu props for dropdown styling
-  const menuProps = {
-    PaperProps: {
-      sx: {
-        bgcolor: '#1a1f4a',
-        backgroundImage: 'none',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-      },
-    },
-  };
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Status Cards */}
@@ -182,7 +171,6 @@ export default function MappingReviewTable({
                           onOpen={() => setOpenDropdown(mapping.csv_column)}
                           onClose={() => setOpenDropdown(null)}
                           displayEmpty
-                          MenuProps={menuProps}
                           renderValue={(selected) => {
                             if (!selected) {
                               return <em>Skip (don&apos;t import)</em>;
