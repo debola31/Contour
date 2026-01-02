@@ -472,9 +472,9 @@ export default function OperationsPage() {
   return (
     <Box>
       {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 0 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 0, mt: -2 }}>
         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
-          <Tab label="Operations" icon={<BuildIcon />} iconPosition="start" />
+          <Tab label="Operation Types" icon={<BuildIcon />} iconPosition="start" />
           <Tab label="Resource Groups" icon={<FolderIcon />} iconPosition="start" />
         </Tabs>
       </Box>
