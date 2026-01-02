@@ -108,11 +108,6 @@ OPERATION_SCHEMA = {
         "required": True,
         "description": "Operation/resource name (e.g., 'HURCO Mill', 'Mazak Lathe')",
     },
-    "code": {
-        "type": "string",
-        "required": False,
-        "description": "Short code/ID for display (e.g., 'HRC-M1', 'LATHE01')",
-    },
     "labor_rate": {
         "type": "number",
         "required": False,

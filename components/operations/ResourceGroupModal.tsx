@@ -38,7 +38,6 @@ export default function ResourceGroupModal({
   const [formData, setFormData] = useState<ResourceGroupFormData>({
     name: '',
     description: '',
-    display_order: 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,12 +51,11 @@ export default function ResourceGroupModal({
       setFormData({
         name: group.name,
         description: group.description || '',
-        display_order: group.display_order,
       });
       // Load operation count for delete warning
       getResourceGroupOperationCount(group.id).then(setOperationCount);
     } else {
-      setFormData({ name: '', description: '', display_order: 0 });
+      setFormData({ name: '', description: '' });
       setOperationCount(0);
     }
     setError(null);
@@ -131,18 +129,6 @@ export default function ResourceGroupModal({
             fullWidth
             multiline
             rows={2}
-            disabled={loading}
-          />
-
-          <TextField
-            label="Display Order"
-            type="number"
-            value={formData.display_order}
-            onChange={(e) =>
-              setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })
-            }
-            fullWidth
-            helperText="Lower numbers appear first"
             disabled={loading}
           />
         </Box>

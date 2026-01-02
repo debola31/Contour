@@ -487,7 +487,7 @@ async def execute_import(
             }
 
             # Map standard fields
-            for db_field in ["name", "code", "description"]:
+            for db_field in ["name", "description"]:
                 csv_column = reverse_mappings.get(db_field)
                 if csv_column and csv_column in row:
                     value = row[csv_column].strip()

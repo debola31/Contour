@@ -37,7 +37,6 @@ type ImportStep = 'upload' | 'analyzing' | 'review' | 'validating' | 'importing'
 // Operation fields for mapping
 const OPERATION_FIELDS: FieldDefinition[] = [
   { key: 'name', label: 'Name', required: true },
-  { key: 'code', label: 'Code', required: false },
   { key: 'labor_rate', label: 'Labor Rate', required: false },
   { key: 'resource_group', label: 'Resource Group', required: false },
   { key: 'description', label: 'Description', required: false },

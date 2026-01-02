@@ -18,7 +18,7 @@ import type {
  */
 export async function getResourceGroups(
   companyId: string,
-  sortField: string = 'display_order',
+  sortField: string = 'name',
   sortDirection: 'asc' | 'desc' = 'asc'
 ): Promise<ResourceGroup[]> {
   const supabase = getSupabase();
@@ -73,7 +73,6 @@ export async function createResourceGroup(
       company_id: companyId,
       name: formData.name.trim(),
       description: formData.description.trim() || null,
-      display_order: formData.display_order,
     })
     .select()
     .single();
@@ -100,7 +99,6 @@ export async function updateResourceGroup(
     .update({
       name: formData.name.trim(),
       description: formData.description.trim() || null,
-      display_order: formData.display_order,
       updated_at: new Date().toISOString(),
     })
     .eq('id', groupId)
@@ -178,7 +176,6 @@ export async function getResourceGroupsWithCounts(
     .from('resource_groups')
     .select('*')
     .eq('company_id', companyId)
-    .order('display_order', { ascending: true })
     .order('name', { ascending: true });
 
   if (groupsError) {
@@ -242,7 +239,7 @@ export async function getAllOperations(
     .order(sortField, { ascending: sortDirection === 'asc' });
 
   if (search?.trim()) {
-    query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
+    query = query.or(`name.ilike.%${search}%`);
   }
 
   const { data, error } = await query;
@@ -270,7 +267,6 @@ export async function getOperationsGrouped(
     .from('resource_groups')
     .select('*')
     .eq('company_id', companyId)
-    .order('display_order', { ascending: true })
     .order('name', { ascending: true });
 
   if (groupsError) {
@@ -286,7 +282,7 @@ export async function getOperationsGrouped(
     .order('name', { ascending: true });
 
   if (search.trim()) {
-    operationsQuery = operationsQuery.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
+    operationsQuery = operationsQuery.or(`name.ilike.%${search}%`);
   }
 
   const { data: operationsData, error: operationsError } = await operationsQuery;
@@ -339,7 +335,7 @@ export async function getOperationsFlat(
     .order('name', { ascending: true });
 
   if (options?.search?.trim()) {
-    query = query.or(`name.ilike.%${options.search}%,code.ilike.%${options.search}%`);
+    query = query.or(`name.ilike.%${options.search}%`);
   }
 
   if (options?.groupId) {
@@ -463,7 +459,6 @@ export async function createOperation(
     .insert({
       company_id: companyId,
       name: formData.name.trim(),
-      code: formData.code.trim() || null,
       resource_group_id: formData.resource_group_id || null,
       labor_rate: formData.labor_rate ? parseFloat(formData.labor_rate) : null,
       description: formData.description.trim() || null,
@@ -493,7 +488,6 @@ export async function updateOperation(
     .from('operation_types')
     .update({
       name: formData.name.trim(),
-      code: formData.code.trim() || null,
       resource_group_id: formData.resource_group_id || null,
       labor_rate: formData.labor_rate ? parseFloat(formData.labor_rate) : null,
       description: formData.description.trim() || null,
@@ -570,7 +564,6 @@ export async function bulkImportOperations(
   companyId: string,
   rows: Array<{
     name: string;
-    code?: string;
     labor_rate?: string;
     resource_group?: string;
     description?: string;
@@ -654,7 +647,6 @@ export async function bulkImportOperations(
           .insert({
             company_id: companyId,
             name: row.resource_group.trim(),
-            display_order: 0,
           })
           .select()
           .single();
@@ -671,7 +663,6 @@ export async function bulkImportOperations(
     const { error } = await supabase.from('operation_types').insert({
       company_id: companyId,
       name: row.name.trim(),
-      code: row.code?.trim() || null,
       resource_group_id: resourceGroupId,
       labor_rate: row.labor_rate ? parseFloat(row.labor_rate) : null,
       description: row.description?.trim() || null,

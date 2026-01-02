@@ -189,17 +189,6 @@ export default function OperationForm({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
-                label="Code"
-                value={formData.code}
-                onChange={handleChange('code')}
-                fullWidth
-                disabled={loading}
-                error={!!fieldErrors.code}
-                helperText={fieldErrors.code || 'Short code for display (optional)'}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
                 select
                 label="Resource Group"
                 value={formData.resource_group_id}

@@ -7,7 +7,6 @@ export interface ResourceGroup {
   company_id: string;
   name: string;
   description: string | null;
-  display_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -29,7 +28,6 @@ export interface Operation {
   company_id: string;
   resource_group_id: string | null;
   name: string;
-  code: string | null;
   labor_rate: number | null;
   description: string | null;
   metadata: Record<string, unknown>;
@@ -58,7 +56,6 @@ export interface OperationsGroupedResponse {
 export interface ResourceGroupFormData {
   name: string;
   description: string;
-  display_order: number;
 }
 
 /**
@@ -66,7 +63,6 @@ export interface ResourceGroupFormData {
  */
 export interface OperationFormData {
   name: string;
-  code: string;
   resource_group_id: string;
   labor_rate: string;
   description: string;
@@ -94,7 +90,6 @@ export interface OperationImportResult {
  */
 export const EMPTY_OPERATION_FORM: OperationFormData = {
   name: '',
-  code: '',
   resource_group_id: '',
   labor_rate: '',
   description: '',
@@ -106,7 +101,6 @@ export const EMPTY_OPERATION_FORM: OperationFormData = {
 export const EMPTY_RESOURCE_GROUP_FORM: ResourceGroupFormData = {
   name: '',
   description: '',
-  display_order: 0,
 };
 
 /**
@@ -115,7 +109,6 @@ export const EMPTY_RESOURCE_GROUP_FORM: ResourceGroupFormData = {
 export function operationToFormData(operation: Operation): OperationFormData {
   return {
     name: operation.name,
-    code: operation.code || '',
     resource_group_id: operation.resource_group_id || '',
     labor_rate: operation.labor_rate !== null ? String(operation.labor_rate) : '',
     description: operation.description || '',
@@ -129,6 +122,5 @@ export function resourceGroupToFormData(group: ResourceGroup): ResourceGroupForm
   return {
     name: group.name,
     description: group.description || '',
-    display_order: group.display_order,
   };
 }

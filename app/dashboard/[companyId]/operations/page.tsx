@@ -377,7 +377,6 @@ export default function OperationsPage() {
   // Operations columns
   const operationsColumnDefs: ColDef<OperationWithGroup>[] = [
     { field: 'name', headerName: 'Name', flex: 2, minWidth: 200 },
-    { field: 'code', headerName: 'Code', width: 120, valueFormatter: (p) => p.value ?? '—' },
     {
       colId: 'resource_group',
       headerName: 'Resource Group',
@@ -418,7 +417,6 @@ export default function OperationsPage() {
     { field: 'name', headerName: 'Name', flex: 2, minWidth: 200 },
     { field: 'description', headerName: 'Description', flex: 2, minWidth: 200, valueFormatter: (p) => p.value ?? '—' },
     { field: 'operation_count', headerName: 'Operations', width: 120 },
-    { field: 'display_order', headerName: 'Order', width: 100 },
     {
       colId: 'actions',
       headerName: '',
