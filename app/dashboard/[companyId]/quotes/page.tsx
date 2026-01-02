@@ -243,16 +243,28 @@ export default function QuotesPage() {
     try {
       if (deleteDialog.type === 'single' && deleteDialog.quoteId) {
         await deleteQuote(deleteDialog.quoteId);
+        setSnackbar({
+          open: true,
+          message: 'Quote deleted successfully',
+          severity: 'success',
+        });
       } else if (deleteDialog.type === 'bulk') {
+        const countToDelete = selectedIds.length;
         await bulkDeleteQuotes(selectedIds);
         setSelectedIds([]);
         if (gridRef.current?.api) {
           gridRef.current.api.deselectAll();
         }
+        setSnackbar({
+          open: true,
+          message: `${countToDelete} draft quote(s) deleted`,
+          severity: 'success',
+        });
       }
       await fetchQuotes();
       setDeleteDialog({ open: false, type: 'single' });
     } catch (error) {
+      console.error('Delete error:', error);
       setSnackbar({
         open: true,
         message: error instanceof Error ? error.message : 'An error occurred',
@@ -584,6 +596,7 @@ export default function QuotesPage() {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button
+            type="button"
             onClick={() => setDeleteDialog({ open: false, type: 'single' })}
             disabled={deleting}
             color="inherit"
@@ -592,6 +605,7 @@ export default function QuotesPage() {
             Cancel
           </Button>
           <Button
+            type="button"
             onClick={handleDeleteConfirm}
             variant="contained"
             color="error"

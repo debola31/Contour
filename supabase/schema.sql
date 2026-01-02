@@ -277,7 +277,6 @@ CREATE TABLE IF NOT EXISTS public.jobs
     started_at timestamp with time zone,
     completed_at timestamp with time zone,
     shipped_at timestamp with time zone,
-    notes text COLLATE pg_catalog."default",
     created_by uuid,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
@@ -351,9 +350,6 @@ COMMENT ON COLUMN public.jobs.completed_at
 COMMENT ON COLUMN public.jobs.shipped_at
     IS 'Timestamp when job was shipped to customer.';
 
-COMMENT ON COLUMN public.jobs.notes
-    IS 'Internal notes about the job.';
-
 COMMENT ON COLUMN public.jobs.created_by
     IS 'UUID of user who created the job. References Supabase auth.users.';
 
@@ -420,7 +416,6 @@ CREATE TABLE IF NOT EXISTS public.parts
     description text COLLATE pg_catalog."default",
     pricing jsonb DEFAULT '[]'::jsonb,
     material_cost numeric(10, 2),
-    notes text COLLATE pg_catalog."default",
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     updated_at timestamp with time zone NOT NULL DEFAULT now(),
     CONSTRAINT parts_pkey PRIMARY KEY (id),
@@ -454,9 +449,6 @@ COMMENT ON COLUMN public.parts.pricing
 COMMENT ON COLUMN public.parts.material_cost
     IS 'Estimated raw material cost per unit. Used for margin calculations.';
 
-COMMENT ON COLUMN public.parts.notes
-    IS 'Internal notes about the part. Not shown to customers.';
-
 COMMENT ON COLUMN public.parts.created_at
     IS 'Timestamp when part was created.';
 
@@ -485,7 +477,6 @@ CREATE TABLE IF NOT EXISTS public.quotes
     converted_to_job_id uuid,
     converted_at timestamp with time zone,
     legacy_quote_number text COLLATE pg_catalog."default",
-    notes text COLLATE pg_catalog."default",
     created_by uuid,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
@@ -558,9 +549,6 @@ COMMENT ON COLUMN public.quotes.converted_at
 
 COMMENT ON COLUMN public.quotes.legacy_quote_number
     IS 'Original quote number from legacy system. For migration/reference.';
-
-COMMENT ON COLUMN public.quotes.notes
-    IS 'Internal notes about the quote.';
 
 COMMENT ON COLUMN public.quotes.created_by
     IS 'UUID of user who created the quote. References Supabase auth.users.';
@@ -670,7 +658,6 @@ CREATE TABLE IF NOT EXISTS public.routings
     estimated_total_hours numeric(10, 2),
     estimated_lead_time_days integer,
     is_default boolean DEFAULT false,
-    notes text COLLATE pg_catalog."default",
     created_by uuid,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
@@ -710,9 +697,6 @@ COMMENT ON COLUMN public.routings.estimated_lead_time_days
 COMMENT ON COLUMN public.routings.is_default
     IS 'If true, this is the default routing for the linked part. Only one routing per part should be default.';
 
-COMMENT ON COLUMN public.routings.notes
-    IS 'Internal notes about the routing.';
-
 COMMENT ON COLUMN public.routings.created_by
     IS 'UUID of user who created the routing.';
 
@@ -720,58 +704,6 @@ COMMENT ON COLUMN public.routings.created_at
     IS 'Timestamp when routing was created.';
 
 COMMENT ON COLUMN public.routings.updated_at
-    IS 'Timestamp of last update. Auto-updated via trigger.';
-
-CREATE TABLE IF NOT EXISTS public.stations
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    company_id uuid NOT NULL,
-    name text COLLATE pg_catalog."default" NOT NULL,
-    code text COLLATE pg_catalog."default",
-    description text COLLATE pg_catalog."default",
-    station_type text COLLATE pg_catalog."default",
-    hourly_rate numeric(10, 2),
-    notes text COLLATE pg_catalog."default",
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT work_centers_pkey PRIMARY KEY (id),
-    CONSTRAINT work_centers_company_id_name_key UNIQUE (company_id, name)
-);
-
-ALTER TABLE IF EXISTS public.stations
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.stations
-    IS 'Work centers/stations/machines in the shop. Examples: CNC Mill, Lathe, Assembly Bench, Inspection. Has hourly rate for costing. Operations are performed at stations.';
-
-COMMENT ON COLUMN public.stations.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.stations.company_id
-    IS 'FK to companies. Cascades on delete.';
-
-COMMENT ON COLUMN public.stations.name
-    IS 'Station display name. Unique per company. Example: "CNC Mill #1", "Inspection Bench"';
-
-COMMENT ON COLUMN public.stations.code
-    IS 'Short code for quick reference. Example: "CNC1", "INSP"';
-
-COMMENT ON COLUMN public.stations.description
-    IS 'Detailed description of station capabilities.';
-
-COMMENT ON COLUMN public.stations.station_type
-    IS 'Category of station. Examples: "machining", "assembly", "inspection", "finishing"';
-
-COMMENT ON COLUMN public.stations.hourly_rate
-    IS 'Cost per hour for this station. Used for job costing and quoting.';
-
-COMMENT ON COLUMN public.stations.notes
-    IS 'Internal notes about the station.';
-
-COMMENT ON COLUMN public.stations.created_at
-    IS 'Timestamp when station was created.';
-
-COMMENT ON COLUMN public.stations.updated_at
     IS 'Timestamp of last update. Auto-updated via trigger.';
 
 CREATE TABLE IF NOT EXISTS public.user_company_access
@@ -874,15 +806,6 @@ ALTER TABLE IF EXISTS public.job_operations
     ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_job_ops_routing_op
     ON public.job_operations(routing_operation_id);
-
-
-ALTER TABLE IF EXISTS public.job_operations
-    ADD CONSTRAINT job_operations_station_id_fkey FOREIGN KEY (station_id)
-    REFERENCES public.stations (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_job_ops_station
-    ON public.job_operations(station_id);
 
 
 ALTER TABLE IF EXISTS public.jobs
@@ -1027,15 +950,6 @@ CREATE INDEX IF NOT EXISTS idx_routing_ops_routing
     ON public.routing_operations(routing_id);
 
 
-ALTER TABLE IF EXISTS public.routing_operations
-    ADD CONSTRAINT routing_operations_station_id_fkey FOREIGN KEY (station_id)
-    REFERENCES public.stations (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_routing_ops_station
-    ON public.routing_operations(station_id);
-
-
 ALTER TABLE IF EXISTS public.routings
     ADD CONSTRAINT routings_company_id_fkey FOREIGN KEY (company_id)
     REFERENCES public.companies (id) MATCH SIMPLE
@@ -1052,15 +966,6 @@ ALTER TABLE IF EXISTS public.routings
     ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_routings_part
     ON public.routings(part_id);
-
-
-ALTER TABLE IF EXISTS public.stations
-    ADD CONSTRAINT work_centers_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_stations_company
-    ON public.stations(company_id);
 
 
 ALTER TABLE IF EXISTS public.user_company_access

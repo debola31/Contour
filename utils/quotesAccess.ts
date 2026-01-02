@@ -564,12 +564,12 @@ export async function getCustomerParts(
 > {
   const supabase = getSupabase();
 
-  // Get parts for this customer + generic parts (customer_id is null)
+  // Get parts for this customer only (no shared parts)
   const { data, error } = await supabase
     .from('parts')
     .select('id, part_number, description, pricing')
     .eq('company_id', companyId)
-    .or(`customer_id.eq.${customerId},customer_id.is.null`)
+    .eq('customer_id', customerId)
     .order('part_number');
 
   if (error) {

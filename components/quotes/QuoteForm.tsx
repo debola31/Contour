@@ -53,14 +53,14 @@ interface PartOption {
 // Special option for "Create New" in dropdowns
 const CREATE_NEW_CUSTOMER: CustomerOption = {
   id: '__create_new__',
-  name: '+ Create New Customer',
+  name: 'Create New Customer',
   customer_code: '',
   isCreateNew: true,
 };
 
 const CREATE_NEW_PART: PartOption = {
   id: '__create_new__',
-  part_number: '+ Create New Part',
+  part_number: 'Create New Part',
   description: null,
   pricing: [],
   isCreateNew: true,
@@ -191,6 +191,7 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
     }
     setSelectedCustomer(value);
     setSelectedPart(null);
+    setParts([]); // Clear parts list when customer changes
     setFormData((prev) => ({
       ...prev,
       customer_id: value?.id || '',
