@@ -11,6 +11,17 @@ function getPageTitle(pathname: string): string {
   const segments = pathname.split('/').filter(Boolean);
   // pathname like /dashboard/[companyId]/customers/new -> segments = ['dashboard', companyId, 'customers', 'new']
 
+  // Check for quotes routes first
+  if (segments.includes('quotes')) {
+    if (segments.includes('new')) return 'New Quote';
+    // Check if there's a quoteId (detail page)
+    const quotesIndex = segments.indexOf('quotes');
+    if (quotesIndex < segments.length - 1 && !['new'].includes(segments[quotesIndex + 1])) {
+      return 'Quote Details';
+    }
+    return 'Quotes';
+  }
+
   // Check for parts routes first (more specific matching)
   if (segments.includes('parts')) {
     if (segments.includes('new')) return 'New Part';

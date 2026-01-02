@@ -1,0 +1,162 @@
+import { PricingTier, getUnitPrice } from './part';
+
+/**
+ * Quote status values
+ */
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+
+/**
+ * Quote record from database
+ */
+export interface Quote {
+  id: string;
+  company_id: string;
+  quote_number: string;
+  customer_id: string;
+  part_id: string | null;
+  part_number_text: string | null;
+  description: string | null;
+  routing_id: string | null;
+  quantity: number;
+  unit_price: number | null;
+  total_price: number | null;
+  estimated_material_cost: number | null;
+  estimated_labor_hours: number | null;
+  estimated_lead_time_days: number | null;
+  valid_until: string | null;
+  status: QuoteStatus;
+  status_changed_at: string | null;
+  converted_to_job_id: string | null;
+  converted_at: string | null;
+  legacy_quote_number: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Quote with joined relation data
+ */
+export interface QuoteWithRelations extends Quote {
+  // Joined customer data
+  customers?: {
+    id: string;
+    name: string;
+    customer_code: string | null;
+  } | null;
+  // Joined part data
+  parts?: {
+    id: string;
+    part_number: string;
+    description: string | null;
+    pricing: PricingTier[];
+  } | null;
+  // Joined job data (if converted)
+  jobs?: {
+    id: string;
+    job_number: string;
+    status: string;
+  } | null;
+}
+
+/**
+ * Form data for creating/editing quotes
+ */
+export interface QuoteFormData {
+  customer_id: string;
+  part_type: 'existing' | 'adhoc';
+  part_id: string;
+  part_number_text: string;
+  description: string;
+  quantity: string; // String for form input
+  unit_price: string; // String for form input
+  estimated_lead_time_days: string;
+  valid_until: string;
+  notes: string;
+}
+
+/**
+ * Filters for quotes list
+ */
+export interface QuoteFilters {
+  status?: QuoteStatus | 'all';
+  customerId?: string;
+  search?: string;
+}
+
+/**
+ * Data for converting quote to job
+ */
+export interface ConvertToJobData {
+  due_date: string;
+  priority: 'low' | 'normal' | 'high' | 'rush';
+  notes: string;
+}
+
+/**
+ * Empty form defaults for NEW quotes only
+ */
+export const EMPTY_QUOTE_FORM: QuoteFormData = {
+  customer_id: '',
+  part_type: 'existing',
+  part_id: '',
+  part_number_text: '',
+  description: '',
+  quantity: '1',
+  unit_price: '',
+  estimated_lead_time_days: '',
+  valid_until: '',
+  notes: '',
+};
+
+/**
+ * Convert Quote to QuoteFormData for edit forms
+ */
+export function quoteToFormData(quote: Quote): QuoteFormData {
+  return {
+    customer_id: quote.customer_id,
+    part_type: quote.part_id ? 'existing' : 'adhoc',
+    part_id: quote.part_id || '',
+    part_number_text: quote.part_number_text || '',
+    description: quote.description || '',
+    quantity: String(quote.quantity),
+    unit_price: quote.unit_price !== null ? String(quote.unit_price) : '',
+    estimated_lead_time_days:
+      quote.estimated_lead_time_days !== null ? String(quote.estimated_lead_time_days) : '',
+    valid_until: quote.valid_until || '',
+    notes: quote.notes || '',
+  };
+}
+
+/**
+ * Calculate unit price from part pricing tiers based on quantity.
+ * Re-exports getUnitPrice from part.ts for convenience.
+ */
+export function calculateUnitPrice(pricing: PricingTier[], orderQty: number): number | null {
+  return getUnitPrice(pricing, orderQty);
+}
+
+/**
+ * Calculate total price from quantity and unit price.
+ * Rounds to 4 decimal places (matches database precision).
+ */
+export function calculateTotalPrice(quantity: number, unitPrice: number | null): number | null {
+  if (unitPrice === null || isNaN(unitPrice)) return null;
+  if (isNaN(quantity) || quantity <= 0) return null;
+  return Math.round(quantity * unitPrice * 10000) / 10000;
+}
+
+/**
+ * Status display configuration
+ */
+export const QUOTE_STATUS_CONFIG: Record<
+  QuoteStatus,
+  { label: string; color: 'default' | 'primary' | 'success' | 'error' | 'warning' }
+> = {
+  draft: { label: 'Draft', color: 'default' },
+  sent: { label: 'Sent', color: 'primary' },
+  accepted: { label: 'Accepted', color: 'success' },
+  declined: { label: 'Declined', color: 'error' },
+  expired: { label: 'Expired', color: 'warning' },
+};
