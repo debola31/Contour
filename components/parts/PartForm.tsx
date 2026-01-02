@@ -409,25 +409,6 @@ export default function PartForm({
         </CardContent>
       </Card>
 
-      {/* Notes */}
-      <Card elevation={2} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Notes
-          </Typography>
-          <TextField
-            fullWidth
-            label="Internal Notes"
-            value={formData.notes}
-            onChange={handleChange('notes')}
-            disabled={loading}
-            multiline
-            rows={4}
-            placeholder="Additional notes about this part"
-          />
-        </CardContent>
-      </Card>
-
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
         {mode === 'edit' && (

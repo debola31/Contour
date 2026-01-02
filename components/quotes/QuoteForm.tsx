@@ -528,6 +528,19 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
                     ))}
                 </Box>
               )}
+
+              {/* Description */}
+              <TextField
+                fullWidth
+                label="Description"
+                value={formData.description}
+                onChange={handleChange('description')}
+                disabled={loading}
+                multiline
+                rows={2}
+                sx={{ mt: 3 }}
+                placeholder="Quote description"
+              />
         </CardContent>
       </Card>
 
@@ -623,24 +636,6 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
               />
             </Grid>
           </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Notes */}
-      <Card elevation={2} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Notes
-          </Typography>
-          <TextField
-            fullWidth
-            label="Internal Notes"
-            value={formData.notes}
-            onChange={handleChange('notes')}
-            multiline
-            rows={3}
-            disabled={loading}
-          />
         </CardContent>
       </Card>
 

@@ -17,7 +17,6 @@ export interface Part {
   description: string | null;
   pricing: PricingTier[];
   material_cost: number | null;
-  notes: string | null;
   created_at: string;
   updated_at: string;
   // Optional joined fields (populated by queries that join customers table)
@@ -40,7 +39,6 @@ export interface PartFormData {
   description: string;
   pricing: PricingTier[];
   material_cost: string; // String for form input, convert to number on save
-  notes: string;
 }
 
 /**
@@ -52,7 +50,6 @@ export const EMPTY_PART_FORM: PartFormData = {
   description: '',
   pricing: [{ qty: 1, price: 0 }],
   material_cost: '',
-  notes: '',
 };
 
 /**
@@ -73,7 +70,6 @@ export function partToFormData(part: Part): PartFormData {
     description: part.description || '',
     pricing: part.pricing.length > 0 ? sortPricingTiers(part.pricing) : [{ qty: 1, price: 0 }],
     material_cost: part.material_cost?.toFixed(2) || '',
-    notes: part.notes || '',
   };
 }
 

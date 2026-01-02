@@ -34,7 +34,6 @@ export default function ConvertToJobModal({
 }: ConvertToJobModalProps) {
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'rush'>('normal');
-  const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +45,6 @@ export default function ConvertToJobModal({
       const jobData: ConvertToJobData = {
         due_date: dueDate || '',
         priority,
-        notes: notes?.trim() || '',
       };
 
       const result = await convertQuoteToJob(quote.id, jobData);
@@ -62,7 +60,6 @@ export default function ConvertToJobModal({
     if (!loading) {
       setDueDate('');
       setPriority('normal');
-      setNotes('');
       setError(null);
       onClose();
     }
@@ -148,16 +145,6 @@ export default function ConvertToJobModal({
                 <MenuItem value="rush">Rush</MenuItem>
               </Select>
             </FormControl>
-
-            <TextField
-              label="Additional Notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              multiline
-              rows={2}
-              disabled={loading}
-              fullWidth
-            />
           </Box>
         </Box>
       </DialogContent>

@@ -14,7 +14,6 @@ interface PartWithCustomerJoin {
   description: string | null;
   pricing: PricingTier[];
   material_cost: number | null;
-  notes: string | null;
   created_at: string;
   updated_at: string;
   customers: { id: string; name: string; customer_code: string } | null;
@@ -330,7 +329,6 @@ export async function createPart(companyId: string, formData: PartFormData): Pro
       material_cost: formData.material_cost
         ? parseFloat(parseFloat(formData.material_cost).toFixed(2))
         : null,
-      notes: formData.notes.trim() || null,
     })
     .select()
     .single();
@@ -365,7 +363,6 @@ export async function updatePart(partId: string, formData: PartFormData): Promis
       material_cost: formData.material_cost
         ? parseFloat(parseFloat(formData.material_cost).toFixed(2))
         : null,
-      notes: formData.notes.trim() || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', partId)

@@ -327,14 +327,26 @@ export default function QuoteDetailPage() {
               ) : (
                 <Typography color="text.secondary">No part specified</Typography>
               )}
-              {quote.description && (
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {quote.description}
-                </Typography>
-              )}
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Description */}
+        {quote.description && (
+          <Grid size={{ xs: 12 }}>
+            <Card elevation={2}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                  Description
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                  {quote.description}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
 
         {/* Pricing */}
         <Grid size={{ xs: 12, md: 6 }}>
@@ -405,23 +417,6 @@ export default function QuoteDetailPage() {
             </CardContent>
           </Card>
         </Grid>
-
-        {/* Notes */}
-        {quote.notes && (
-          <Grid size={{ xs: 12 }}>
-            <Card elevation={2}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                  Notes
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {quote.notes}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
       </Grid>
 
       {/* Convert to Job Modal */}

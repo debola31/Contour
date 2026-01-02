@@ -29,7 +29,6 @@ export interface Quote {
   converted_to_job_id: string | null;
   converted_at: string | null;
   legacy_quote_number: string | null;
-  notes: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -73,7 +72,6 @@ export interface QuoteFormData {
   unit_price: string; // String for form input
   estimated_lead_time_days: string;
   valid_until: string;
-  notes: string;
 }
 
 /**
@@ -91,7 +89,6 @@ export interface QuoteFilters {
 export interface ConvertToJobData {
   due_date: string;
   priority: 'low' | 'normal' | 'high' | 'rush';
-  notes: string;
 }
 
 /**
@@ -107,7 +104,6 @@ export const EMPTY_QUOTE_FORM: QuoteFormData = {
   unit_price: '',
   estimated_lead_time_days: '',
   valid_until: '',
-  notes: '',
 };
 
 /**
@@ -125,7 +121,6 @@ export function quoteToFormData(quote: Quote): QuoteFormData {
     estimated_lead_time_days:
       quote.estimated_lead_time_days !== null ? String(quote.estimated_lead_time_days) : '',
     valid_until: quote.valid_until || '',
-    notes: quote.notes || '',
   };
 }
 
