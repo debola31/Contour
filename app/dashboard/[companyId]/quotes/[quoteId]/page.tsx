@@ -191,15 +191,6 @@ export default function QuoteDetailPage() {
               >
                 Send for Approval
               </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={actionLoading}
-              >
-                Delete
-              </Button>
             </>
           )}
 
@@ -237,6 +228,16 @@ export default function QuoteDetailPage() {
               Convert to Job
             </Button>
           )}
+
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={() => setDeleteDialogOpen(true)}
+            disabled={actionLoading}
+          >
+            Delete
+          </Button>
         </Box>
       </Box>
 

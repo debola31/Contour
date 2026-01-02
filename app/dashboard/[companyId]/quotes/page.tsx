@@ -2,19 +2,18 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import Tooltip from '@mui/material/Tooltip';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import FormControl from '@mui/material/FormControl';
@@ -22,12 +21,10 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import CircularProgress from '@mui/material/CircularProgress';
+import MuiLink from '@mui/material/Link';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 
 import { AgGridReact } from 'ag-grid-react';
@@ -206,31 +203,6 @@ export default function QuotesPage() {
     setSelectedIds(selectedData);
   };
 
-  const handleViewQuote = (e: React.MouseEvent, quote: QuoteWithRelations) => {
-    e.stopPropagation();
-    router.push(`/dashboard/${companyId}/quotes/${quote.id}`);
-  };
-
-  const handleEditQuote = (e: React.MouseEvent, quote: QuoteWithRelations) => {
-    e.stopPropagation();
-    router.push(`/dashboard/${companyId}/quotes/${quote.id}`);
-  };
-
-  const handleConvertQuote = (e: React.MouseEvent, quote: QuoteWithRelations) => {
-    e.stopPropagation();
-    router.push(`/dashboard/${companyId}/quotes/${quote.id}?convert=true`);
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent, quote: QuoteWithRelations) => {
-    e.stopPropagation();
-    setDeleteDialog({
-      open: true,
-      type: 'single',
-      quoteId: quote.id,
-      quoteNumber: quote.quote_number,
-    });
-  };
-
   const handleBulkDeleteClick = () => {
     setDeleteDialog({
       open: true,
@@ -257,7 +229,7 @@ export default function QuotesPage() {
         }
         setSnackbar({
           open: true,
-          message: `${countToDelete} draft quote(s) deleted`,
+          message: `${countToDelete} quote(s) deleted`,
           severity: 'success',
         });
       }
@@ -335,63 +307,25 @@ export default function QuotesPage() {
         params.value ? formatDate(params.value) : '—',
     },
     {
-      colId: 'actions',
-      headerName: '',
-      width: 140,
-      sortable: false,
+      colId: 'job',
+      headerName: 'Job',
+      width: 100,
       cellRenderer: (params: ICellRendererParams<QuoteWithRelations>) => {
         if (!params.data) return null;
         const quote = params.data;
-        const isDraft = quote.status === 'draft';
-        const isApproved = quote.status === 'approved';
-        const canConvert = isApproved && !quote.converted_to_job_id;
-
-        return (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Tooltip title="View">
-              <IconButton
-                size="small"
-                onClick={(e) => handleViewQuote(e, quote)}
-                sx={{ color: 'text.secondary' }}
-              >
-                <VisibilityIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            {isDraft && (
-              <Tooltip title="Edit">
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleEditQuote(e, quote)}
-                  sx={{ color: 'text.secondary' }}
-                >
-                  <EditIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canConvert && (
-              <Tooltip title="Convert to Job">
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleConvertQuote(e, quote)}
-                  sx={{ color: 'primary.main' }}
-                >
-                  <PlayArrowIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {isDraft && (
-              <Tooltip title="Delete">
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleDeleteClick(e, quote)}
-                  sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
-        );
+        if (quote.converted_to_job_id && quote.jobs) {
+          return (
+            <MuiLink
+              component={Link}
+              href={`/dashboard/${companyId}/jobs/${quote.converted_to_job_id}`}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              sx={{ fontWeight: 500 }}
+            >
+              {quote.jobs.job_number}
+            </MuiLink>
+          );
+        }
+        return '—';
       },
     },
   ];
@@ -590,7 +524,7 @@ export default function QuotesPage() {
               )}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Only draft quotes can be deleted. This action cannot be undone.
+              This action cannot be undone.
             </Typography>
           </Box>
         </DialogContent>

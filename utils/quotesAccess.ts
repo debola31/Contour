@@ -318,26 +318,10 @@ export async function updateQuote(quoteId: string, formData: QuoteFormData): Pro
 }
 
 /**
- * Delete a quote (draft only)
+ * Delete a quote
  */
 export async function deleteQuote(quoteId: string): Promise<void> {
   const supabase = getSupabase();
-
-  // First check if quote is in draft status
-  const { data: existing, error: checkError } = await supabase
-    .from('quotes')
-    .select('status')
-    .eq('id', quoteId)
-    .single();
-
-  if (checkError) {
-    console.error('Error checking quote status:', checkError);
-    throw checkError;
-  }
-
-  if (existing.status !== 'draft') {
-    throw new Error('Only draft quotes can be deleted');
-  }
 
   const { error } = await supabase.from('quotes').delete().eq('id', quoteId);
 
@@ -348,7 +332,7 @@ export async function deleteQuote(quoteId: string): Promise<void> {
 }
 
 /**
- * Bulk delete quotes (draft only)
+ * Bulk delete quotes
  */
 export async function bulkDeleteQuotes(quoteIds: string[]): Promise<void> {
   if (quoteIds.length === 0) return;
@@ -362,12 +346,10 @@ export async function bulkDeleteQuotes(quoteIds: string[]): Promise<void> {
   for (let i = 0; i < validIds.length; i += BATCH_SIZE) {
     const batch = validIds.slice(i, i + BATCH_SIZE);
 
-    // Only delete quotes that are in draft status
     const { error } = await supabase
       .from('quotes')
       .delete()
-      .in('id', batch)
-      .eq('status', 'draft');
+      .in('id', batch);
 
     if (error) {
       if (error.code === '23503') {
