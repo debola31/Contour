@@ -13,12 +13,14 @@ import WorkIcon from '@mui/icons-material/Work';
 import PeopleIcon from '@mui/icons-material/People';
 import CategoryIcon from '@mui/icons-material/Category';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import BuildIcon from '@mui/icons-material/Build';
 import CompanySwitcher from './CompanySwitcher';
 
 const menuItems = [
   { name: 'Dashboard', path: '', icon: DashboardIcon },
   { name: 'Customers', path: '/customers', icon: PeopleIcon },
   { name: 'Parts', path: '/parts', icon: CategoryIcon },
+  { name: 'Resources', path: '/resources', icon: BuildIcon },
   { name: 'Jobs', path: '/jobs', icon: WorkIcon },
   { name: 'Routings', path: '/routings', icon: AccountTreeIcon },
 ];

@@ -45,9 +45,11 @@ app.add_middleware(
 # Import and register routes
 from routes.import_routes import router as import_router
 from routes.parts_import_routes import router as parts_import_router
+from routes.resources_import_routes import router as resources_import_router
 
 app.include_router(import_router)
 app.include_router(parts_import_router)
+app.include_router(resources_import_router)
 
 
 @app.get("/api/example_name")
