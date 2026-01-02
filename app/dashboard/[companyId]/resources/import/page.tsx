@@ -452,19 +452,16 @@ export default function ImportResourcesPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       {/* Header */}
-      <Box display="flex" alignItems="center" gap={2} mb={3}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Button
-          variant="text"
+          color="primary"
           startIcon={<ArrowBackIcon />}
           onClick={() => router.push(`/dashboard/${companyId}/resources`)}
         >
           Back
         </Button>
-        <Typography variant="h4" component="h1">
-          Import Resources
-        </Typography>
       </Box>
 
       {/* Stepper */}

@@ -119,9 +119,36 @@ export default function ResourcesPage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header Actions */}
-      <Box display="flex" justifyContent="flex-end" alignItems="center" mb={3} gap={1}>
+    <Box>
+      {/* Toolbar */}
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+          mb: 3,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
+        <TextField
+          placeholder="Search resources..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          size="small"
+          sx={{ width: 300 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+
+        <Box sx={{ flex: 1 }} />
+
         <Button
           variant="outlined"
           startIcon={<UploadIcon />}
@@ -140,24 +167,6 @@ export default function ResourcesPage() {
           New Resource
         </Button>
       </Box>
-
-      {/* Search */}
-      <TextField
-        placeholder="Search resources by name or code..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          },
-        }}
-        sx={{ mb: 3, maxWidth: 400 }}
-        fullWidth
-      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>

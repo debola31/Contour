@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
@@ -59,7 +58,7 @@ export default function EditResourcePage() {
 
   if (error || !initialData) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box>
         <Alert severity="error">{error || 'Resource not found'}</Alert>
         <Button
           variant="outlined"
@@ -74,21 +73,7 @@ export default function EditResourcePage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box display="flex" alignItems="center" gap={2} mb={3}>
-        <Button
-          variant="text"
-          startIcon={<ArrowBackIcon />}
-          onClick={handleCancel}
-        >
-          Back
-        </Button>
-        <Typography variant="h4" component="h1">
-          Edit Resource
-        </Typography>
-      </Box>
-
+    <Box>
       {/* Form */}
       <ResourceForm
         companyId={companyId}
