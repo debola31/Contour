@@ -33,7 +33,6 @@ import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-communi
 import type {
   ColDef,
   GridReadyEvent,
-  RowClickedEvent,
   SelectionChangedEvent,
   SortChangedEvent,
   ICellRendererParams,
@@ -232,12 +231,6 @@ export default function OperationsPage() {
   }, [groupsLoading, groups.length]);
 
   // Operation handlers
-  const handleOperationRowClick = (event: RowClickedEvent<OperationWithGroup>) => {
-    if (event.data?.id) {
-      router.push(`/dashboard/${companyId}/operations/${event.data.id}/edit`);
-    }
-  };
-
   const handleOperationsGridReady = (event: GridReadyEvent<OperationWithGroup>) => {
     event.api.applyColumnState({
       state: [{ colId: 'name', sort: 'asc' }],
@@ -264,6 +257,11 @@ export default function OperationsPage() {
       .map((node) => node.data?.id)
       .filter((id): id is string => id !== undefined);
     setSelectedOperationIds(selectedData);
+  };
+
+  const handleEditOperation = (e: React.MouseEvent, operation: OperationWithGroup) => {
+    e.stopPropagation();
+    router.push(`/dashboard/${companyId}/operations/${operation.id}/edit`);
   };
 
   const handleDeleteOperation = (e: React.MouseEvent, operation: OperationWithGroup) => {
@@ -376,7 +374,12 @@ export default function OperationsPage() {
 
   // Operations columns
   const operationsColumnDefs: ColDef<OperationWithGroup>[] = [
-    { field: 'name', headerName: 'Name', flex: 2, minWidth: 200 },
+    {
+      field: 'name',
+      headerName: 'Name',
+      flex: 2,
+      minWidth: 200,
+    },
     {
       colId: 'resource_group',
       headerName: 'Resource Group',
@@ -393,20 +396,31 @@ export default function OperationsPage() {
     {
       colId: 'actions',
       headerName: '',
-      width: 60,
+      width: 100,
       sortable: false,
       cellRenderer: (params: ICellRendererParams<OperationWithGroup>) => {
         if (!params.data) return null;
         return (
-          <Tooltip title="Delete">
-            <IconButton
-              size="small"
-              onClick={(e) => handleDeleteOperation(e, params.data!)}
-              sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={(e) => handleEditOperation(e, params.data!)}
+                sx={{ color: 'text.secondary' }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                onClick={(e) => handleDeleteOperation(e, params.data!)}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
         );
       },
     },
@@ -587,7 +601,6 @@ export default function OperationsPage() {
                 suppressPaginationPanel={false}
                 domLayout="normal"
                 onSortChanged={handleOperationsSortChanged}
-                onRowClicked={handleOperationRowClick}
                 onGridReady={handleOperationsGridReady}
                 loading={operationsLoading}
                 suppressCellFocus={true}

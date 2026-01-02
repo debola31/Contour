@@ -22,6 +22,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import CategoryIcon from '@mui/icons-material/Category';
 
 import { AgGridReact } from 'ag-grid-react';
@@ -29,7 +30,6 @@ import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-communi
 import type {
   ColDef,
   GridReadyEvent,
-  RowClickedEvent,
   SelectionChangedEvent,
   SortChangedEvent,
   ICellRendererParams,
@@ -151,12 +151,6 @@ export default function PartsPage() {
     return Math.max(headerHeight + rowHeight * displayedRows + paginationHeight, 400);
   }, [loading, parts.length]);
 
-  const handleRowClick = (event: RowClickedEvent<Part>) => {
-    if (event.data?.id) {
-      router.push(`/dashboard/${companyId}/parts/${event.data.id}`);
-    }
-  };
-
   const handleGridReady = (event: GridReadyEvent<Part>) => {
     event.api.applyColumnState({
       state: [{ colId: 'part_number', sort: 'asc' }],
@@ -184,6 +178,11 @@ export default function PartsPage() {
       .map((node) => node.data?.id)
       .filter((id): id is string => id !== undefined);
     setSelectedIds(selectedData);
+  };
+
+  const handleEditPart = (e: React.MouseEvent, part: Part) => {
+    e.stopPropagation();
+    router.push(`/dashboard/${companyId}/parts/${part.id}`);
   };
 
   const handleDeleteClick = (e: React.MouseEvent, part: Part) => {
@@ -298,20 +297,31 @@ export default function PartsPage() {
     {
       colId: 'actions',
       headerName: '',
-      width: 60,
+      width: 100,
       sortable: false,
       cellRenderer: (params: ICellRendererParams<Part>) => {
         if (!params.data) return null;
         return (
-          <Tooltip title="Delete">
-            <IconButton
-              size="small"
-              onClick={(e) => handleDeleteClick(e, params.data!)}
-              sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={(e) => handleEditPart(e, params.data!)}
+                sx={{ color: 'text.secondary' }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                onClick={(e) => handleDeleteClick(e, params.data!)}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
         );
       },
     },
@@ -452,7 +462,6 @@ export default function PartsPage() {
               suppressPaginationPanel={false}
               domLayout="normal"
               onSortChanged={handleSortChanged}
-              onRowClicked={handleRowClick}
               onGridReady={handleGridReady}
               loading={loading}
               suppressCellFocus={true}
