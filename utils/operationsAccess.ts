@@ -161,6 +161,62 @@ export async function getResourceGroupOperationCount(groupId: string): Promise<n
   return count || 0;
 }
 
+export interface ResourceGroupWithCount extends ResourceGroup {
+  operation_count: number;
+}
+
+/**
+ * Get all resource groups with their operation counts
+ */
+export async function getResourceGroupsWithCounts(
+  companyId: string
+): Promise<ResourceGroupWithCount[]> {
+  const supabase = getSupabase();
+
+  // Get all groups
+  const { data: groups, error: groupsError } = await supabase
+    .from('resource_groups')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (groupsError) {
+    console.error('Error fetching resource groups:', groupsError);
+    throw groupsError;
+  }
+
+  if (!groups || groups.length === 0) {
+    return [];
+  }
+
+  // Get operation counts per group
+  const { data: counts, error: countsError } = await supabase
+    .from('operation_types')
+    .select('resource_group_id')
+    .eq('company_id', companyId)
+    .not('resource_group_id', 'is', null);
+
+  if (countsError) {
+    console.error('Error fetching operation counts:', countsError);
+    // Return groups without counts on error
+    return groups.map((g: ResourceGroup) => ({ ...g, operation_count: 0 }));
+  }
+
+  // Count operations per group
+  const countMap: Record<string, number> = {};
+  for (const op of counts || []) {
+    if (op.resource_group_id) {
+      countMap[op.resource_group_id] = (countMap[op.resource_group_id] || 0) + 1;
+    }
+  }
+
+  return groups.map((g: ResourceGroup) => ({
+    ...g,
+    operation_count: countMap[g.id] || 0,
+  }));
+}
+
 // ============== Operations ==============
 
 /**

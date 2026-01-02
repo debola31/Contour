@@ -18,11 +18,15 @@ import DialogActions from '@mui/material/DialogActions';
 import Tooltip from '@mui/material/Tooltip';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import BuildIcon from '@mui/icons-material/Build';
+import FolderIcon from '@mui/icons-material/Folder';
+import EditIcon from '@mui/icons-material/Edit';
 
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community';
@@ -61,29 +65,58 @@ const jiggedDarkTheme = themeQuartz.withParams({
   iconSize: 20,
 });
 
-import { getAllOperations, deleteOperation, bulkDeleteOperations } from '@/utils/operationsAccess';
+import {
+  getAllOperations,
+  deleteOperation,
+  bulkDeleteOperations,
+  getResourceGroupsWithCounts,
+  deleteResourceGroup,
+  type ResourceGroupWithCount,
+} from '@/utils/operationsAccess';
 import ResourceGroupModal from '@/components/operations/ResourceGroupModal';
 import type { OperationWithGroup, ResourceGroup } from '@/types/operations';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel({ children, value, index, ...other }: TabPanelProps) {
+  return (
+    <div role="tabpanel" hidden={value !== index} id={`tabpanel-${index}`} {...other}>
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
 
 export default function OperationsPage() {
   const router = useRouter();
   const params = useParams();
   const companyId = params.companyId as string;
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Operations state
   const [operations, setOperations] = useState<OperationWithGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [searchDebounced, setSearchDebounced] = useState('');
-  const [sortModel, setSortModel] = useState<{ field: string; sort: 'asc' | 'desc' }>({
+  const [operationsLoading, setOperationsLoading] = useState(true);
+  const [operationsSearch, setOperationsSearch] = useState('');
+  const [operationsSearchDebounced, setOperationsSearchDebounced] = useState('');
+  const [operationsSortModel, setOperationsSortModel] = useState<{ field: string; sort: 'asc' | 'desc' }>({
     field: 'name',
     sort: 'asc',
   });
+  const [selectedOperationIds, setSelectedOperationIds] = useState<string[]>([]);
+  const operationsGridRef = useRef<AgGridReact<OperationWithGroup>>(null);
 
-  // Selection state
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-  // Grid ref for API access
-  const gridRef = useRef<AgGridReact<OperationWithGroup>>(null);
+  // Groups state
+  const [groups, setGroups] = useState<ResourceGroupWithCount[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [groupsSearch, setGroupsSearch] = useState('');
+  const [groupsSearchDebounced, setGroupsSearchDebounced] = useState('');
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const groupsGridRef = useRef<AgGridReact<ResourceGroupWithCount>>(null);
 
   // Group modal state
   const [groupModalOpen, setGroupModalOpen] = useState(false);
@@ -92,10 +125,12 @@ export default function OperationsPage() {
   // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    type: 'single' | 'bulk';
-    operationId?: string;
-    operationName?: string;
-  }>({ open: false, type: 'single' });
+    type: 'operation' | 'operations' | 'group' | 'groups';
+    id?: string;
+    name?: string;
+    count?: number;
+    operationCount?: number;
+  }>({ open: false, type: 'operation' });
   const [deleting, setDeleting] = useState(false);
 
   // Snackbar for errors
@@ -109,127 +144,178 @@ export default function OperationsPage() {
     severity: 'error',
   });
 
-  // Debounce search input
+  // Debounce operations search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSearchDebounced(search);
+      setOperationsSearchDebounced(operationsSearch);
     }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [operationsSearch]);
+
+  // Debounce groups search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setGroupsSearchDebounced(groupsSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [groupsSearch]);
 
   // Fetch operations
   const fetchOperations = useCallback(async () => {
-    setLoading(true);
+    setOperationsLoading(true);
     try {
-      const data = await getAllOperations(companyId, searchDebounced, sortModel.field, sortModel.sort);
+      const data = await getAllOperations(
+        companyId,
+        operationsSearchDebounced,
+        operationsSortModel.field,
+        operationsSortModel.sort
+      );
       setOperations(data);
     } catch (error) {
       console.error('Error fetching operations:', error);
     } finally {
-      setLoading(false);
+      setOperationsLoading(false);
     }
-  }, [companyId, searchDebounced, sortModel]);
+  }, [companyId, operationsSearchDebounced, operationsSortModel]);
+
+  // Fetch groups
+  const fetchGroups = useCallback(async () => {
+    setGroupsLoading(true);
+    try {
+      let data = await getResourceGroupsWithCounts(companyId);
+      if (groupsSearchDebounced) {
+        const searchLower = groupsSearchDebounced.toLowerCase();
+        data = data.filter((g) => g.name.toLowerCase().includes(searchLower));
+      }
+      setGroups(data);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    } finally {
+      setGroupsLoading(false);
+    }
+  }, [companyId, groupsSearchDebounced]);
 
   useEffect(() => {
     fetchOperations();
   }, [fetchOperations]);
 
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
+
   // Clear selection when search changes
   useEffect(() => {
-    setSelectedIds([]);
-    if (gridRef.current?.api) {
-      gridRef.current.api.deselectAll();
+    setSelectedOperationIds([]);
+    if (operationsGridRef.current?.api) {
+      operationsGridRef.current.api.deselectAll();
     }
-  }, [searchDebounced]);
+  }, [operationsSearchDebounced]);
 
-  // Calculate grid height dynamically
-  const gridHeight = useMemo(() => {
-    if (loading || operations.length === 0) return 600;
+  useEffect(() => {
+    setSelectedGroupIds([]);
+    if (groupsGridRef.current?.api) {
+      groupsGridRef.current.api.deselectAll();
+    }
+  }, [groupsSearchDebounced]);
 
-    const headerHeight = 56;
-    const rowHeight = 52;
-    const paginationHeight = 56;
+  // Calculate grid heights
+  const operationsGridHeight = useMemo(() => {
+    if (operationsLoading || operations.length === 0) return 600;
     const displayedRows = Math.min(operations.length, 25);
+    return Math.max(56 + 52 * displayedRows + 56, 400);
+  }, [operationsLoading, operations.length]);
 
-    return Math.max(headerHeight + rowHeight * displayedRows + paginationHeight, 400);
-  }, [loading, operations.length]);
+  const groupsGridHeight = useMemo(() => {
+    if (groupsLoading || groups.length === 0) return 400;
+    const displayedRows = Math.min(groups.length, 25);
+    return Math.max(56 + 52 * displayedRows + 56, 300);
+  }, [groupsLoading, groups.length]);
 
-  const handleRowClick = (event: RowClickedEvent<OperationWithGroup>) => {
+  // Operation handlers
+  const handleOperationRowClick = (event: RowClickedEvent<OperationWithGroup>) => {
     if (event.data?.id) {
       router.push(`/dashboard/${companyId}/operations/${event.data.id}/edit`);
     }
   };
 
-  const handleGridReady = (event: GridReadyEvent<OperationWithGroup>) => {
+  const handleOperationsGridReady = (event: GridReadyEvent<OperationWithGroup>) => {
     event.api.applyColumnState({
       state: [{ colId: 'name', sort: 'asc' }],
       defaultState: { sort: null },
     });
   };
 
-  const handleSortChanged = (event: SortChangedEvent) => {
+  const handleOperationsSortChanged = (event: SortChangedEvent) => {
     const columnState = event.api.getColumnState();
     const sortedColumn = columnState.find((col) => col.sort !== null);
-
     if (sortedColumn && sortedColumn.sort) {
-      setSortModel({
+      setOperationsSortModel({
         field: sortedColumn.colId || 'name',
         sort: sortedColumn.sort as 'asc' | 'desc',
       });
     } else {
-      setSortModel({ field: 'name', sort: 'asc' });
+      setOperationsSortModel({ field: 'name', sort: 'asc' });
     }
   };
 
-  const handleSelectionChanged = (event: SelectionChangedEvent<OperationWithGroup>) => {
+  const handleOperationsSelectionChanged = (event: SelectionChangedEvent<OperationWithGroup>) => {
     const selectedNodes = event.api.getSelectedNodes();
     const selectedData = selectedNodes
       .map((node) => node.data?.id)
       .filter((id): id is string => id !== undefined);
-    setSelectedIds(selectedData);
+    setSelectedOperationIds(selectedData);
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, operation: OperationWithGroup) => {
+  const handleDeleteOperation = (e: React.MouseEvent, operation: OperationWithGroup) => {
     e.stopPropagation();
     setDeleteDialog({
       open: true,
-      type: 'single',
-      operationId: operation.id,
-      operationName: operation.name,
+      type: 'operation',
+      id: operation.id,
+      name: operation.name,
     });
   };
 
-  const handleBulkDeleteClick = () => {
+  const handleBulkDeleteOperations = () => {
     setDeleteDialog({
       open: true,
-      type: 'bulk',
+      type: 'operations',
+      count: selectedOperationIds.length,
     });
   };
 
-  const handleDeleteConfirm = async () => {
-    setDeleting(true);
-    try {
-      if (deleteDialog.type === 'single' && deleteDialog.operationId) {
-        await deleteOperation(deleteDialog.operationId);
-      } else if (deleteDialog.type === 'bulk') {
-        await bulkDeleteOperations(selectedIds as string[]);
-        setSelectedIds([]);
-        if (gridRef.current?.api) {
-          gridRef.current.api.deselectAll();
-        }
-      }
-      await fetchOperations();
-      setDeleteDialog({ open: false, type: 'single' });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error instanceof Error ? error.message : 'An error occurred',
-        severity: 'error',
-      });
-      setDeleteDialog({ open: false, type: 'single' });
-    } finally {
-      setDeleting(false);
-    }
+  // Group handlers
+  const handleGroupsSelectionChanged = (event: SelectionChangedEvent<ResourceGroupWithCount>) => {
+    const selectedNodes = event.api.getSelectedNodes();
+    const selectedData = selectedNodes
+      .map((node) => node.data?.id)
+      .filter((id): id is string => id !== undefined);
+    setSelectedGroupIds(selectedData);
+  };
+
+  const handleEditGroup = (e: React.MouseEvent, group: ResourceGroupWithCount) => {
+    e.stopPropagation();
+    setEditingGroup(group);
+    setGroupModalOpen(true);
+  };
+
+  const handleDeleteGroup = (e: React.MouseEvent, group: ResourceGroupWithCount) => {
+    e.stopPropagation();
+    setDeleteDialog({
+      open: true,
+      type: 'group',
+      id: group.id,
+      name: group.name,
+      operationCount: group.operation_count,
+    });
+  };
+
+  const handleBulkDeleteGroups = () => {
+    setDeleteDialog({
+      open: true,
+      type: 'groups',
+      count: selectedGroupIds.length,
+    });
   };
 
   const handleCreateGroup = () => {
@@ -240,38 +326,70 @@ export default function OperationsPage() {
   const handleGroupSaved = () => {
     setGroupModalOpen(false);
     setEditingGroup(null);
-    fetchOperations(); // Refresh to show updated group names
+    fetchGroups();
+    fetchOperations();
   };
 
-  const columnDefs: ColDef<OperationWithGroup>[] = [
-    {
-      field: 'name',
-      headerName: 'Name',
-      flex: 2,
-      minWidth: 200,
-    },
-    {
-      field: 'code',
-      headerName: 'Code',
-      width: 120,
-      valueFormatter: (params) => params.value ?? '—',
-    },
+  // Delete confirmation
+  const handleDeleteConfirm = async () => {
+    setDeleting(true);
+    try {
+      if (deleteDialog.type === 'operation' && deleteDialog.id) {
+        await deleteOperation(deleteDialog.id);
+        await fetchOperations();
+        await fetchGroups();
+      } else if (deleteDialog.type === 'operations') {
+        await bulkDeleteOperations(selectedOperationIds);
+        setSelectedOperationIds([]);
+        if (operationsGridRef.current?.api) {
+          operationsGridRef.current.api.deselectAll();
+        }
+        await fetchOperations();
+        await fetchGroups();
+      } else if (deleteDialog.type === 'group' && deleteDialog.id) {
+        await deleteResourceGroup(deleteDialog.id);
+        await fetchGroups();
+        await fetchOperations();
+      } else if (deleteDialog.type === 'groups') {
+        for (const id of selectedGroupIds) {
+          await deleteResourceGroup(id);
+        }
+        setSelectedGroupIds([]);
+        if (groupsGridRef.current?.api) {
+          groupsGridRef.current.api.deselectAll();
+        }
+        await fetchGroups();
+        await fetchOperations();
+      }
+      setDeleteDialog({ open: false, type: 'operation' });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'An error occurred',
+        severity: 'error',
+      });
+      setDeleteDialog({ open: false, type: 'operation' });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Operations columns
+  const operationsColumnDefs: ColDef<OperationWithGroup>[] = [
+    { field: 'name', headerName: 'Name', flex: 2, minWidth: 200 },
+    { field: 'code', headerName: 'Code', width: 120, valueFormatter: (p) => p.value ?? '—' },
     {
       colId: 'resource_group',
       headerName: 'Resource Group',
       flex: 1,
       minWidth: 150,
-      valueGetter: (params) => {
-        if (!params.data) return '—';
-        return params.data.resource_group?.name ?? 'Ungrouped';
-      },
+      valueGetter: (p) => (p.data ? p.data.resource_group?.name ?? 'Ungrouped' : '—'),
     },
     {
       field: 'labor_rate',
       headerName: 'Labor Rate',
       width: 150,
-      valueFormatter: (params) =>
-        params.value != null ? `$${Number(params.value).toFixed(2)}/hr` : '—',
+      valueFormatter: (p) => (p.value != null ? `$${Number(p.value).toFixed(2)}/hr` : '—'),
     },
     {
       colId: 'actions',
@@ -284,7 +402,7 @@ export default function OperationsPage() {
           <Tooltip title="Delete">
             <IconButton
               size="small"
-              onClick={(e) => handleDeleteClick(e, params.data!)}
+              onClick={(e) => handleDeleteOperation(e, params.data!)}
               sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
             >
               <DeleteIcon fontSize="small" />
@@ -295,157 +413,290 @@ export default function OperationsPage() {
     },
   ];
 
+  // Groups columns
+  const groupsColumnDefs: ColDef<ResourceGroupWithCount>[] = [
+    { field: 'name', headerName: 'Name', flex: 2, minWidth: 200 },
+    { field: 'description', headerName: 'Description', flex: 2, minWidth: 200, valueFormatter: (p) => p.value ?? '—' },
+    { field: 'operation_count', headerName: 'Operations', width: 120 },
+    { field: 'display_order', headerName: 'Order', width: 100 },
+    {
+      colId: 'actions',
+      headerName: '',
+      width: 100,
+      sortable: false,
+      cellRenderer: (params: ICellRendererParams<ResourceGroupWithCount>) => {
+        if (!params.data) return null;
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={(e) => handleEditGroup(e, params.data!)}
+                sx={{ color: 'text.secondary' }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                onClick={(e) => handleDeleteGroup(e, params.data!)}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        );
+      },
+    },
+  ];
+
+  const getDeleteDialogContent = () => {
+    switch (deleteDialog.type) {
+      case 'operation':
+        return `Are you sure you want to delete "${deleteDialog.name}"?`;
+      case 'operations':
+        return `Are you sure you want to delete ${deleteDialog.count} operation${(deleteDialog.count ?? 0) > 1 ? 's' : ''}?`;
+      case 'group':
+        return deleteDialog.operationCount
+          ? `Delete "${deleteDialog.name}"? ${deleteDialog.operationCount} operation(s) will become ungrouped.`
+          : `Are you sure you want to delete "${deleteDialog.name}"?`;
+      case 'groups':
+        return `Are you sure you want to delete ${deleteDialog.count} group${(deleteDialog.count ?? 0) > 1 ? 's' : ''}?`;
+      default:
+        return '';
+    }
+  };
+
   return (
     <Box>
-      {/* Toolbar */}
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 2,
-          mb: 3,
-          flexWrap: 'wrap',
-          alignItems: 'center',
-        }}
-      >
-        <TextField
-          placeholder="Search operations..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          size="small"
-          sx={{ width: 300 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: 'text.secondary' }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
-
-        {/* Bulk delete button - shows when items selected */}
-        {selectedIds.length > 0 && (
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={handleBulkDeleteClick}
-          >
-            Delete ({selectedIds.length})
-          </Button>
-        )}
-
-        <Box sx={{ flex: 1 }} />
-
-        <Button
-          variant="outlined"
-          startIcon={<UploadIcon />}
-          onClick={() => router.push(`/dashboard/${companyId}/operations/import`)}
-        >
-          Import
-        </Button>
-
-        <Button variant="outlined" onClick={handleCreateGroup}>
-          + New Group
-        </Button>
-
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => router.push(`/dashboard/${companyId}/operations/new`)}
-        >
-          New Operation
-        </Button>
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 0 }}>
+        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+          <Tab label="Operations" icon={<BuildIcon />} iconPosition="start" />
+          <Tab label="Resource Groups" icon={<FolderIcon />} iconPosition="start" />
+        </Tabs>
       </Box>
 
-      {/* Data Grid or Empty State */}
-      {!loading && operations.length === 0 ? (
-        <Card elevation={2}>
-          <CardContent sx={{ p: 6, textAlign: 'center' }}>
-            <BuildIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No operations yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {searchDebounced
-                ? 'No operations match your search.'
-                : 'Create your first operation or import from CSV.'}
-            </Typography>
-            {!searchDebounced && (
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<UploadIcon />}
-                  onClick={() => router.push(`/dashboard/${companyId}/operations/import`)}
-                >
-                  Import CSV
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => router.push(`/dashboard/${companyId}/operations/new`)}
-                >
-                  Add Operation
-                </Button>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <Card elevation={2} sx={{ position: 'relative', minHeight: 600 }}>
-          <Box
-            sx={{
-              width: '100%',
-              height: gridHeight,
-              minHeight: 500,
-              '& .ag-root-wrapper': {
-                border: 'none',
-              },
-              '& .ag-row': {
-                cursor: 'pointer',
-              },
-              '& .ag-cell:focus, & .ag-header-cell:focus': {
-                outline: 'none !important',
-                border: 'none !important',
+      {/* Operations Tab */}
+      <TabPanel value={activeTab} index={0}>
+        {/* Toolbar */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+          <TextField
+            placeholder="Search operations..."
+            value={operationsSearch}
+            onChange={(e) => setOperationsSearch(e.target.value)}
+            size="small"
+            sx={{ width: 300 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
               },
             }}
+          />
+
+          {selectedOperationIds.length > 0 && (
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={handleBulkDeleteOperations}
+            >
+              Delete ({selectedOperationIds.length})
+            </Button>
+          )}
+
+          <Box sx={{ flex: 1 }} />
+
+          <Button
+            variant="outlined"
+            startIcon={<UploadIcon />}
+            onClick={() => router.push(`/dashboard/${companyId}/operations/import`)}
           >
-            <AgGridReact<OperationWithGroup>
-              ref={gridRef}
-              rowData={operations}
-              columnDefs={columnDefs}
-              theme={jiggedDarkTheme}
-              defaultColDef={{
-                sortable: true,
-                resizable: true,
+            Import
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => router.push(`/dashboard/${companyId}/operations/new`)}
+          >
+            New Operation
+          </Button>
+        </Box>
+
+        {/* Grid or Empty State */}
+        {!operationsLoading && operations.length === 0 ? (
+          <Card elevation={2}>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              <BuildIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No operations yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {operationsSearchDebounced
+                  ? 'No operations match your search.'
+                  : 'Create your first operation or import from CSV.'}
+              </Typography>
+              {!operationsSearchDebounced && (
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<UploadIcon />}
+                    onClick={() => router.push(`/dashboard/${companyId}/operations/import`)}
+                  >
+                    Import CSV
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => router.push(`/dashboard/${companyId}/operations/new`)}
+                  >
+                    Add Operation
+                  </Button>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card elevation={2} sx={{ position: 'relative', minHeight: 600 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: operationsGridHeight,
+                minHeight: 500,
+                '& .ag-root-wrapper': { border: 'none' },
+                '& .ag-row': { cursor: 'pointer' },
+                '& .ag-cell:focus, & .ag-header-cell:focus': { outline: 'none !important', border: 'none !important' },
               }}
-              rowSelection={{
-                mode: 'multiRow',
-                checkboxes: true,
-                headerCheckbox: true,
-                enableClickSelection: false,
-                selectAll: 'all',
+            >
+              <AgGridReact<OperationWithGroup>
+                ref={operationsGridRef}
+                rowData={operations}
+                columnDefs={operationsColumnDefs}
+                theme={jiggedDarkTheme}
+                defaultColDef={{ sortable: true, resizable: true }}
+                rowSelection={{ mode: 'multiRow', checkboxes: true, headerCheckbox: true, enableClickSelection: false, selectAll: 'all' }}
+                onSelectionChanged={handleOperationsSelectionChanged}
+                pagination={true}
+                paginationPageSize={25}
+                paginationPageSizeSelector={[25, 50, 100]}
+                suppressPaginationPanel={false}
+                domLayout="normal"
+                onSortChanged={handleOperationsSortChanged}
+                onRowClicked={handleOperationRowClick}
+                onGridReady={handleOperationsGridReady}
+                loading={operationsLoading}
+                suppressCellFocus={true}
+                suppressMenuHide={false}
+                getRowId={(params) => params.data.id}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+              />
+            </Box>
+          </Card>
+        )}
+      </TabPanel>
+
+      {/* Resource Groups Tab */}
+      <TabPanel value={activeTab} index={1}>
+        {/* Toolbar */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+          <TextField
+            placeholder="Search groups..."
+            value={groupsSearch}
+            onChange={(e) => setGroupsSearch(e.target.value)}
+            size="small"
+            sx={{ width: 300 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {selectedGroupIds.length > 0 && (
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={handleBulkDeleteGroups}
+            >
+              Delete ({selectedGroupIds.length})
+            </Button>
+          )}
+
+          <Box sx={{ flex: 1 }} />
+
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateGroup}>
+            New Group
+          </Button>
+        </Box>
+
+        {/* Grid or Empty State */}
+        {!groupsLoading && groups.length === 0 ? (
+          <Card elevation={2}>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              <FolderIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No resource groups yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {groupsSearchDebounced
+                  ? 'No groups match your search.'
+                  : 'Create groups to organize your operations.'}
+              </Typography>
+              {!groupsSearchDebounced && (
+                <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateGroup}>
+                  Create Group
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card elevation={2} sx={{ position: 'relative' }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: groupsGridHeight,
+                minHeight: 300,
+                '& .ag-root-wrapper': { border: 'none' },
+                '& .ag-cell:focus, & .ag-header-cell:focus': { outline: 'none !important', border: 'none !important' },
               }}
-              onSelectionChanged={handleSelectionChanged}
-              pagination={true}
-              paginationPageSize={25}
-              paginationPageSizeSelector={[25, 50, 100]}
-              suppressPaginationPanel={false}
-              domLayout="normal"
-              onSortChanged={handleSortChanged}
-              onRowClicked={handleRowClick}
-              onGridReady={handleGridReady}
-              loading={loading}
-              suppressCellFocus={true}
-              suppressMenuHide={false}
-              getRowId={(params) => params.data.id}
-              enableCellTextSelection={true}
-              ensureDomOrder={true}
-            />
-          </Box>
-        </Card>
-      )}
+            >
+              <AgGridReact<ResourceGroupWithCount>
+                ref={groupsGridRef}
+                rowData={groups}
+                columnDefs={groupsColumnDefs}
+                theme={jiggedDarkTheme}
+                defaultColDef={{ sortable: true, resizable: true }}
+                rowSelection={{ mode: 'multiRow', checkboxes: true, headerCheckbox: true, enableClickSelection: false, selectAll: 'all' }}
+                onSelectionChanged={handleGroupsSelectionChanged}
+                pagination={true}
+                paginationPageSize={25}
+                paginationPageSizeSelector={[25, 50, 100]}
+                suppressPaginationPanel={false}
+                domLayout="normal"
+                loading={groupsLoading}
+                suppressCellFocus={true}
+                suppressMenuHide={false}
+                getRowId={(params) => params.data.id}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+              />
+            </Box>
+          </Card>
+        )}
+      </TabPanel>
 
       {/* Resource Group Modal */}
       <ResourceGroupModal
@@ -459,26 +710,18 @@ export default function OperationsPage() {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialog.open}
-        onClose={() => !deleting && setDeleteDialog({ open: false, type: 'single' })}
+        onClose={() => !deleting && setDeleteDialog({ open: false, type: 'operation' })}
         maxWidth="xs"
         fullWidth
       >
         <DialogTitle sx={{ pb: 2 }}>
-          {deleteDialog.type === 'single' ? 'Delete Operation' : 'Delete Operations'}
+          {deleteDialog.type === 'operation' || deleteDialog.type === 'operations' ? 'Delete Operation' : 'Delete Group'}
+          {(deleteDialog.type === 'operations' || deleteDialog.type === 'groups') && 's'}
         </DialogTitle>
         <DialogContent sx={{ pt: 0 }}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body1" sx={{ mb: 1 }}>
-              {deleteDialog.type === 'single' ? (
-                <>
-                  Are you sure you want to delete <strong>{deleteDialog.operationName}</strong>?
-                </>
-              ) : (
-                <>
-                  Are you sure you want to delete <strong>{selectedIds.length}</strong> operation
-                  {selectedIds.length > 1 ? 's' : ''}?
-                </>
-              )}
+              {getDeleteDialogContent()}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               This action cannot be undone.
@@ -487,7 +730,7 @@ export default function OperationsPage() {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button
-            onClick={() => setDeleteDialog({ open: false, type: 'single' })}
+            onClick={() => setDeleteDialog({ open: false, type: 'operation' })}
             disabled={deleting}
             color="inherit"
             size="large"
