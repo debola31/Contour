@@ -312,6 +312,15 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
                 helperText={fieldErrors.customer_id}
               />
             )}
+            slotProps={{
+              paper: {
+                sx: {
+                  bgcolor: '#1a1f4a',
+                  backgroundImage: 'none',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                },
+              },
+            }}
             fullWidth
           />
         </CardContent>
@@ -370,6 +379,15 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
                     }
                   />
                 )}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      bgcolor: '#1a1f4a',
+                      backgroundImage: 'none',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                    },
+                  },
+                }}
                 fullWidth
               />
 

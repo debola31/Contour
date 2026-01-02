@@ -74,6 +74,7 @@ import {
 } from '@/utils/quotesAccess';
 import { getAllCustomers } from '@/utils/customerAccess';
 import QuoteStatusChip from '@/components/quotes/QuoteStatusChip';
+import SearchableSelect, { type SelectOption } from '@/components/common/SearchableSelect';
 import type { QuoteWithRelations, QuoteStatus, QuoteFilters } from '@/types/quote';
 import type { Customer } from '@/types/customer';
 
@@ -428,21 +429,21 @@ export default function QuotesPage() {
           </Select>
         </FormControl>
 
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Customer</InputLabel>
-          <Select
+        <Box sx={{ minWidth: 220 }}>
+          <SearchableSelect
+            options={customers.map((c): SelectOption => ({
+              id: c.id,
+              label: c.name,
+              secondaryLabel: c.customer_code,
+            }))}
             value={customerFilter}
+            onChange={setCustomerFilter}
             label="Customer"
-            onChange={(e) => setCustomerFilter(e.target.value)}
-          >
-            <MenuItem value="">All Customers</MenuItem>
-            {customers.map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            allowNone
+            noneLabel="All Customers"
+            size="small"
+          />
+        </Box>
 
         {/* Delete button when items selected */}
         {selectedIds.length > 0 && (
