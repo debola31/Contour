@@ -17,17 +17,17 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Grid from '@mui/material/Grid';
 import Autocomplete from '@mui/material/Autocomplete';
-import FormControl from '@mui/material/FormControl';
-import FormLabel from '@mui/material/FormLabel';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
 import InputAdornment from '@mui/material/InputAdornment';
 import type { QuoteFormData } from '@/types/quote';
 import { calculateUnitPrice, calculateTotalPrice } from '@/types/quote';
 import type { PricingTier } from '@/types/part';
 import { createQuote, updateQuote, deleteQuote, getCustomerParts } from '@/utils/quotesAccess';
 import { getAllCustomers } from '@/utils/customerAccess';
+import CustomerFormModal from '@/components/customers/CustomerFormModal';
+import PartFormModal from '@/components/parts/PartFormModal';
+import type { Customer } from '@/types/customer';
+import type { Part } from '@/types/part';
+import AddIcon from '@mui/icons-material/Add';
 
 interface QuoteFormProps {
   mode: 'create' | 'edit';
@@ -39,6 +39,7 @@ interface CustomerOption {
   id: string;
   name: string;
   customer_code: string;
+  isCreateNew?: boolean;
 }
 
 interface PartOption {
@@ -46,7 +47,24 @@ interface PartOption {
   part_number: string;
   description: string | null;
   pricing: PricingTier[];
+  isCreateNew?: boolean;
 }
+
+// Special option for "Create New" in dropdowns
+const CREATE_NEW_CUSTOMER: CustomerOption = {
+  id: '__create_new__',
+  name: '+ Create New Customer',
+  customer_code: '',
+  isCreateNew: true,
+};
+
+const CREATE_NEW_PART: PartOption = {
+  id: '__create_new__',
+  part_number: '+ Create New Part',
+  description: null,
+  pricing: [],
+  isCreateNew: true,
+};
 
 export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps) {
   const router = useRouter();
@@ -58,6 +76,10 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Modal states for quick create
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [partModalOpen, setPartModalOpen] = useState(false);
 
   // Dropdown options
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
@@ -162,6 +184,11 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
     };
 
   const handleCustomerChange = (_: unknown, value: CustomerOption | null) => {
+    // Check if "Create New" was selected
+    if (value?.isCreateNew) {
+      setCustomerModalOpen(true);
+      return;
+    }
     setSelectedCustomer(value);
     setSelectedPart(null);
     setFormData((prev) => ({
@@ -175,6 +202,11 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
   };
 
   const handlePartChange = (_: unknown, value: PartOption | null) => {
+    // Check if "Create New" was selected
+    if (value?.isCreateNew) {
+      setPartModalOpen(true);
+      return;
+    }
     setSelectedPart(value);
     setFormData((prev) => ({
       ...prev,
@@ -186,15 +218,42 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
     }
   };
 
-  const handlePartTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newType = e.target.value as 'existing' | 'adhoc';
+  // Handler for when a new customer is created via modal
+  const handleCustomerCreated = async (customer: Customer) => {
+    const newOption: CustomerOption = {
+      id: customer.id,
+      name: customer.name,
+      customer_code: customer.customer_code,
+    };
+    setCustomers((prev) => [...prev, newOption]);
+    setSelectedCustomer(newOption);
     setSelectedPart(null);
     setFormData((prev) => ({
       ...prev,
-      part_type: newType,
+      customer_id: customer.id,
       part_id: '',
-      part_number_text: '',
     }));
+    // Always clear the error when a customer is selected
+    setFieldErrors((prev) => ({ ...prev, customer_id: '' }));
+  };
+
+  // Handler for when a new part is created via modal
+  const handlePartCreated = async (part: Part) => {
+    const newOption: PartOption = {
+      id: part.id,
+      part_number: part.part_number,
+      description: part.description,
+      pricing: part.pricing || [],
+    };
+    setParts((prev) => [...prev, newOption]);
+    setSelectedPart(newOption);
+    setFormData((prev) => ({
+      ...prev,
+      part_id: part.id,
+      description: part.description || prev.description,
+    }));
+    // Always clear the error when a part is selected
+    setFieldErrors((prev) => ({ ...prev, part_id: '' }));
   };
 
   const validateForm = (): boolean => {
@@ -202,10 +261,6 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
 
     if (!formData.customer_id) {
       errors.customer_id = 'Customer is required';
-    }
-
-    if (formData.part_type === 'adhoc' && !formData.part_number_text.trim()) {
-      errors.part_number_text = 'Part number is required for ad-hoc parts';
     }
 
     const qty = parseInt(formData.quantity, 10);
@@ -293,16 +348,57 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
             Customer
           </Typography>
           <Autocomplete
-            options={customers}
+            options={[CREATE_NEW_CUSTOMER, ...customers]}
             getOptionLabel={(option) =>
-              option.customer_code
-                ? `${option.name} (${option.customer_code})`
-                : option.name
+              option.isCreateNew
+                ? option.name
+                : option.customer_code
+                  ? `${option.name} (${option.customer_code})`
+                  : option.name
             }
             value={selectedCustomer}
             onChange={handleCustomerChange}
             loading={loadingCustomers}
             disabled={loading}
+            filterOptions={(options, state) => {
+              // Always keep "Create New" at the top, then filter the rest
+              const createNew = options.find((o) => o.isCreateNew);
+              const filtered = options
+                .filter((o) => !o.isCreateNew)
+                .filter((o) => {
+                  const label = o.customer_code
+                    ? `${o.name} (${o.customer_code})`
+                    : o.name;
+                  return label.toLowerCase().includes(state.inputValue.toLowerCase());
+                });
+              return createNew ? [createNew, ...filtered] : filtered;
+            }}
+            renderOption={(props, option) => {
+              const { key, ...otherProps } = props;
+              if (option.isCreateNew) {
+                return (
+                  <li
+                    key={key}
+                    {...otherProps}
+                    style={{
+                      fontWeight: 600,
+                      color: '#4682B4',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+                    }}
+                  >
+                    <AddIcon sx={{ mr: 1, fontSize: 20 }} />
+                    {option.name}
+                  </li>
+                );
+              }
+              return (
+                <li key={key} {...otherProps}>
+                  {option.customer_code
+                    ? `${option.name} (${option.customer_code})`
+                    : option.name}
+                </li>
+              );
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -333,41 +429,58 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
             Part
           </Typography>
 
-          <FormControl component="fieldset" sx={{ mb: 3 }}>
-            <FormLabel component="legend">Part Type</FormLabel>
-            <RadioGroup
-              row
-              value={formData.part_type}
-              onChange={handlePartTypeChange}
-            >
-              <FormControlLabel
-                value="existing"
-                control={<Radio />}
-                label="Existing Part"
-                disabled={loading}
-              />
-              <FormControlLabel
-                value="adhoc"
-                control={<Radio />}
-                label="New/Ad-hoc Part"
-                disabled={loading}
-              />
-            </RadioGroup>
-          </FormControl>
-
-          {formData.part_type === 'existing' ? (
-            <>
-              <Autocomplete
-                options={parts}
+          <Autocomplete
+                options={formData.customer_id ? [CREATE_NEW_PART, ...parts] : parts}
                 getOptionLabel={(option) =>
-                  option.description
-                    ? `${option.part_number} - ${option.description}`
-                    : option.part_number
+                  option.isCreateNew
+                    ? option.part_number
+                    : option.description
+                      ? `${option.part_number} - ${option.description}`
+                      : option.part_number
                 }
                 value={selectedPart}
                 onChange={handlePartChange}
                 loading={loadingParts}
                 disabled={loading || !formData.customer_id}
+                filterOptions={(options, state) => {
+                  // Always keep "Create New" at the top, then filter the rest
+                  const createNew = options.find((o) => o.isCreateNew);
+                  const filtered = options
+                    .filter((o) => !o.isCreateNew)
+                    .filter((o) => {
+                      const label = o.description
+                        ? `${o.part_number} - ${o.description}`
+                        : o.part_number;
+                      return label.toLowerCase().includes(state.inputValue.toLowerCase());
+                    });
+                  return createNew ? [createNew, ...filtered] : filtered;
+                }}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  if (option.isCreateNew) {
+                    return (
+                      <li
+                        key={key}
+                        {...otherProps}
+                        style={{
+                          fontWeight: 600,
+                          color: '#4682B4',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+                        }}
+                      >
+                        <AddIcon sx={{ mr: 1, fontSize: 20 }} />
+                        {option.part_number}
+                      </li>
+                    );
+                  }
+                  return (
+                    <li key={key} {...otherProps}>
+                      {option.description
+                        ? `${option.part_number} - ${option.description}`
+                        : option.part_number}
+                    </li>
+                  );
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -414,34 +527,6 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
                     ))}
                 </Box>
               )}
-            </>
-          ) : (
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  required
-                  label="Part Number"
-                  value={formData.part_number_text}
-                  onChange={handleChange('part_number_text')}
-                  error={!!fieldErrors.part_number_text}
-                  helperText={fieldErrors.part_number_text}
-                  disabled={loading}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Description"
-                  value={formData.description}
-                  onChange={handleChange('description')}
-                  multiline
-                  rows={2}
-                  disabled={loading}
-                />
-              </Grid>
-            </Grid>
-          )}
         </CardContent>
       </Card>
 
@@ -599,6 +684,23 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Quick Create Customer Modal */}
+      <CustomerFormModal
+        open={customerModalOpen}
+        onClose={() => setCustomerModalOpen(false)}
+        onCreated={handleCustomerCreated}
+        companyId={companyId}
+      />
+
+      {/* Quick Create Part Modal */}
+      <PartFormModal
+        open={partModalOpen}
+        onClose={() => setPartModalOpen(false)}
+        onCreated={handlePartCreated}
+        companyId={companyId}
+        preselectedCustomerId={formData.customer_id}
+      />
     </Box>
   );
 }

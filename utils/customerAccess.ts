@@ -209,8 +209,6 @@ export async function createCustomer(
       company_id: companyId,
       customer_code: formData.customer_code.trim(),
       name: formData.name.trim(),
-      phone: formData.phone.trim() || null,
-      email: formData.email.trim() || null,
       website: formData.website.trim() || null,
       contact_name: formData.contact_name.trim() || null,
       contact_phone: formData.contact_phone.trim() || null,
@@ -221,7 +219,6 @@ export async function createCustomer(
       state: formData.state.trim() || null,
       postal_code: formData.postal_code.trim() || null,
       country: formData.country.trim() || 'USA',
-      notes: formData.notes.trim() || null,
     })
     .select()
     .single();
@@ -248,8 +245,6 @@ export async function updateCustomer(
     .update({
       customer_code: formData.customer_code.trim(),
       name: formData.name.trim(),
-      phone: formData.phone.trim() || null,
-      email: formData.email.trim() || null,
       website: formData.website.trim() || null,
       contact_name: formData.contact_name.trim() || null,
       contact_phone: formData.contact_phone.trim() || null,
@@ -260,7 +255,6 @@ export async function updateCustomer(
       state: formData.state.trim() || null,
       postal_code: formData.postal_code.trim() || null,
       country: formData.country.trim() || 'USA',
-      notes: formData.notes.trim() || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', customerId)
@@ -403,8 +397,6 @@ export async function bulkImportCustomers(
       company_id: companyId,
       customer_code: row.customer_code.trim(),
       name: row.name.trim(),
-      phone: row.phone?.trim() || null,
-      email: row.email?.trim() || null,
       website: row.website?.trim() || null,
       contact_name: row.contact_name?.trim() || null,
       contact_phone: row.contact_phone?.trim() || null,
@@ -415,7 +407,6 @@ export async function bulkImportCustomers(
       state: row.state?.trim() || null,
       postal_code: row.postal_code?.trim() || null,
       country: row.country?.trim() || 'USA',
-      notes: row.notes?.trim() || null,
     });
 
     if (error) {

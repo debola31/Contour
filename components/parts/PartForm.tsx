@@ -37,7 +37,9 @@ interface PartFormProps {
   initialData: PartFormData;
   partId?: string;
   part?: Part; // Full Part with relations for delete dialog
-  onSuccess?: () => void;
+  /** Optional: Pre-selected customer ID (for modal usage from QuoteForm) */
+  preselectedCustomerId?: string;
+  onSuccess?: (part?: Part) => void;
   onCancel?: () => void;
 }
 
@@ -47,6 +49,7 @@ export default function PartForm({
   initialData,
   partId,
   part,
+  preselectedCustomerId,
   onSuccess,
   onCancel,
 }: PartFormProps) {
@@ -178,6 +181,7 @@ export default function PartForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent bubbling to parent forms (e.g., QuoteForm)
     setError(null);
 
     const isValid = await validateForm();
@@ -189,14 +193,14 @@ export default function PartForm({
       if (mode === 'create') {
         const newPart = await createPart(companyId, formData);
         if (onSuccess) {
-          onSuccess();
+          onSuccess(newPart);
         } else {
           router.push(`/dashboard/${companyId}/parts/${newPart.id}`);
         }
       } else if (partId) {
-        await updatePart(partId, formData);
+        const updatedPart = await updatePart(partId, formData);
         if (onSuccess) {
-          onSuccess();
+          onSuccess(updatedPart);
         } else {
           router.push(`/dashboard/${companyId}/parts/${partId}`);
         }
