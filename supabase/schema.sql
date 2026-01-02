@@ -363,6 +363,25 @@ COMMENT ON COLUMN public.jobs.created_at
 COMMENT ON COLUMN public.jobs.updated_at
     IS 'Timestamp of last update. Auto-updated via trigger.';
 
+CREATE TABLE IF NOT EXISTS public.operation_types
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    resource_group_id uuid,
+    name text COLLATE pg_catalog."default" NOT NULL,
+    code text COLLATE pg_catalog."default",
+    labor_rate numeric(10, 2),
+    description text COLLATE pg_catalog."default",
+    metadata jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT operation_types_pkey PRIMARY KEY (id),
+    CONSTRAINT operation_types_company_id_name_key UNIQUE (company_id, name)
+);
+
+ALTER TABLE IF EXISTS public.operation_types
+    ENABLE ROW LEVEL SECURITY;
+
 CREATE TABLE IF NOT EXISTS public.parts
 (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -522,6 +541,22 @@ COMMENT ON COLUMN public.quotes.created_at
 
 COMMENT ON COLUMN public.quotes.updated_at
     IS 'Timestamp of last update. Auto-updated via trigger.';
+
+CREATE TABLE IF NOT EXISTS public.resource_groups
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    name text COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default",
+    display_order integer DEFAULT 0,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT resource_groups_pkey PRIMARY KEY (id),
+    CONSTRAINT resource_groups_company_id_name_key UNIQUE (company_id, name)
+);
+
+ALTER TABLE IF EXISTS public.resource_groups
+    ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS public.routing_operations
 (
@@ -846,6 +881,24 @@ CREATE INDEX IF NOT EXISTS idx_jobs_routing
     ON public.jobs(routing_id);
 
 
+ALTER TABLE IF EXISTS public.operation_types
+    ADD CONSTRAINT resources_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_operation_types_company
+    ON public.operation_types(company_id);
+
+
+ALTER TABLE IF EXISTS public.operation_types
+    ADD CONSTRAINT resources_resource_group_id_fkey FOREIGN KEY (resource_group_id)
+    REFERENCES public.resource_groups (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_operation_types_group
+    ON public.operation_types(resource_group_id);
+
+
 ALTER TABLE IF EXISTS public.parts
     ADD CONSTRAINT parts_company_id_fkey FOREIGN KEY (company_id)
     REFERENCES public.companies (id) MATCH SIMPLE
@@ -905,6 +958,15 @@ ALTER TABLE IF EXISTS public.quotes
     ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_quotes_routing
     ON public.quotes(routing_id);
+
+
+ALTER TABLE IF EXISTS public.resource_groups
+    ADD CONSTRAINT resource_groups_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_resource_groups_company
+    ON public.resource_groups(company_id);
 
 
 ALTER TABLE IF EXISTS public.routing_operations
