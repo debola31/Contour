@@ -1,4 +1,4 @@
-"""Pydantic models for Resources CSV import API."""
+"""Pydantic models for Operations CSV import API."""
 
 from typing import Optional
 from pydantic import BaseModel
@@ -14,16 +14,16 @@ class ColumnMapping(BaseModel):
     needs_review: bool  # True if confidence < 0.7
 
 
-class ResourceAnalyzeRequest(BaseModel):
-    """Request to analyze CSV and get mapping suggestions for resources."""
+class OperationAnalyzeRequest(BaseModel):
+    """Request to analyze CSV and get mapping suggestions for operations."""
 
     company_id: str
     headers: list[str]
     sample_rows: list[list[str]]  # First 5 rows of data
 
 
-class ResourceAnalyzeResponse(BaseModel):
-    """Response with AI-suggested column mappings for resources."""
+class OperationAnalyzeResponse(BaseModel):
+    """Response with AI-suggested column mappings for operations."""
 
     mappings: list[ColumnMapping]
     unmapped_required: list[str]  # Required DB fields with no mapping
@@ -31,18 +31,18 @@ class ResourceAnalyzeResponse(BaseModel):
     ai_provider: str  # Which AI was used
 
 
-class ResourceConflictInfo(BaseModel):
+class OperationConflictInfo(BaseModel):
     """Information about a conflicting row."""
 
     row_number: int
     csv_name: Optional[str]
     csv_resource_group: Optional[str]
     conflict_type: str  # "duplicate_name" | "csv_duplicate"
-    existing_resource_id: str  # Empty string for non-DB conflicts
+    existing_operation_id: str  # Empty string for non-DB conflicts
     existing_value: str  # Additional conflict info
 
 
-class ResourceValidationError(BaseModel):
+class OperationValidationError(BaseModel):
     """A validation error discovered during validation phase."""
 
     row_number: int
@@ -51,8 +51,8 @@ class ResourceValidationError(BaseModel):
     message: str
 
 
-class ResourceValidateRequest(BaseModel):
-    """Request to validate resources data before import."""
+class OperationValidateRequest(BaseModel):
+    """Request to validate operations data before import."""
 
     company_id: str
     mappings: dict[str, str]  # csv_column -> db_field
@@ -60,12 +60,12 @@ class ResourceValidateRequest(BaseModel):
     create_groups: bool = True  # Auto-create resource groups
 
 
-class ResourceValidateResponse(BaseModel):
-    """Response with validation results for resources."""
+class OperationValidateResponse(BaseModel):
+    """Response with validation results for operations."""
 
     has_conflicts: bool
-    conflicts: list[ResourceConflictInfo]
-    validation_errors: list[ResourceValidationError]
+    conflicts: list[OperationConflictInfo]
+    validation_errors: list[OperationValidationError]
     valid_rows_count: int
     conflict_rows_count: int
     error_rows_count: int
@@ -73,7 +73,7 @@ class ResourceValidateResponse(BaseModel):
     groups_to_create: list[str]  # New groups that will be created
 
 
-class ResourceImportError(BaseModel):
+class OperationImportError(BaseModel):
     """An error that occurred during import."""
 
     row_number: int
@@ -81,8 +81,8 @@ class ResourceImportError(BaseModel):
     data: dict[str, str]
 
 
-class ResourceExecuteRequest(BaseModel):
-    """Request to execute the resources import."""
+class OperationExecuteRequest(BaseModel):
+    """Request to execute the operations import."""
 
     company_id: str
     mappings: dict[str, str]  # csv_column -> db_field
@@ -91,22 +91,22 @@ class ResourceExecuteRequest(BaseModel):
     create_groups: bool = True  # Auto-create resource groups
 
 
-class ResourceExecuteResponse(BaseModel):
-    """Response with import results for resources."""
+class OperationExecuteResponse(BaseModel):
+    """Response with import results for operations."""
 
     success: bool
     imported_count: int
     skipped_count: int
     groups_created: int
-    errors: list[ResourceImportError]
+    errors: list[OperationImportError]
 
 
-# Target schema for resources table (for AI mapping)
-RESOURCE_SCHEMA = {
+# Target schema for operation_types table (for AI mapping)
+OPERATION_SCHEMA = {
     "name": {
         "type": "string",
         "required": True,
-        "description": "Resource/operation name (e.g., 'HURCO Mill', 'Mazak Lathe')",
+        "description": "Operation/resource name (e.g., 'HURCO Mill', 'Mazak Lathe')",
     },
     "code": {
         "type": "string",

@@ -1,5 +1,6 @@
 /**
- * Resource Group - Category for organizing resources
+ * Resource Group - Category for organizing operations
+ * NOTE: "Resource Group" terminology stays as-is per PRD
  */
 export interface ResourceGroup {
   id: string;
@@ -12,17 +13,18 @@ export interface ResourceGroup {
 }
 
 /**
- * Resource Group with nested resources (for grouped display)
+ * Resource Group with nested operations (for grouped display)
  */
-export interface ResourceGroupWithResources extends ResourceGroup {
-  resources: Resource[];
-  resource_count: number;
+export interface ResourceGroupWithOperations extends ResourceGroup {
+  operations: Operation[];
+  operation_count: number;
 }
 
 /**
- * Resource - Operation type with labor rate
+ * Operation - Operation type with labor rate
+ * NOTE: Database table is "operation_types"
  */
-export interface Resource {
+export interface Operation {
   id: string;
   company_id: string;
   resource_group_id: string | null;
@@ -36,18 +38,18 @@ export interface Resource {
 }
 
 /**
- * Resource with group info (for flat lists)
+ * Operation with group info (for flat lists with AG Grid)
  */
-export interface ResourceWithGroup extends Resource {
+export interface OperationWithGroup extends Operation {
   resource_group: { id: string; name: string } | null;
 }
 
 /**
- * Grouped response structure for main page
+ * Grouped response structure (legacy - for accordion view)
  */
-export interface ResourcesGroupedResponse {
-  groups: ResourceGroupWithResources[];
-  ungrouped: Resource[];
+export interface OperationsGroupedResponse {
+  groups: ResourceGroupWithOperations[];
+  ungrouped: Operation[];
 }
 
 /**
@@ -60,9 +62,9 @@ export interface ResourceGroupFormData {
 }
 
 /**
- * Form data for Resource create/edit
+ * Form data for Operation create/edit
  */
-export interface ResourceFormData {
+export interface OperationFormData {
   name: string;
   code: string;
   resource_group_id: string;
@@ -71,16 +73,16 @@ export interface ResourceFormData {
 }
 
 /**
- * Resource with relation counts for delete constraint checks
+ * Operation with relation counts for delete constraint checks
  */
-export interface ResourceWithRelations extends Resource {
+export interface OperationWithRelations extends Operation {
   routing_operations_count: number;
 }
 
 /**
- * Import result for resources
+ * Import result for operations
  */
-export interface ResourceImportResult {
+export interface OperationImportResult {
   imported: number;
   skipped: number;
   groups_created: number;
@@ -88,9 +90,9 @@ export interface ResourceImportResult {
 }
 
 /**
- * Empty form data for new resource
+ * Empty form data for new operation
  */
-export const EMPTY_RESOURCE_FORM: ResourceFormData = {
+export const EMPTY_OPERATION_FORM: OperationFormData = {
   name: '',
   code: '',
   resource_group_id: '',
@@ -108,15 +110,15 @@ export const EMPTY_RESOURCE_GROUP_FORM: ResourceGroupFormData = {
 };
 
 /**
- * Convert Resource entity to form data
+ * Convert Operation entity to form data
  */
-export function resourceToFormData(resource: Resource): ResourceFormData {
+export function operationToFormData(operation: Operation): OperationFormData {
   return {
-    name: resource.name,
-    code: resource.code || '',
-    resource_group_id: resource.resource_group_id || '',
-    labor_rate: resource.labor_rate !== null ? String(resource.labor_rate) : '',
-    description: resource.description || '',
+    name: operation.name,
+    code: operation.code || '',
+    resource_group_id: operation.resource_group_id || '',
+    labor_rate: operation.labor_rate !== null ? String(operation.labor_rate) : '',
+    description: operation.description || '',
   };
 }
 

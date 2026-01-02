@@ -7,45 +7,45 @@ import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ResourceForm from '@/components/resources/ResourceForm';
-import { getResource } from '@/utils/resourcesAccess';
-import { resourceToFormData, EMPTY_RESOURCE_FORM } from '@/types/resources';
-import type { ResourceFormData } from '@/types/resources';
+import OperationForm from '@/components/operations/OperationForm';
+import { getOperation } from '@/utils/operationsAccess';
+import { operationToFormData } from '@/types/operations';
+import type { OperationFormData } from '@/types/operations';
 
-export default function EditResourcePage() {
+export default function EditOperationPage() {
   const params = useParams();
   const router = useRouter();
   const companyId = params.companyId as string;
-  const resourceId = params.resourceId as string;
+  const operationId = params.operationId as string;
 
-  const [initialData, setInitialData] = useState<ResourceFormData | null>(null);
+  const [initialData, setInitialData] = useState<OperationFormData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadResource() {
+    async function loadOperation() {
       try {
-        const resource = await getResource(resourceId);
-        if (!resource) {
-          setError('Resource not found');
+        const operation = await getOperation(operationId);
+        if (!operation) {
+          setError('Operation not found');
           return;
         }
-        setInitialData(resourceToFormData(resource));
+        setInitialData(operationToFormData(operation));
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load resource');
+        setError(err instanceof Error ? err.message : 'Failed to load operation');
       } finally {
         setLoading(false);
       }
     }
-    loadResource();
-  }, [resourceId]);
+    loadOperation();
+  }, [operationId]);
 
   const handleCancel = () => {
-    router.push(`/dashboard/${companyId}/resources`);
+    router.push(`/dashboard/${companyId}/operations`);
   };
 
   const handleSaved = () => {
-    router.push(`/dashboard/${companyId}/resources`);
+    router.push(`/dashboard/${companyId}/operations`);
   };
 
   if (loading) {
@@ -59,14 +59,14 @@ export default function EditResourcePage() {
   if (error || !initialData) {
     return (
       <Box>
-        <Alert severity="error">{error || 'Resource not found'}</Alert>
+        <Alert severity="error">{error || 'Operation not found'}</Alert>
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
           onClick={handleCancel}
           sx={{ mt: 2 }}
         >
-          Back to Resources
+          Back to Operations
         </Button>
       </Box>
     );
@@ -75,9 +75,9 @@ export default function EditResourcePage() {
   return (
     <Box>
       {/* Form */}
-      <ResourceForm
+      <OperationForm
         companyId={companyId}
-        resourceId={resourceId}
+        operationId={operationId}
         initialData={initialData}
         onCancel={handleCancel}
         onSaved={handleSaved}

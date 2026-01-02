@@ -20,7 +20,7 @@ const menuItems = [
   { name: 'Dashboard', path: '', icon: DashboardIcon },
   { name: 'Customers', path: '/customers', icon: PeopleIcon },
   { name: 'Parts', path: '/parts', icon: CategoryIcon },
-  { name: 'Resources', path: '/resources', icon: BuildIcon },
+  { name: 'Operations', path: '/operations', icon: BuildIcon },
   { name: 'Jobs', path: '/jobs', icon: WorkIcon },
   { name: 'Routings', path: '/routings', icon: AccountTreeIcon },
 ];

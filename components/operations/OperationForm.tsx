@@ -14,41 +14,37 @@ import MenuItem from '@mui/material/MenuItem';
 import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import {
-  createResource,
-  updateResource,
-  deleteResource,
+  createOperation,
+  updateOperation,
+  deleteOperation,
   getResourceGroups,
-  checkResourceNameExists,
-  getResourceWithRelations,
-} from '@/utils/resourcesAccess';
-import type {
-  ResourceFormData,
-  ResourceGroup,
-  EMPTY_RESOURCE_FORM,
-} from '@/types/resources';
+  checkOperationNameExists,
+  getOperationWithRelations,
+} from '@/utils/operationsAccess';
+import type { OperationFormData, ResourceGroup } from '@/types/operations';
 
-interface ResourceFormProps {
+interface OperationFormProps {
   companyId: string;
-  resourceId?: string; // undefined for create mode
-  initialData: ResourceFormData;
+  operationId?: string; // undefined for create mode
+  initialData: OperationFormData;
   onCancel: () => void;
-  onSaved: (resourceId: string) => void;
+  onSaved: (operationId: string) => void;
 }
 
 /**
- * Form for creating/editing resources.
+ * Form for creating/editing operations.
  */
-export default function ResourceForm({
+export default function OperationForm({
   companyId,
-  resourceId,
+  operationId,
   initialData,
   onCancel,
   onSaved,
-}: ResourceFormProps) {
+}: OperationFormProps) {
   const router = useRouter();
-  const isEdit = !!resourceId;
+  const isEdit = !!operationId;
 
-  const [formData, setFormData] = useState<ResourceFormData>(initialData);
+  const [formData, setFormData] = useState<OperationFormData>(initialData);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,14 +67,13 @@ export default function ResourceForm({
   }, [companyId]);
 
   // Handle field change
-  const handleChange = (field: keyof ResourceFormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-    if (fieldErrors[field]) {
-      setFieldErrors((prev) => ({ ...prev, [field]: '' }));
-    }
-  };
+  const handleChange =
+    (field: keyof OperationFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+      if (fieldErrors[field]) {
+        setFieldErrors((prev) => ({ ...prev, [field]: '' }));
+      }
+    };
 
   // Validate form
   const validate = async (): Promise<boolean> => {
@@ -89,13 +84,13 @@ export default function ResourceForm({
       errors.name = 'Name is required';
     } else {
       // Check uniqueness
-      const exists = await checkResourceNameExists(
+      const exists = await checkOperationNameExists(
         companyId,
         formData.name.trim(),
-        resourceId
+        operationId
       );
       if (exists) {
-        errors.name = 'A resource with this name already exists';
+        errors.name = 'An operation with this name already exists';
       }
     }
 
@@ -125,16 +120,16 @@ export default function ResourceForm({
 
     try {
       let savedId: string;
-      if (isEdit && resourceId) {
-        const updated = await updateResource(resourceId, formData);
+      if (isEdit && operationId) {
+        const updated = await updateOperation(operationId, formData);
         savedId = updated.id;
       } else {
-        const created = await createResource(companyId, formData);
+        const created = await createOperation(companyId, formData);
         savedId = created.id;
       }
       onSaved(savedId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save resource');
+      setError(err instanceof Error ? err.message : 'Failed to save operation');
     } finally {
       setLoading(false);
     }
@@ -142,25 +137,25 @@ export default function ResourceForm({
 
   // Handle delete
   const handleDelete = async () => {
-    if (!resourceId) return;
+    if (!operationId) return;
 
     // Check for relations
-    const resourceWithRelations = await getResourceWithRelations(resourceId);
-    if (resourceWithRelations && resourceWithRelations.routing_operations_count > 0) {
+    const operationWithRelations = await getOperationWithRelations(operationId);
+    if (operationWithRelations && operationWithRelations.routing_operations_count > 0) {
       setError(
-        `Cannot delete: This resource is used in ${resourceWithRelations.routing_operations_count} routing operation(s).`
+        `Cannot delete: This operation is used in ${operationWithRelations.routing_operations_count} routing operation(s).`
       );
       return;
     }
 
-    if (!confirm('Are you sure you want to delete this resource?')) return;
+    if (!confirm('Are you sure you want to delete this operation?')) return;
 
     setLoading(true);
     try {
-      await deleteResource(resourceId);
-      router.push(`/dashboard/${companyId}/resources`);
+      await deleteOperation(operationId);
+      router.push(`/dashboard/${companyId}/operations`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete resource');
+      setError(err instanceof Error ? err.message : 'Failed to delete operation');
       setLoading(false);
     }
   };
@@ -211,7 +206,7 @@ export default function ResourceForm({
                 onChange={handleChange('resource_group_id')}
                 fullWidth
                 disabled={loading || loadingGroups}
-                helperText="Category for this resource (optional)"
+                helperText="Category for this operation (optional)"
               >
                 <MenuItem value="">
                   <em>None (Ungrouped)</em>
@@ -258,7 +253,7 @@ export default function ResourceForm({
             multiline
             rows={3}
             disabled={loading}
-            helperText="Additional notes about this resource"
+            helperText="Additional notes about this operation"
           />
         </CardContent>
       </Card>
@@ -266,12 +261,7 @@ export default function ResourceForm({
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
         {isEdit && (
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={handleDelete}
-            disabled={loading}
-          >
+          <Button variant="outlined" color="error" onClick={handleDelete} disabled={loading}>
             Delete
           </Button>
         )}
@@ -285,7 +275,7 @@ export default function ResourceForm({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={16} /> : null}
         >
-          {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Resource'}
+          {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Operation'}
         </Button>
       </Box>
     </Box>

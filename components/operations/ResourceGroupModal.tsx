@@ -13,8 +13,9 @@ import {
   createResourceGroup,
   updateResourceGroup,
   deleteResourceGroup,
-} from '@/utils/resourcesAccess';
-import type { ResourceGroup, ResourceGroupFormData, EMPTY_RESOURCE_GROUP_FORM } from '@/types/resources';
+  getResourceGroupOperationCount,
+} from '@/utils/operationsAccess';
+import type { ResourceGroup, ResourceGroupFormData } from '@/types/operations';
 
 interface ResourceGroupModalProps {
   open: boolean;
@@ -41,6 +42,7 @@ export default function ResourceGroupModal({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [operationCount, setOperationCount] = useState(0);
 
   const isEdit = !!group;
 
@@ -52,8 +54,11 @@ export default function ResourceGroupModal({
         description: group.description || '',
         display_order: group.display_order,
       });
+      // Load operation count for delete warning
+      getResourceGroupOperationCount(group.id).then(setOperationCount);
     } else {
       setFormData({ name: '', description: '', display_order: 0 });
+      setOperationCount(0);
     }
     setError(null);
     setLoading(false);
@@ -85,10 +90,9 @@ export default function ResourceGroupModal({
   const handleDelete = async () => {
     if (!group) return;
 
-    const resourceCount = (group as ResourceGroup & { resource_count?: number }).resource_count || 0;
     const message =
-      resourceCount > 0
-        ? `This will move ${resourceCount} resource(s) to Ungrouped. Continue?`
+      operationCount > 0
+        ? `This will move ${operationCount} operation(s) to Ungrouped. Continue?`
         : 'Delete this group?';
 
     if (!confirm(message)) return;

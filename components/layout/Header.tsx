@@ -37,12 +37,12 @@ function getPageTitle(pathname: string): string {
     return 'Customers';
   }
 
-  // Check for resources routes
-  if (segments.includes('resources')) {
-    if (segments.includes('new')) return 'New Resource';
-    if (segments.includes('edit')) return 'Edit Resource';
-    if (segments.includes('import')) return 'Import Resources';
-    return 'Resources';
+  // Check for operations routes
+  if (segments.includes('operations')) {
+    if (segments.includes('new')) return 'New Operation';
+    if (segments.includes('edit')) return 'Edit Operation';
+    if (segments.includes('import')) return 'Import Operations';
+    return 'Operations';
   }
 
   // Map other route segments to display titles

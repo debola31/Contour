@@ -2,28 +2,28 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-import ResourceForm from '@/components/resources/ResourceForm';
-import { EMPTY_RESOURCE_FORM } from '@/types/resources';
+import OperationForm from '@/components/operations/OperationForm';
+import { EMPTY_OPERATION_FORM } from '@/types/operations';
 
-export default function NewResourcePage() {
+export default function NewOperationPage() {
   const params = useParams();
   const router = useRouter();
   const companyId = params.companyId as string;
 
   const handleCancel = () => {
-    router.push(`/dashboard/${companyId}/resources`);
+    router.push(`/dashboard/${companyId}/operations`);
   };
 
-  const handleSaved = (resourceId: string) => {
-    router.push(`/dashboard/${companyId}/resources`);
+  const handleSaved = (operationId: string) => {
+    router.push(`/dashboard/${companyId}/operations`);
   };
 
   return (
     <Box>
       {/* Form */}
-      <ResourceForm
+      <OperationForm
         companyId={companyId}
-        initialData={EMPTY_RESOURCE_FORM}
+        initialData={EMPTY_OPERATION_FORM}
         onCancel={handleCancel}
         onSaved={handleSaved}
       />

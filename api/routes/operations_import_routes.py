@@ -1,4 +1,4 @@
-"""Import routes for resources CSV import with AI-powered mapping."""
+"""Import routes for operations CSV import with AI-powered mapping."""
 
 import hashlib
 import json
@@ -10,41 +10,41 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from supabase import Client
 
-from models.resources_import_models import (
+from models.operations_import_models import (
     ColumnMapping,
-    ResourceAnalyzeRequest,
-    ResourceAnalyzeResponse,
-    ResourceValidateRequest,
-    ResourceValidateResponse,
-    ResourceValidationError,
-    ResourceConflictInfo,
-    ResourceExecuteRequest,
-    ResourceExecuteResponse,
-    ResourceImportError,
-    RESOURCE_SCHEMA,
+    OperationAnalyzeRequest,
+    OperationAnalyzeResponse,
+    OperationValidateRequest,
+    OperationValidateResponse,
+    OperationValidationError,
+    OperationConflictInfo,
+    OperationExecuteRequest,
+    OperationExecuteResponse,
+    OperationImportError,
+    OPERATION_SCHEMA,
 )
 from services.ai import get_provider
 from utils.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/resources/import", tags=["resources-import"])
+router = APIRouter(prefix="/api/operations/import", tags=["operations-import"])
 
 # Rate limiter: 10 AI calls per minute per company
 ai_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
 # Cache directory for AI responses (dev only - avoids repeated API calls)
-CACHE_DIR = Path(__file__).parent.parent / ".cache" / "ai_responses" / "resources"
+CACHE_DIR = Path(__file__).parent.parent / ".cache" / "ai_responses" / "operations"
 CACHE_ENABLED = os.getenv("AI_CACHE_ENABLED", "true").lower() == "true"
 
 
 def _get_cache_key(company_id: str, headers: list[str]) -> str:
     """Generate a cache key from company_id and headers."""
-    content = f"resources:{company_id}:{','.join(sorted(headers))}"
+    content = f"operations:{company_id}:{','.join(sorted(headers))}"
     return hashlib.md5(content.encode()).hexdigest()
 
 
-def _get_cached_response(cache_key: str) -> ResourceAnalyzeResponse | None:
+def _get_cached_response(cache_key: str) -> OperationAnalyzeResponse | None:
     """Try to get a cached response."""
     if not CACHE_ENABLED:
         return None
@@ -54,13 +54,13 @@ def _get_cached_response(cache_key: str) -> ResourceAnalyzeResponse | None:
         try:
             with open(cache_file) as f:
                 data = json.load(f)
-            return ResourceAnalyzeResponse(**data)
+            return OperationAnalyzeResponse(**data)
         except Exception:
             return None
     return None
 
 
-def _save_to_cache(cache_key: str, response: ResourceAnalyzeResponse) -> None:
+def _save_to_cache(cache_key: str, response: OperationAnalyzeResponse) -> None:
     """Save response to cache."""
     if not CACHE_ENABLED:
         return
@@ -115,13 +115,13 @@ def get_supabase() -> Client:
     return supabase
 
 
-@router.post("/analyze", response_model=ResourceAnalyzeResponse)
+@router.post("/analyze", response_model=OperationAnalyzeResponse)
 async def analyze_csv(
-    request: ResourceAnalyzeRequest,
+    request: OperationAnalyzeRequest,
     supabase: Client = Depends(get_supabase),
 ):
     """
-    Analyze CSV headers and sample data to suggest column mappings for resources using AI.
+    Analyze CSV headers and sample data to suggest column mappings for operations using AI.
 
     Caching: Responses are cached by company_id + headers to avoid repeated
     API calls during development. Set AI_CACHE_ENABLED=false to disable.
@@ -153,7 +153,7 @@ async def analyze_csv(
         suggestions = await provider.suggest_column_mappings(
             csv_headers=request.headers,
             sample_rows=request.sample_rows,
-            target_schema=RESOURCE_SCHEMA,
+            target_schema=OPERATION_SCHEMA,
             column_samples=column_samples,
         )
 
@@ -182,11 +182,11 @@ async def analyze_csv(
 
         # Check for unmapped required fields
         required_fields = [
-            field for field, info in RESOURCE_SCHEMA.items() if info.get("required")
+            field for field, info in OPERATION_SCHEMA.items() if info.get("required")
         ]
         unmapped_required = [f for f in required_fields if f not in mapped_db_fields]
 
-        response = ResourceAnalyzeResponse(
+        response = OperationAnalyzeResponse(
             mappings=mappings,
             unmapped_required=unmapped_required,
             discarded_columns=discarded_columns,
@@ -209,34 +209,34 @@ async def analyze_csv(
         )
 
 
-@router.post("/validate", response_model=ResourceValidateResponse)
+@router.post("/validate", response_model=OperationValidateResponse)
 async def validate_import(
-    request: ResourceValidateRequest,
+    request: OperationValidateRequest,
     supabase: Client = Depends(get_supabase),
 ):
     """
-    Validate resources CSV data before import.
+    Validate operations CSV data before import.
 
     Checks:
-    - Resource name uniqueness per company
+    - Operation name uniqueness per company
     - Labor rate validity (if provided)
     - Required fields presence
     """
     try:
-        # Get existing resources for this company
-        resources_response = (
-            supabase.table("resources")
+        # Get existing operations for this company
+        operations_response = (
+            supabase.table("operation_types")
             .select("id, name")
             .eq("company_id", request.company_id)
             .execute()
         )
-        existing_resources = resources_response.data or []
+        existing_operations = operations_response.data or []
 
-        # Build lookup: name_lower -> resource
-        existing_resources_lookup: dict[str, dict] = {}
-        for resource in existing_resources:
-            key = resource["name"].lower()
-            existing_resources_lookup[key] = resource
+        # Build lookup: name_lower -> operation
+        existing_operations_lookup: dict[str, dict] = {}
+        for operation in existing_operations:
+            key = operation["name"].lower()
+            existing_operations_lookup[key] = operation
 
         # Get existing groups for this company
         groups_response = (
@@ -259,9 +259,7 @@ async def validate_import(
 
         for i, row in enumerate(request.rows):
             row_number = i + 1
-            name = (
-                row.get(name_column, "").strip() if name_column else ""
-            )
+            name = row.get(name_column, "").strip() if name_column else ""
 
             if name:
                 name_key = name.lower()
@@ -276,28 +274,28 @@ async def validate_import(
         groups_to_create: set[str] = set()
 
         # Second pass: validate each row
-        validation_errors: list[ResourceValidationError] = []
-        conflicts: list[ResourceConflictInfo] = []
+        validation_errors: list[OperationValidationError] = []
+        conflicts: list[OperationConflictInfo] = []
         validation_error_rows: set[int] = set()
         conflict_rows: set[int] = set()
 
         for i, row in enumerate(request.rows):
             row_number = i + 1
-            name = (
-                row.get(name_column, "").strip() if name_column else ""
-            )
+            name = row.get(name_column, "").strip() if name_column else ""
             resource_group = (
-                row.get(resource_group_column, "").strip() if resource_group_column else ""
+                row.get(resource_group_column, "").strip()
+                if resource_group_column
+                else ""
             )
 
             # Check required field: name
             if not name:
                 validation_errors.append(
-                    ResourceValidationError(
+                    OperationValidationError(
                         row_number=row_number,
                         error_type="missing_name",
                         field="name",
-                        message="Resource name is required",
+                        message="Operation name is required",
                     )
                 )
                 validation_error_rows.add(row_number)
@@ -310,29 +308,29 @@ async def validate_import(
                 other_rows = [r for r in csv_duplicates[name_key] if r != row_number]
                 if other_rows:  # Don't flag if this is the first occurrence
                     conflicts.append(
-                        ResourceConflictInfo(
+                        OperationConflictInfo(
                             row_number=row_number,
                             csv_name=name,
                             csv_resource_group=resource_group,
                             conflict_type="csv_duplicate",
-                            existing_resource_id="",
+                            existing_operation_id="",
                             existing_value=f"Duplicate in CSV at rows {', '.join(map(str, other_rows))}",
                         )
                     )
                     conflict_rows.add(row_number)
                     continue
 
-            # Check for existing resource with same name
-            if name_key in existing_resources_lookup:
-                existing = existing_resources_lookup[name_key]
+            # Check for existing operation with same name
+            if name_key in existing_operations_lookup:
+                existing = existing_operations_lookup[name_key]
                 conflicts.append(
-                    ResourceConflictInfo(
+                    OperationConflictInfo(
                         row_number=row_number,
                         csv_name=name,
                         csv_resource_group=resource_group,
                         conflict_type="duplicate_name",
-                        existing_resource_id=existing["id"],
-                        existing_value=f"Resource '{name}' already exists",
+                        existing_operation_id=existing["id"],
+                        existing_value=f"Operation '{name}' already exists",
                     )
                 )
                 conflict_rows.add(row_number)
@@ -346,7 +344,7 @@ async def validate_import(
                         labor_rate = float(labor_rate_str)
                         if labor_rate < 0:
                             validation_errors.append(
-                                ResourceValidationError(
+                                OperationValidationError(
                                     row_number=row_number,
                                     error_type="invalid_rate",
                                     field="labor_rate",
@@ -357,7 +355,7 @@ async def validate_import(
                             continue
                     except ValueError:
                         validation_errors.append(
-                            ResourceValidationError(
+                            OperationValidationError(
                                 row_number=row_number,
                                 error_type="invalid_rate",
                                 field="labor_rate",
@@ -376,7 +374,7 @@ async def validate_import(
         total_skipped = conflict_rows | validation_error_rows
         valid_rows = len(request.rows) - len(total_skipped)
 
-        return ResourceValidateResponse(
+        return OperationValidateResponse(
             has_conflicts=len(conflicts) > 0,
             conflicts=conflicts,
             validation_errors=validation_errors,
@@ -396,13 +394,13 @@ async def validate_import(
         )
 
 
-@router.post("/execute", response_model=ResourceExecuteResponse)
+@router.post("/execute", response_model=OperationExecuteResponse)
 async def execute_import(
-    request: ResourceExecuteRequest,
+    request: OperationExecuteRequest,
     supabase: Client = Depends(get_supabase),
 ):
     """
-    Execute the resources import.
+    Execute the operations import.
 
     If skip_conflicts is True, only imports rows without conflicts.
     Otherwise, fails if any conflicts exist.
@@ -412,7 +410,7 @@ async def execute_import(
     try:
         # First validate to get conflict info
         validate_response = await validate_import(
-            ResourceValidateRequest(
+            OperationValidateRequest(
                 company_id=request.company_id,
                 mappings=request.mappings,
                 rows=request.rows,
@@ -441,11 +439,13 @@ async def execute_import(
                 try:
                     result = (
                         supabase.table("resource_groups")
-                        .insert({
-                            "company_id": request.company_id,
-                            "name": group_name,
-                            "display_order": 0,
-                        })
+                        .insert(
+                            {
+                                "company_id": request.company_id,
+                                "name": group_name,
+                                "display_order": 0,
+                            }
+                        )
                         .execute()
                     )
                     if result.data:
@@ -469,7 +469,7 @@ async def execute_import(
 
         # Prepare rows for insertion
         rows_to_insert = []
-        errors: list[ResourceImportError] = []
+        errors: list[OperationImportError] = []
         skipped = 0
 
         for i, row in enumerate(request.rows):
@@ -480,8 +480,8 @@ async def execute_import(
                 skipped += 1
                 continue
 
-            # Build resource record
-            resource_data = {
+            # Build operation record
+            operation_data = {
                 "company_id": request.company_id,
                 "metadata": {},
             }
@@ -493,7 +493,7 @@ async def execute_import(
                     value = row[csv_column].strip()
                     # Filter out empty values and literal "undefined" string from frontend
                     if value and value.lower() != "undefined":
-                        resource_data[db_field] = value
+                        operation_data[db_field] = value
 
             # Handle labor_rate (numeric)
             labor_rate_column = reverse_mappings.get("labor_rate")
@@ -501,7 +501,7 @@ async def execute_import(
                 value = row[labor_rate_column].strip()
                 if value:
                     try:
-                        resource_data["labor_rate"] = round(float(value), 2)
+                        operation_data["labor_rate"] = round(float(value), 2)
                     except ValueError:
                         pass  # Skip invalid values (should be caught in validation)
 
@@ -512,22 +512,24 @@ async def execute_import(
                 if group_name:
                     group_id = group_name_to_id.get(group_name.lower())
                     if group_id:
-                        resource_data["resource_group_id"] = group_id
+                        operation_data["resource_group_id"] = group_id
 
             # Handle legacy_id (store in metadata)
             legacy_id_column = reverse_mappings.get("legacy_id")
             if legacy_id_column and legacy_id_column in row:
                 value = row[legacy_id_column].strip()
                 if value:
-                    resource_data["metadata"]["legacy_id"] = value
+                    operation_data["metadata"]["legacy_id"] = value
 
-            rows_to_insert.append(resource_data)
+            rows_to_insert.append(operation_data)
 
         # Bulk insert
         imported_count = 0
         if rows_to_insert:
             try:
-                response = supabase.table("resources").insert(rows_to_insert).execute()
+                response = (
+                    supabase.table("operation_types").insert(rows_to_insert).execute()
+                )
                 imported_count = len(response.data) if response.data else 0
             except Exception as e:
                 error_str = str(e)
@@ -535,14 +537,14 @@ async def execute_import(
                 if "23505" in error_str or "duplicate key" in error_str.lower():
                     raise HTTPException(
                         status_code=400,
-                        detail="Import failed: A resource with this name already exists. Please check your CSV for duplicate names.",
+                        detail="Import failed: An operation with this name already exists. Please check your CSV for duplicate names.",
                     )
                 raise HTTPException(
                     status_code=500,
                     detail="Database error occurred during import. Please try again.",
                 )
 
-        return ResourceExecuteResponse(
+        return OperationExecuteResponse(
             success=True,
             imported_count=imported_count,
             skipped_count=skipped,
@@ -553,7 +555,7 @@ async def execute_import(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Resources import execution error: {str(e)}", exc_info=True)
+        logger.error(f"Operations import execution error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"An unexpected error occurred during import: {str(e)}",

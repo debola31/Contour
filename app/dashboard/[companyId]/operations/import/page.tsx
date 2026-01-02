@@ -34,8 +34,8 @@ const steps = ['Upload', 'AI Analysis', 'Review Mappings', 'Validate', 'Import']
 
 type ImportStep = 'upload' | 'analyzing' | 'review' | 'validating' | 'importing' | 'complete';
 
-// Resource fields for mapping
-const RESOURCE_FIELDS: FieldDefinition[] = [
+// Operation fields for mapping
+const OPERATION_FIELDS: FieldDefinition[] = [
   { key: 'name', label: 'Name', required: true },
   { key: 'code', label: 'Code', required: false },
   { key: 'labor_rate', label: 'Labor Rate', required: false },
@@ -44,7 +44,7 @@ const RESOURCE_FIELDS: FieldDefinition[] = [
   { key: 'legacy_id', label: 'Legacy ID', required: false },
 ];
 
-export default function ImportResourcesPage() {
+export default function ImportOperationsPage() {
   const router = useRouter();
   const params = useParams();
   const companyId = params.companyId as string;
@@ -88,48 +88,51 @@ export default function ImportResourcesPage() {
   };
 
   // Handle file selection
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    // Check file size
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      setError(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB`);
-      return;
-    }
-
-    setError(null);
-    setLoading(true);
-
-    try {
-      const text = await file.text();
-      const parsed = parseCSV(text);
-
-      if (parsed.length < 2) {
-        setError('CSV file must have a header row and at least one data row');
-        setLoading(false);
+      // Check file size
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        setError(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB`);
         return;
       }
 
-      const fileHeaders = parsed[0];
-      const fileRows = parsed.slice(1);
+      setError(null);
+      setLoading(true);
 
-      setHeaders(fileHeaders);
-      setAllRows(fileRows);
+      try {
+        const text = await file.text();
+        const parsed = parseCSV(text);
 
-      // Start analysis
-      setCurrentStep('analyzing');
-      await analyzeCSV(fileHeaders, fileRows.slice(0, 5));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse CSV');
-      setLoading(false);
-    }
-  }, [companyId]);
+        if (parsed.length < 2) {
+          setError('CSV file must have a header row and at least one data row');
+          setLoading(false);
+          return;
+        }
+
+        const fileHeaders = parsed[0];
+        const fileRows = parsed.slice(1);
+
+        setHeaders(fileHeaders);
+        setAllRows(fileRows);
+
+        // Start analysis
+        setCurrentStep('analyzing');
+        await analyzeCSV(fileHeaders, fileRows.slice(0, 5));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to parse CSV');
+        setLoading(false);
+      }
+    },
+    [companyId]
+  );
 
   // Analyze CSV with AI
   const analyzeCSV = async (fileHeaders: string[], sampleRows: string[][]) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/resources/import/analyze`, {
+      const response = await fetch(`${API_BASE_URL}/api/operations/import/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -150,8 +153,10 @@ export default function ImportResourcesPage() {
       setDiscardedColumns(data.discarded_columns || []);
 
       // Calculate unmapped optional fields
-      const mappedFields = new Set((data.mappings || []).map((m: ColumnMapping) => m.db_field).filter(Boolean));
-      const optional = RESOURCE_FIELDS.filter((f) => !f.required).map((f) => f.key);
+      const mappedFields = new Set(
+        (data.mappings || []).map((m: ColumnMapping) => m.db_field).filter(Boolean)
+      );
+      const optional = OPERATION_FIELDS.filter((f) => !f.required).map((f) => f.key);
       setUnmappedOptional(optional.filter((f) => !mappedFields.has(f)));
 
       setCurrentStep('review');
@@ -182,8 +187,8 @@ export default function ImportResourcesPage() {
     );
     if (newDbField) mappedFields.add(newDbField);
 
-    const required = RESOURCE_FIELDS.filter((f) => f.required).map((f) => f.key);
-    const optional = RESOURCE_FIELDS.filter((f) => !f.required).map((f) => f.key);
+    const required = OPERATION_FIELDS.filter((f) => f.required).map((f) => f.key);
+    const optional = OPERATION_FIELDS.filter((f) => !f.required).map((f) => f.key);
     setUnmappedRequired(required.filter((f) => !mappedFields.has(f)));
     setUnmappedOptional(optional.filter((f) => !mappedFields.has(f)));
   };
@@ -212,7 +217,7 @@ export default function ImportResourcesPage() {
         return obj;
       });
 
-      const response = await fetch(`${API_BASE_URL}/api/resources/import/validate`, {
+      const response = await fetch(`${API_BASE_URL}/api/operations/import/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -249,11 +254,14 @@ export default function ImportResourcesPage() {
   };
 
   // Execute import
-  const executeImport = async (mappingsDict: Record<string, string>, rows: Record<string, string>[]) => {
+  const executeImport = async (
+    mappingsDict: Record<string, string>,
+    rows: Record<string, string>[]
+  ) => {
     setCurrentStep('importing');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/resources/import/execute`, {
+      const response = await fetch(`${API_BASE_URL}/api/operations/import/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -290,23 +298,14 @@ export default function ImportResourcesPage() {
             <CardContent sx={{ textAlign: 'center', py: 6 }}>
               <UploadFileIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
               <Typography variant="h6" gutterBottom>
-                Upload Resources CSV
+                Upload Operations CSV
               </Typography>
               <Typography color="text.secondary" mb={3}>
-                Select a CSV file containing your resources data
+                Select a CSV file containing your operations data
               </Typography>
-              <Button
-                variant="contained"
-                component="label"
-                disabled={loading}
-              >
+              <Button variant="contained" component="label" disabled={loading}>
                 Choose File
-                <input
-                  type="file"
-                  accept=".csv"
-                  hidden
-                  onChange={handleFileChange}
-                />
+                <input type="file" accept=".csv" hidden onChange={handleFileChange} />
               </Button>
               <Box mt={3}>
                 <FormControlLabel
@@ -354,7 +353,7 @@ export default function ImportResourcesPage() {
                 </Typography>
                 <MappingReviewTable
                   mappings={mappings}
-                  fields={RESOURCE_FIELDS}
+                  fields={OPERATION_FIELDS}
                   unmappedRequired={unmappedRequired}
                   unmappedOptional={unmappedOptional}
                   discardedColumns={discardedColumns}
@@ -393,7 +392,7 @@ export default function ImportResourcesPage() {
             <CardContent sx={{ textAlign: 'center', py: 6 }}>
               <CircularProgress sx={{ mb: 2 }} />
               <Typography variant="h6">
-                {currentStep === 'validating' ? 'Validating data...' : 'Importing resources...'}
+                {currentStep === 'validating' ? 'Validating data...' : 'Importing operations...'}
               </Typography>
             </CardContent>
           </Card>
@@ -408,7 +407,7 @@ export default function ImportResourcesPage() {
                 Import Complete!
               </Typography>
               <Typography color="text.secondary" mb={1}>
-                {importedCount} resources imported
+                {importedCount} operations imported
               </Typography>
               {groupsCreatedCount > 0 && (
                 <Typography color="text.secondary" mb={1}>
@@ -437,9 +436,9 @@ export default function ImportResourcesPage() {
                 </Button>
                 <Button
                   variant="contained"
-                  onClick={() => router.push(`/dashboard/${companyId}/resources`)}
+                  onClick={() => router.push(`/dashboard/${companyId}/operations`)}
                 >
-                  View Resources
+                  View Operations
                 </Button>
               </Box>
             </CardContent>
@@ -458,7 +457,7 @@ export default function ImportResourcesPage() {
         <Button
           color="primary"
           startIcon={<ArrowBackIcon />}
-          onClick={() => router.push(`/dashboard/${companyId}/resources`)}
+          onClick={() => router.push(`/dashboard/${companyId}/operations`)}
         >
           Back
         </Button>
