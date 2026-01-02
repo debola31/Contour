@@ -435,24 +435,24 @@ async function updateQuoteStatus(
 }
 
 /**
- * Mark quote as sent (draft → sent)
+ * Mark quote as pending approval (draft → pending_approval)
  */
-export async function markQuoteAsSent(quoteId: string): Promise<Quote> {
-  return updateQuoteStatus(quoteId, 'draft', 'sent');
+export async function markQuoteAsPendingApproval(quoteId: string): Promise<Quote> {
+  return updateQuoteStatus(quoteId, 'draft', 'pending_approval');
 }
 
 /**
- * Mark quote as accepted (sent → accepted)
+ * Mark quote as approved (pending_approval → approved)
  */
-export async function markQuoteAsAccepted(quoteId: string): Promise<Quote> {
-  return updateQuoteStatus(quoteId, 'sent', 'accepted');
+export async function markQuoteAsApproved(quoteId: string): Promise<Quote> {
+  return updateQuoteStatus(quoteId, 'pending_approval', 'approved');
 }
 
 /**
- * Mark quote as declined (sent → declined)
+ * Mark quote as rejected (pending_approval → rejected)
  */
-export async function markQuoteAsDeclined(quoteId: string): Promise<Quote> {
-  return updateQuoteStatus(quoteId, 'sent', 'declined');
+export async function markQuoteAsRejected(quoteId: string): Promise<Quote> {
+  return updateQuoteStatus(quoteId, 'pending_approval', 'rejected');
 }
 
 // ============== Convert to Job ==============
@@ -487,8 +487,8 @@ export async function convertQuoteToJob(
   }
 
   // 2. Validate quote status
-  if (quote.status !== 'accepted') {
-    throw new Error('Only accepted quotes can be converted to jobs');
+  if (quote.status !== 'approved') {
+    throw new Error('Only approved quotes can be converted to jobs');
   }
 
   if (quote.converted_to_job_id) {

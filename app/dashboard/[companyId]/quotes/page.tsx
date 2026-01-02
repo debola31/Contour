@@ -331,8 +331,8 @@ export default function QuotesPage() {
         if (!params.data) return null;
         const quote = params.data;
         const isDraft = quote.status === 'draft';
-        const isAccepted = quote.status === 'accepted';
-        const canConvert = isAccepted && !quote.converted_to_job_id;
+        const isApproved = quote.status === 'approved';
+        const canConvert = isApproved && !quote.converted_to_job_id;
 
         return (
           <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -422,9 +422,9 @@ export default function QuotesPage() {
           >
             <MenuItem value="all">All Statuses</MenuItem>
             <MenuItem value="draft">Draft</MenuItem>
-            <MenuItem value="sent">Sent</MenuItem>
-            <MenuItem value="accepted">Accepted</MenuItem>
-            <MenuItem value="declined">Declined</MenuItem>
+            <MenuItem value="pending_approval">Pending Approval</MenuItem>
+            <MenuItem value="approved">Approved</MenuItem>
+            <MenuItem value="rejected">Rejected</MenuItem>
             <MenuItem value="expired">Expired</MenuItem>
           </Select>
         </FormControl>

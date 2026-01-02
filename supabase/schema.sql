@@ -381,6 +381,36 @@ CREATE TABLE IF NOT EXISTS public.operation_types
 ALTER TABLE IF EXISTS public.operation_types
     ENABLE ROW LEVEL SECURITY;
 
+COMMENT ON TABLE public.operation_types
+    IS 'Operation types available in the shop (e.g., HURCO Mill, Mazak Lathe). Defines what work can be done and at what hourly cost.';
+
+COMMENT ON COLUMN public.operation_types.id
+    IS 'Primary key (auto-generated UUID)';
+
+COMMENT ON COLUMN public.operation_types.company_id
+    IS 'Foreign key to companies table (multi-tenant isolation)';
+
+COMMENT ON COLUMN public.operation_types.resource_group_id
+    IS 'Foreign key to resource_groups (NULL = ungrouped)';
+
+COMMENT ON COLUMN public.operation_types.name
+    IS 'Operation type name (e.g., "HURCO Mill", "EDM", "GRINDING")';
+
+COMMENT ON COLUMN public.operation_types.labor_rate
+    IS 'Hourly rate in dollars (e.g., 135.00)';
+
+COMMENT ON COLUMN public.operation_types.description
+    IS 'Optional description or notes';
+
+COMMENT ON COLUMN public.operation_types.metadata
+    IS 'Flexible JSONB for shop-specific data (setup_time_minutes, capabilities, legacy_id, etc.)';
+
+COMMENT ON COLUMN public.operation_types.created_at
+    IS 'Timestamp when record was created';
+
+COMMENT ON COLUMN public.operation_types.updated_at
+    IS 'Timestamp when record was last updated';
+
 CREATE TABLE IF NOT EXISTS public.parts
 (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -515,7 +545,7 @@ COMMENT ON COLUMN public.quotes.valid_until
     IS 'Quote expiration date. After this date, pricing may change.';
 
 COMMENT ON COLUMN public.quotes.status
-    IS 'Quote lifecycle status. Values: draft, sent, accepted, rejected, expired, converted. Default: draft';
+    IS 'Quote lifecycle status. Values: draft, pending_approval, approved, rejected, expired, converted. Default: draft';
 
 COMMENT ON COLUMN public.quotes.status_changed_at
     IS 'Timestamp when status last changed. For tracking response times.';
@@ -555,6 +585,27 @@ CREATE TABLE IF NOT EXISTS public.resource_groups
 
 ALTER TABLE IF EXISTS public.resource_groups
     ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.resource_groups
+    IS 'Categories for organizing operation types (e.g., CNC, LATHE&MILL, Hone, EDM). Matches terminology from legacy system.';
+
+COMMENT ON COLUMN public.resource_groups.id
+    IS 'Primary key (auto-generated UUID)';
+
+COMMENT ON COLUMN public.resource_groups.company_id
+    IS 'Foreign key to companies table (multi-tenant isolation)';
+
+COMMENT ON COLUMN public.resource_groups.name
+    IS 'Group name (e.g., "CNC", "LATHE&MILL", "Hone", "EDM")';
+
+COMMENT ON COLUMN public.resource_groups.description
+    IS 'Optional description of the group';
+
+COMMENT ON COLUMN public.resource_groups.created_at
+    IS 'Timestamp when record was created';
+
+COMMENT ON COLUMN public.resource_groups.updated_at
+    IS 'Timestamp when record was last updated';
 
 CREATE TABLE IF NOT EXISTS public.routing_operations
 (

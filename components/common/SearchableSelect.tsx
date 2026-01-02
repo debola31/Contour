@@ -113,14 +113,23 @@ export default function SearchableSelect({
       renderOption={(props, option) => {
         const { key, ...otherProps } = props;
         return (
-          <li key={key} {...otherProps}>
+          <li
+            key={key}
+            {...otherProps}
+            style={{
+              ...((otherProps as React.HTMLAttributes<HTMLLIElement>).style || {}),
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: 'block',
+            }}
+          >
             {option.id === '' ? (
               <em>{option.label}</em>
             ) : option.secondaryLabel ? (
-              <>
-                <span style={{ fontWeight: 500 }}>{option.secondaryLabel}</span>
-                <span style={{ marginLeft: 8 }}>{option.label}</span>
-              </>
+              <span>
+                {option.label} <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>({option.secondaryLabel})</span>
+              </span>
             ) : (
               option.label
             )}

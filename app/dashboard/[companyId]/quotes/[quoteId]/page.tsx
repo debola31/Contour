@@ -19,6 +19,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -26,9 +27,9 @@ import DialogActions from '@mui/material/DialogActions';
 
 import {
   getQuoteWithRelations,
-  markQuoteAsSent,
-  markQuoteAsAccepted,
-  markQuoteAsDeclined,
+  markQuoteAsPendingApproval,
+  markQuoteAsApproved,
+  markQuoteAsRejected,
   deleteQuote,
 } from '@/utils/quotesAccess';
 import { quoteToFormData } from '@/types/quote';
@@ -138,6 +139,15 @@ export default function QuoteDetailPage() {
 
   return (
     <Box>
+      {/* Back Button */}
+      <Button
+        startIcon={<ArrowBackIcon />}
+        onClick={() => router.push(`/dashboard/${companyId}/quotes`)}
+        sx={{ mb: 2 }}
+      >
+        Back to Quotes
+      </Button>
+
       {/* Header with Actions */}
       <Box
         sx={{
@@ -176,10 +186,10 @@ export default function QuoteDetailPage() {
               <Button
                 variant="contained"
                 startIcon={<SendIcon />}
-                onClick={() => handleAction(() => markQuoteAsSent(quoteId))}
+                onClick={() => handleAction(() => markQuoteAsPendingApproval(quoteId))}
                 disabled={actionLoading}
               >
-                Mark as Sent
+                Send for Approval
               </Button>
               <Button
                 variant="outlined"
@@ -193,30 +203,30 @@ export default function QuoteDetailPage() {
             </>
           )}
 
-          {quote.status === 'sent' && (
+          {quote.status === 'pending_approval' && (
             <>
               <Button
                 variant="contained"
                 color="success"
                 startIcon={<CheckIcon />}
-                onClick={() => handleAction(() => markQuoteAsAccepted(quoteId))}
+                onClick={() => handleAction(() => markQuoteAsApproved(quoteId))}
                 disabled={actionLoading}
               >
-                Accept
+                Approve
               </Button>
               <Button
                 variant="outlined"
                 color="error"
                 startIcon={<CloseIcon />}
-                onClick={() => handleAction(() => markQuoteAsDeclined(quoteId))}
+                onClick={() => handleAction(() => markQuoteAsRejected(quoteId))}
                 disabled={actionLoading}
               >
-                Decline
+                Reject
               </Button>
             </>
           )}
 
-          {quote.status === 'accepted' && !quote.converted_to_job_id && (
+          {quote.status === 'approved' && !quote.converted_to_job_id && (
             <Button
               variant="contained"
               color="primary"

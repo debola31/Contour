@@ -8,7 +8,7 @@ interface QuoteStatusChipProps {
 }
 
 export default function QuoteStatusChip({ status, size = 'small' }: QuoteStatusChipProps) {
-  const config = QUOTE_STATUS_CONFIG[status];
+  const config = QUOTE_STATUS_CONFIG[status] || { label: status, color: 'default' as const };
 
   return (
     <Chip

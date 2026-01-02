@@ -3,7 +3,7 @@ import { PricingTier, getUnitPrice } from './part';
 /**
  * Quote status values
  */
-export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+export type QuoteStatus = 'draft' | 'pending_approval' | 'approved' | 'rejected' | 'expired';
 
 /**
  * Quote record from database
@@ -155,8 +155,8 @@ export const QUOTE_STATUS_CONFIG: Record<
   { label: string; color: 'default' | 'primary' | 'success' | 'error' | 'warning' }
 > = {
   draft: { label: 'Draft', color: 'default' },
-  sent: { label: 'Sent', color: 'primary' },
-  accepted: { label: 'Accepted', color: 'success' },
-  declined: { label: 'Declined', color: 'error' },
+  pending_approval: { label: 'Pending Approval', color: 'primary' },
+  approved: { label: 'Approved', color: 'success' },
+  rejected: { label: 'Rejected', color: 'error' },
   expired: { label: 'Expired', color: 'warning' },
 };
