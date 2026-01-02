@@ -73,6 +73,7 @@ import {
   type ResourceGroupWithCount,
 } from '@/utils/operationsAccess';
 import ResourceGroupModal from '@/components/operations/ResourceGroupModal';
+import ExportCsvButton from '@/components/common/ExportCsvButton';
 import type { OperationWithGroup, ResourceGroup } from '@/types/operations';
 
 interface TabPanelProps {
@@ -512,15 +513,23 @@ export default function OperationsPage() {
             }}
           />
 
+          {/* Export and Delete buttons - show when items selected */}
           {selectedOperationIds.length > 0 && (
-            <Button
-              variant="contained"
-              color="error"
-              startIcon={<DeleteIcon />}
-              onClick={handleBulkDeleteOperations}
-            >
-              Delete ({selectedOperationIds.length})
-            </Button>
+            <>
+              <ExportCsvButton
+                gridRef={operationsGridRef}
+                fileName="operations-export"
+                selectedCount={selectedOperationIds.length}
+              />
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleBulkDeleteOperations}
+              >
+                Delete ({selectedOperationIds.length})
+              </Button>
+            </>
           )}
 
           <Box sx={{ flex: 1 }} />
@@ -635,15 +644,23 @@ export default function OperationsPage() {
             }}
           />
 
+          {/* Export and Delete buttons - show when items selected */}
           {selectedGroupIds.length > 0 && (
-            <Button
-              variant="contained"
-              color="error"
-              startIcon={<DeleteIcon />}
-              onClick={handleBulkDeleteGroups}
-            >
-              Delete ({selectedGroupIds.length})
-            </Button>
+            <>
+              <ExportCsvButton
+                gridRef={groupsGridRef}
+                fileName="resource-groups-export"
+                selectedCount={selectedGroupIds.length}
+              />
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleBulkDeleteGroups}
+              >
+                Delete ({selectedGroupIds.length})
+              </Button>
+            </>
           )}
 
           <Box sx={{ flex: 1 }} />
