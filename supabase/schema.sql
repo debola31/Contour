@@ -1,6 +1,6 @@
 -- ============================================================
 -- Jigged Manufacturing ERP - Database Schema
--- Generated: 2026-01-03T23:10:37Z
+-- Generated: 2026-01-03T23:28:12Z
 -- Schemas: public, storage
 -- ============================================================
 
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS "public"."routing_operations"
     "routing_id" uuid NOT NULL,
     "sequence" integer NOT NULL,
     "operation_name" text NOT NULL,
-    "station_id" uuid,
+    "operation_type_id" uuid,
     "estimated_setup_hours" numeric(8,2) DEFAULT 0,
     "estimated_run_hours_per_unit" numeric(8,4) DEFAULT 0,
     "instructions" text,
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS "public"."job_operations"
     "routing_operation_id" uuid,
     "sequence" integer NOT NULL,
     "operation_name" text NOT NULL,
-    "station_id" uuid,
+    "operation_type_id" uuid,
     "estimated_setup_hours" numeric(8,2) DEFAULT 0,
     "estimated_run_hours_per_unit" numeric(8,4) DEFAULT 0,
     "actual_setup_hours" numeric(8,2),
@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS "public"."job_operations"
     "updated_at" timestamp with time zone DEFAULT now(),
     CONSTRAINT "job_operations_pkey" PRIMARY KEY (id),
     CONSTRAINT "job_operations_job_id_sequence_key" UNIQUE (job_id, sequence),
-    CONSTRAINT "job_operations_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'complete'::text, 'skipped'::text])))
+    CONSTRAINT "job_operations_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'completed'::text, 'skipped'::text])))
 );
 
 CREATE TABLE IF NOT EXISTS "public"."jobs"
@@ -227,8 +227,8 @@ CREATE TABLE IF NOT EXISTS "public"."jobs"
     "updated_at" timestamp with time zone DEFAULT now(),
     CONSTRAINT "jobs_pkey" PRIMARY KEY (id),
     CONSTRAINT "jobs_company_id_job_number_key" UNIQUE (company_id, job_number),
-    CONSTRAINT "jobs_priority_check" CHECK ((priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'rush'::text]))),
-    CONSTRAINT "jobs_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'complete'::text, 'shipped'::text, 'cancelled'::text])))
+    CONSTRAINT "jobs_priority_check" CHECK ((priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text]))),
+    CONSTRAINT "jobs_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'on_hold'::text, 'completed'::text, 'shipped'::text, 'cancelled'::text])))
 );
 
 CREATE TABLE IF NOT EXISTS "public"."quote_attachments"
@@ -266,7 +266,7 @@ CREATE TABLE IF NOT EXISTS "public"."quotes"
     "updated_at" timestamp with time zone DEFAULT now(),
     CONSTRAINT "quotes_pkey" PRIMARY KEY (id),
     CONSTRAINT "quotes_company_id_quote_number_key" UNIQUE (company_id, quote_number),
-    CONSTRAINT "quotes_status_check" CHECK ((status = ANY (ARRAY['draft'::text, 'pending_approval'::text, 'approved'::text, 'declined'::text, 'rejected'::text]))) NOT VALID
+    CONSTRAINT "quotes_status_check" CHECK ((status = ANY (ARRAY['draft'::text, 'pending_approval'::text, 'approved'::text, 'rejected'::text, 'accepted'::text, 'expired'::text, 'converted'::text])))
 );
 
 -- ============================================================
@@ -291,6 +291,24 @@ ALTER TABLE "public"."user_preferences" ENABLE ROW LEVEL SECURITY;
 -- ============================================================
 -- 4. RLS POLICIES
 -- ============================================================
+DROP POLICY IF EXISTS "Admins can delete AI config" ON "public"."ai_config";
+CREATE POLICY "Admins can delete AI config"
+    ON "public"."ai_config"
+    FOR DELETE
+    USING (is_company_admin(company_id));
+
+DROP POLICY IF EXISTS "Admins can insert AI config" ON "public"."ai_config";
+CREATE POLICY "Admins can insert AI config"
+    ON "public"."ai_config"
+    FOR INSERT
+    WITH CHECK (is_company_admin(company_id));
+
+DROP POLICY IF EXISTS "Admins can update AI config" ON "public"."ai_config";
+CREATE POLICY "Admins can update AI config"
+    ON "public"."ai_config"
+    FOR UPDATE
+    USING (is_company_admin(company_id));
+
 DROP POLICY IF EXISTS "Users can view their company's AI config" ON "public"."ai_config";
 CREATE POLICY "Users can view their company's AI config"
     ON "public"."ai_config"
@@ -767,10 +785,10 @@ ALTER TABLE "public"."jobs"
     ADD CONSTRAINT "jobs_routing_id_fkey" FOREIGN KEY (routing_id) REFERENCES routings(id) ON DELETE SET NULL;
 
 ALTER TABLE "public"."operation_types"
-    ADD CONSTRAINT "resources_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+    ADD CONSTRAINT "operation_types_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
 
 ALTER TABLE "public"."operation_types"
-    ADD CONSTRAINT "resources_resource_group_id_fkey" FOREIGN KEY (resource_group_id) REFERENCES resource_groups(id) ON DELETE SET NULL;
+    ADD CONSTRAINT "operation_types_resource_group_id_fkey" FOREIGN KEY (resource_group_id) REFERENCES resource_groups(id) ON DELETE SET NULL;
 
 ALTER TABLE "public"."parts"
     ADD CONSTRAINT "parts_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
@@ -842,8 +860,8 @@ CREATE INDEX IF NOT EXISTS idx_job_attachments_job ON public.job_attachments USI
 CREATE INDEX IF NOT EXISTS idx_job_attachments_source ON public.job_attachments USING btree (source_quote_attachment_id);
 CREATE INDEX IF NOT EXISTS idx_job_ops_assigned ON public.job_operations USING btree (assigned_to) WHERE (assigned_to IS NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_job_ops_job ON public.job_operations USING btree (job_id);
+CREATE INDEX IF NOT EXISTS idx_job_ops_operation_type ON public.job_operations USING btree (operation_type_id);
 CREATE INDEX IF NOT EXISTS idx_job_ops_routing_op ON public.job_operations USING btree (routing_operation_id);
-CREATE INDEX IF NOT EXISTS idx_job_ops_station ON public.job_operations USING btree (station_id);
 CREATE INDEX IF NOT EXISTS idx_job_ops_status ON public.job_operations USING btree (status);
 CREATE INDEX IF NOT EXISTS idx_jobs_company ON public.jobs USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_customer ON public.jobs USING btree (customer_id);
@@ -868,8 +886,8 @@ CREATE INDEX IF NOT EXISTS idx_quotes_part ON public.quotes USING btree (part_id
 CREATE INDEX IF NOT EXISTS idx_quotes_routing ON public.quotes USING btree (routing_id);
 CREATE INDEX IF NOT EXISTS idx_quotes_status ON public.quotes USING btree (company_id, status);
 CREATE INDEX IF NOT EXISTS idx_resource_groups_company ON public.resource_groups USING btree (company_id);
+CREATE INDEX IF NOT EXISTS idx_routing_ops_operation_type ON public.routing_operations USING btree (operation_type_id);
 CREATE INDEX IF NOT EXISTS idx_routing_ops_routing ON public.routing_operations USING btree (routing_id);
-CREATE INDEX IF NOT EXISTS idx_routing_ops_station ON public.routing_operations USING btree (station_id);
 CREATE INDEX IF NOT EXISTS idx_routings_company ON public.routings USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_routings_default ON public.routings USING btree (part_id, is_default) WHERE (is_default = true);
 CREATE INDEX IF NOT EXISTS idx_routings_part ON public.routings USING btree (part_id);
@@ -880,6 +898,80 @@ CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON public.user_preferenc
 -- ============================================================
 -- 7. FUNCTIONS
 -- ============================================================
+CREATE OR REPLACE FUNCTION public.convert_quote_to_job(p_quote_id uuid, p_routing_id uuid DEFAULT NULL::uuid, p_due_date date DEFAULT NULL::date, p_priority text DEFAULT 'normal'::text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+DECLARE
+    v_quote RECORD;
+    v_job_id UUID;
+    v_routing_id UUID;
+    v_ops_count INTEGER;
+BEGIN
+    -- Get the quote
+    SELECT * INTO v_quote FROM quotes WHERE id = p_quote_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Quote not found: %', p_quote_id;
+    END IF;
+
+    IF v_quote.status != 'accepted' THEN
+        RAISE EXCEPTION 'Quote must be accepted before converting. Current status: %', v_quote.status;
+    END IF;
+
+    IF v_quote.converted_to_job_id IS NOT NULL THEN
+        RAISE EXCEPTION 'Quote already converted to job: %', v_quote.converted_to_job_id;
+    END IF;
+
+    -- Determine which routing to use
+    v_routing_id := COALESCE(p_routing_id, v_quote.routing_id);
+
+    -- Create the job
+    INSERT INTO jobs (
+        company_id,
+        quote_id,
+        routing_id,
+        customer_id,
+        part_id,
+        description,
+        quantity_ordered,
+        due_date,
+        priority,
+        created_by
+    ) VALUES (
+        v_quote.company_id,
+        v_quote.id,
+        v_routing_id,
+        v_quote.customer_id,
+        v_quote.part_id,
+        v_quote.description,
+        v_quote.quantity,
+        p_due_date,
+        p_priority,
+        v_quote.created_by
+    )
+    RETURNING id INTO v_job_id;
+
+    -- If there's a routing, copy operations to the job
+    IF v_routing_id IS NOT NULL THEN
+        SELECT create_job_operations_from_routing(v_job_id, v_routing_id) INTO v_ops_count;
+    END IF;
+
+    -- Update the quote with conversion info
+    UPDATE quotes
+    SET
+        status = 'converted',
+        converted_to_job_id = v_job_id,
+        converted_at = NOW()
+    WHERE id = p_quote_id;
+
+    RETURN v_job_id;
+END;
+$function$
+
+;
+
 CREATE OR REPLACE FUNCTION public.convert_quote_to_job(p_quote_id uuid, p_routing_id uuid DEFAULT NULL::uuid, p_due_date date DEFAULT NULL::date, p_priority text DEFAULT 'normal'::text, p_notes text DEFAULT NULL::text)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -962,41 +1054,41 @@ CREATE OR REPLACE FUNCTION public.create_job_operations_from_routing(p_job_id uu
  LANGUAGE plpgsql
 AS $function$
 DECLARE
-  v_count INTEGER;
+    v_count INTEGER;
 BEGIN
-  INSERT INTO job_operations (
-    job_id,
-    routing_operation_id,
-    sequence,
-    operation_name,
-    work_center_id,
-    estimated_setup_hours,
-    estimated_run_hours_per_unit,
-    instructions
-  )
-  SELECT
-    p_job_id,
-    ro.id,
-    ro.sequence,
-    ro.operation_name,
-    ro.work_center_id,
-    ro.estimated_setup_hours,
-    ro.estimated_run_hours_per_unit,
-    ro.instructions
-  FROM routing_operations ro
-  WHERE ro.routing_id = p_routing_id
-  ORDER BY ro.sequence;
-  
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-  
-  -- Set the job's current operation to the first one
-  UPDATE jobs 
-  SET current_operation_sequence = (
-    SELECT MIN(sequence) FROM job_operations WHERE job_id = p_job_id
-  )
-  WHERE id = p_job_id;
-  
-  RETURN v_count;
+    INSERT INTO job_operations (
+        job_id,
+        routing_operation_id,
+        sequence,
+        operation_name,
+        operation_type_id,
+        estimated_setup_hours,
+        estimated_run_hours_per_unit,
+        instructions
+    )
+    SELECT
+        p_job_id,
+        ro.id,
+        ro.sequence,
+        ro.operation_name,
+        ro.operation_type_id,
+        ro.estimated_setup_hours,
+        ro.estimated_run_hours_per_unit,
+        ro.instructions
+    FROM routing_operations ro
+    WHERE ro.routing_id = p_routing_id
+    ORDER BY ro.sequence;
+
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+
+    -- Set the job's current operation to the first one
+    UPDATE jobs
+    SET current_operation_sequence = (
+        SELECT MIN(sequence) FROM job_operations WHERE job_id = p_job_id
+    )
+    WHERE id = p_job_id;
+
+    RETURN v_count;
 END;
 $function$
 
@@ -1208,20 +1300,11 @@ CREATE TRIGGER ai_config_updated_at BEFORE UPDATE ON public.ai_config FOR EACH R
 DROP TRIGGER IF EXISTS "companies_updated_at" ON "public"."companies";
 CREATE TRIGGER companies_updated_at BEFORE UPDATE ON public.companies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS "update_companies_updated_at" ON "public"."companies";
-CREATE TRIGGER update_companies_updated_at BEFORE UPDATE ON public.companies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS "customers_updated_at" ON "public"."customers";
 CREATE TRIGGER customers_updated_at BEFORE UPDATE ON public.customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS "update_customers_updated_at" ON "public"."customers";
-CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON public.customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS "job_operations_updated_at" ON "public"."job_operations";
 CREATE TRIGGER job_operations_updated_at BEFORE UPDATE ON public.job_operations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS "update_job_operations_updated_at" ON "public"."job_operations";
-CREATE TRIGGER update_job_operations_updated_at BEFORE UPDATE ON public.job_operations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS "jobs_updated_at" ON "public"."jobs";
 CREATE TRIGGER jobs_updated_at BEFORE UPDATE ON public.jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1231,9 +1314,6 @@ CREATE TRIGGER trigger_job_status_change BEFORE UPDATE ON public.jobs FOR EACH R
 
 DROP TRIGGER IF EXISTS "trigger_set_job_number" ON "public"."jobs";
 CREATE TRIGGER trigger_set_job_number BEFORE INSERT ON public.jobs FOR EACH ROW EXECUTE FUNCTION set_job_number();
-
-DROP TRIGGER IF EXISTS "update_jobs_updated_at" ON "public"."jobs";
-CREATE TRIGGER update_jobs_updated_at BEFORE UPDATE ON public.jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS "update_operation_types_updated_at" ON "public"."operation_types";
 CREATE TRIGGER update_operation_types_updated_at BEFORE UPDATE ON public.operation_types FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1259,17 +1339,8 @@ CREATE TRIGGER update_resource_groups_updated_at BEFORE UPDATE ON public.resourc
 DROP TRIGGER IF EXISTS "routing_operations_updated_at" ON "public"."routing_operations";
 CREATE TRIGGER routing_operations_updated_at BEFORE UPDATE ON public.routing_operations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS "update_routing_operations_updated_at" ON "public"."routing_operations";
-CREATE TRIGGER update_routing_operations_updated_at BEFORE UPDATE ON public.routing_operations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS "routings_updated_at" ON "public"."routings";
 CREATE TRIGGER routings_updated_at BEFORE UPDATE ON public.routings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS "update_routings_updated_at" ON "public"."routings";
-CREATE TRIGGER update_routings_updated_at BEFORE UPDATE ON public.routings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS "update_user_preferences_updated_at" ON "public"."user_preferences";
-CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON public.user_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS "user_preferences_updated_at" ON "public"."user_preferences";
 CREATE TRIGGER user_preferences_updated_at BEFORE UPDATE ON public.user_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1458,8 +1529,8 @@ COMMENT ON COLUMN "public"."job_operations"."sequence"
 COMMENT ON COLUMN "public"."job_operations"."operation_name"
     IS 'Name of the operation. Copied from routing or manually entered.';
 
-COMMENT ON COLUMN "public"."job_operations"."station_id"
-    IS 'FK to stations. Where operation is performed. SET NULL if station deleted.';
+COMMENT ON COLUMN "public"."job_operations"."operation_type_id"
+    IS 'FK to operation_types. What type of operation is performed. SET NULL if operation type deleted.';
 
 COMMENT ON COLUMN "public"."job_operations"."estimated_setup_hours"
     IS 'Estimated setup hours from routing.';
@@ -1684,7 +1755,7 @@ COMMENT ON COLUMN "public"."quotes"."total_price"
     IS 'Total quoted price (quantity × unit_price). Stored for quick access.';
 
 COMMENT ON COLUMN "public"."quotes"."status"
-    IS 'Quote lifecycle status. Values: draft, pending_approval, approved, rejected, expired, converted. Default: draft';
+    IS 'Quote lifecycle status. Values: draft, pending_approval, approved, rejected, accepted, expired, converted. Default: draft';
 
 COMMENT ON COLUMN "public"."quotes"."status_changed_at"
     IS 'Timestamp when status last changed. For tracking response times.';
@@ -1734,8 +1805,8 @@ COMMENT ON COLUMN "public"."routing_operations"."sequence"
 COMMENT ON COLUMN "public"."routing_operations"."operation_name"
     IS 'Name/description of the operation. Example: "CNC Rough Cut", "Deburr", "Final Inspection"';
 
-COMMENT ON COLUMN "public"."routing_operations"."station_id"
-    IS 'FK to stations. Where this operation is performed. SET NULL if station deleted.';
+COMMENT ON COLUMN "public"."routing_operations"."operation_type_id"
+    IS 'FK to operation_types. What type of operation is performed. SET NULL if operation type deleted.';
 
 COMMENT ON COLUMN "public"."routing_operations"."estimated_setup_hours"
     IS 'Estimated hours for machine/station setup before production.';
