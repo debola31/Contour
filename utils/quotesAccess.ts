@@ -22,8 +22,11 @@ import {
   generateTempStoragePath,
 } from './storageHelpers';
 
-// Maximum attachments per quote (Phase 0)
-const MAX_ATTACHMENTS_PER_QUOTE = 1;
+// Maximum attachments per quote
+export const MAX_ATTACHMENTS_PER_QUOTE = 5;
+
+// Maximum file size (50MB)
+export const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 // ============== CRUD Operations ==============
 
@@ -235,7 +238,7 @@ export async function getQuoteWithRelations(quoteId: string): Promise<QuoteWithR
 export async function createQuote(
   companyId: string,
   formData: QuoteFormData,
-  tempAttachment?: TempAttachment | null
+  tempAttachments?: TempAttachment[]
 ): Promise<Quote> {
   const supabase = getSupabase();
 
@@ -264,14 +267,16 @@ export async function createQuote(
     throw error;
   }
 
-  // If there's a temp attachment, move it to permanent location
-  if (tempAttachment && data.id) {
-    try {
-      await moveTempAttachmentToPermanent(tempAttachment, data.id, companyId);
-    } catch (attachmentError) {
-      console.error('Failed to move temp attachment:', attachmentError);
-      // Quote is already created, so just log the error
-      // User can upload attachment again if needed
+  // If there are temp attachments, move them to permanent location
+  if (tempAttachments && tempAttachments.length > 0 && data.id) {
+    for (const tempAttachment of tempAttachments) {
+      try {
+        await moveTempAttachmentToPermanent(tempAttachment, data.id, companyId);
+      } catch (attachmentError) {
+        console.error('Failed to move temp attachment:', attachmentError);
+        // Quote is already created, so just log the error
+        // User can upload attachment again if needed
+      }
     }
   }
 
@@ -686,10 +691,9 @@ export async function uploadQuoteAttachment(
     throw new Error('Only PDF files are allowed');
   }
 
-  // 2. Validate file size (10MB)
-  const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-  if (file.size > MAX_SIZE) {
-    throw new Error('File size must be 10MB or less');
+  // 2. Validate file size (50MB)
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error('File size must be 50MB or less');
   }
 
   // 3. Check quote status (must be draft)
@@ -808,9 +812,8 @@ export async function replaceQuoteAttachment(
     throw new Error('Only PDF files are allowed');
   }
 
-  const MAX_SIZE = 10 * 1024 * 1024;
-  if (newFile.size > MAX_SIZE) {
-    throw new Error('File size must be 10MB or less');
+  if (newFile.size > MAX_FILE_SIZE) {
+    throw new Error('File size must be 50MB or less');
   }
 
   // 2. Get existing attachment info with quote status
@@ -889,10 +892,9 @@ export async function uploadTempQuoteAttachment(
     throw new Error('Only PDF files are allowed');
   }
 
-  // 2. Validate file size (10MB)
-  const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-  if (file.size > MAX_SIZE) {
-    throw new Error('File size must be 10MB or less');
+  // 2. Validate file size (50MB)
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error('File size must be 50MB or less');
   }
 
   // 3. Generate temp storage path

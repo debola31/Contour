@@ -18,6 +18,7 @@ import {
   replaceQuoteAttachment,
   uploadTempQuoteAttachment,
   deleteTempQuoteAttachment,
+  MAX_ATTACHMENTS_PER_QUOTE,
 } from '@/utils/quotesAccess';
 
 interface QuoteAttachmentUploadProps {
@@ -25,9 +26,9 @@ interface QuoteAttachmentUploadProps {
   companyId: string;
   sessionId: string; // For temp uploads
   existingAttachments: QuoteAttachment[];
-  tempAttachment?: TempAttachment | null; // For new quotes
+  tempAttachments?: TempAttachment[]; // For new quotes (multiple)
   onAttachmentChange: () => void;
-  onTempAttachmentChange?: (attachment: TempAttachment | null) => void; // For temp uploads
+  onTempAttachmentsChange?: (attachments: TempAttachment[]) => void; // For temp uploads
   disabled: boolean;
 }
 
@@ -36,9 +37,9 @@ export default function QuoteAttachmentUpload({
   companyId,
   sessionId,
   existingAttachments,
-  tempAttachment,
+  tempAttachments = [],
   onAttachmentChange,
-  onTempAttachmentChange,
+  onTempAttachmentsChange,
   disabled,
 }: QuoteAttachmentUploadProps) {
   const [uploading, setUploading] = useState(false);
@@ -47,7 +48,8 @@ export default function QuoteAttachmentUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isCreateMode = quoteId === null;
-  const hasAttachment = existingAttachments.length > 0 || !!tempAttachment;
+  const totalAttachments = existingAttachments.length + tempAttachments.length;
+  const canUploadMore = totalAttachments < MAX_ATTACHMENTS_PER_QUOTE;
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -59,33 +61,64 @@ export default function QuoteAttachmentUpload({
     return new Date(dateStr).toLocaleDateString();
   };
 
-  const handleFileSelect = async (file: File) => {
-    if (disabled) return;
-
-    setError(null);
-    setUploading(true);
+  const handleFileSelect = async (file: File): Promise<TempAttachment | null> => {
+    if (disabled) return null;
 
     try {
       if (isCreateMode) {
         // Upload to temp location for new quotes
         const tempAttach = await uploadTempQuoteAttachment(companyId, sessionId, file);
-        onTempAttachmentChange?.(tempAttach);
+        return tempAttach;
       } else {
         // Upload to permanent location for existing quotes
         await uploadQuoteAttachment(quoteId!, companyId, file);
         onAttachmentChange();
+        return null;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload attachment');
-    } finally {
-      setUploading(false);
+      return null;
     }
   };
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      // Calculate how many files we can still upload
+      const remainingSlots = MAX_ATTACHMENTS_PER_QUOTE - totalAttachments;
+      const filesToUpload = Array.from(files).slice(0, remainingSlots);
+
+      if (filesToUpload.length === 0) {
+        setError(`Maximum ${MAX_ATTACHMENTS_PER_QUOTE} attachments allowed.`);
+        e.target.value = '';
+        return;
+      }
+
+      setError(null);
+      setUploading(true);
+
+      try {
+        // Upload all files and collect results
+        const uploadedAttachments: TempAttachment[] = [];
+        for (const file of filesToUpload) {
+          const result = await handleFileSelect(file);
+          if (result) {
+            uploadedAttachments.push(result);
+          }
+        }
+
+        // Update state once with all new attachments
+        if (isCreateMode && uploadedAttachments.length > 0) {
+          onTempAttachmentsChange?.([...tempAttachments, ...uploadedAttachments]);
+        }
+
+        if (files.length > remainingSlots) {
+          const skipped = files.length - remainingSlots;
+          setError(`${skipped} file(s) skipped. Maximum is ${MAX_ATTACHMENTS_PER_QUOTE} attachments.`);
+        }
+      } finally {
+        setUploading(false);
+      }
     }
     // Reset input so same file can be selected again
     e.target.value = '';
@@ -101,16 +134,49 @@ export default function QuoteAttachmentUpload({
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
 
-    if (disabled) return;
+    if (disabled || !canUploadMore) return;
 
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleFileSelect(file);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      // Calculate how many files we can still upload
+      const remainingSlots = MAX_ATTACHMENTS_PER_QUOTE - totalAttachments;
+      const filesToUpload = Array.from(files).slice(0, remainingSlots);
+
+      if (filesToUpload.length === 0) {
+        setError(`Maximum ${MAX_ATTACHMENTS_PER_QUOTE} attachments allowed.`);
+        return;
+      }
+
+      setError(null);
+      setUploading(true);
+
+      try {
+        // Upload all files and collect results
+        const uploadedAttachments: TempAttachment[] = [];
+        for (const file of filesToUpload) {
+          const result = await handleFileSelect(file);
+          if (result) {
+            uploadedAttachments.push(result);
+          }
+        }
+
+        // Update state once with all new attachments
+        if (isCreateMode && uploadedAttachments.length > 0) {
+          onTempAttachmentsChange?.([...tempAttachments, ...uploadedAttachments]);
+        }
+
+        if (files.length > remainingSlots) {
+          const skipped = files.length - remainingSlots;
+          setError(`${skipped} file(s) skipped. Maximum is ${MAX_ATTACHMENTS_PER_QUOTE} attachments.`);
+        }
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -124,7 +190,8 @@ export default function QuoteAttachmentUpload({
       if (isCreateMode && tempPath) {
         // Delete temp attachment
         await deleteTempQuoteAttachment(tempPath);
-        onTempAttachmentChange?.(null);
+        // Remove from array
+        onTempAttachmentsChange?.(tempAttachments.filter(a => a.file_path !== tempPath));
       } else if (attachmentId) {
         // Delete permanent attachment
         await deleteQuoteAttachment(attachmentId);
@@ -138,7 +205,7 @@ export default function QuoteAttachmentUpload({
   };
 
   const handleReplace = async (attachmentId: string, file: File) => {
-    if (disabled) return;
+    if (disabled || !quoteId) return;
 
     setError(null);
     setUploading(true);
@@ -233,44 +300,48 @@ export default function QuoteAttachmentUpload({
         </Box>
       )}
 
-      {/* Temp Attachment (for new quotes) */}
-      {tempAttachment && (
+      {/* Temp Attachments (for new quotes) */}
+      {tempAttachments.length > 0 && (
         <Box sx={{ mb: 2 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              p: 2,
-              bgcolor: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: 1,
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <PictureAsPdfIcon sx={{ fontSize: 40, color: 'error.main' }} />
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body1" fontWeight={500}>
-                {tempAttachment.file_name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatFileSize(tempAttachment.file_size)} • Ready to upload
-              </Typography>
+          {tempAttachments.map((attachment, index) => (
+            <Box
+              key={attachment.file_path}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                p: 2,
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: 1,
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                mb: 1,
+              }}
+            >
+              <PictureAsPdfIcon sx={{ fontSize: 40, color: 'error.main' }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body1" fontWeight={500}>
+                  {attachment.file_name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {formatFileSize(attachment.file_size)} • Ready to upload
+                </Typography>
+              </Box>
+              {!disabled && !uploading && (
+                <IconButton
+                  color="error"
+                  onClick={() => handleDelete(undefined, attachment.file_path)}
+                  title="Delete attachment"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
             </Box>
-            {!disabled && !uploading && (
-              <IconButton
-                color="error"
-                onClick={() => handleDelete(undefined, tempAttachment.file_path)}
-                title="Delete attachment"
-              >
-                <DeleteIcon />
-              </IconButton>
-            )}
-          </Box>
+          ))}
         </Box>
       )}
 
       {/* Upload Area */}
-      {!hasAttachment && !disabled && (
+      {canUploadMore && !disabled && (
         <Box
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -296,6 +367,7 @@ export default function QuoteAttachmentUpload({
             ref={fileInputRef}
             type="file"
             accept="application/pdf"
+            multiple
             onChange={handleFileInputChange}
             style={{ display: 'none' }}
             disabled={uploading}
@@ -310,10 +382,10 @@ export default function QuoteAttachmentUpload({
             <Box>
               <UploadFileIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
               <Typography variant="body1" gutterBottom>
-                Drag and drop a PDF file here, or click to select
+                Drag and drop PDF files here, or click to select
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Maximum file size: 10MB • PDF files only
+                Maximum file size: 50MB • Up to {MAX_ATTACHMENTS_PER_QUOTE} files • PDF files only
               </Typography>
             </Box>
           )}

@@ -95,7 +95,7 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
   // Attachments
   const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
-  const [tempAttachment, setTempAttachment] = useState<TempAttachment | null>(null);
+  const [tempAttachments, setTempAttachments] = useState<TempAttachment[]>([]);
   const [sessionId] = useState(() => generateSessionId()); // Generate once on mount
 
   // Load customers on mount
@@ -172,15 +172,17 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
     loadAttachments();
   }, [loadAttachments]);
 
-  // Cleanup temp attachment on unmount (if in create mode and quote wasn't saved)
+  // Cleanup temp attachments on unmount (if in create mode and quote wasn't saved)
   useEffect(() => {
     return () => {
-      if (mode === 'create' && tempAttachment?.file_path) {
+      if (mode === 'create' && tempAttachments.length > 0) {
         // Best effort cleanup - don't block unmount
-        deleteTempQuoteAttachment(tempAttachment.file_path).catch(console.error);
+        tempAttachments.forEach(attachment => {
+          deleteTempQuoteAttachment(attachment.file_path).catch(console.error);
+        });
       }
     };
-  }, [mode, tempAttachment]);
+  }, [mode, tempAttachments]);
 
   // Auto-fill price when part or quantity changes
   useEffect(() => {
@@ -310,7 +312,7 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
 
     try {
       if (mode === 'create') {
-        const quote = await createQuote(companyId, formData, tempAttachment);
+        const quote = await createQuote(companyId, formData, tempAttachments);
         router.push(`/dashboard/${companyId}/quotes/${quote.id}`);
       } else if (quoteId) {
         await updateQuote(quoteId, formData);
@@ -644,9 +646,9 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
             companyId={companyId}
             sessionId={sessionId}
             existingAttachments={attachments}
-            tempAttachment={tempAttachment}
+            tempAttachments={tempAttachments}
             onAttachmentChange={loadAttachments}
-            onTempAttachmentChange={setTempAttachment}
+            onTempAttachmentsChange={setTempAttachments}
             disabled={mode === 'edit' && formData.status !== 'draft' && formData.status !== 'rejected'}
           />
         </CardContent>
