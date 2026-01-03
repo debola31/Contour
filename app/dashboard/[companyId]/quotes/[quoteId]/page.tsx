@@ -23,6 +23,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DownloadIcon from '@mui/icons-material/Download';
 import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -208,7 +209,7 @@ export default function QuoteDetailPage() {
         </Box>
 
         {/* Action Buttons */}
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
           {(quote.status === 'draft' || quote.status === 'rejected') && (
             <>
               <Button
@@ -242,11 +243,12 @@ export default function QuoteDetailPage() {
                 Approve
               </Button>
               <Button
-                variant="outlined"
-                color="error"
+                variant="contained"
+                color="warning"
                 startIcon={<CloseIcon />}
                 onClick={() => handleAction(() => markQuoteAsRejected(quoteId))}
                 disabled={actionLoading}
+                sx={{ color: 'white' }}
               >
                 Reject
               </Button>
@@ -265,15 +267,25 @@ export default function QuoteDetailPage() {
             </Button>
           )}
 
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={() => setDeleteDialogOpen(true)}
-            disabled={actionLoading}
-          >
-            Delete
-          </Button>
+          {/* Spacer to push delete to far right */}
+          <Box sx={{ flex: 1 }} />
+
+          {/* Delete Icon Button */}
+          <Tooltip title="Delete Quote">
+            <IconButton
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={actionLoading}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'error.main',
+                  bgcolor: 'rgba(239, 68, 68, 0.1)',
+                },
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 
