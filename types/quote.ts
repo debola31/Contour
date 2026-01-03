@@ -14,16 +14,11 @@ export interface Quote {
   quote_number: string;
   customer_id: string;
   part_id: string | null;
-  part_number_text: string | null;
   description: string | null;
   routing_id: string | null;
   quantity: number;
   unit_price: number | null;
   total_price: number | null;
-  estimated_material_cost: number | null;
-  estimated_labor_hours: number | null;
-  estimated_lead_time_days: number | null;
-  valid_until: string | null;
   status: QuoteStatus;
   status_changed_at: string | null;
   converted_to_job_id: string | null;
@@ -66,12 +61,9 @@ export interface QuoteFormData {
   customer_id: string;
   part_type: 'existing' | 'adhoc';
   part_id: string;
-  part_number_text: string;
   description: string;
   quantity: string; // String for form input
   unit_price: string; // String for form input
-  estimated_lead_time_days: string;
-  valid_until: string;
   status?: QuoteStatus; // For edit mode to check permissions
 }
 
@@ -99,12 +91,9 @@ export const EMPTY_QUOTE_FORM: QuoteFormData = {
   customer_id: '',
   part_type: 'existing',
   part_id: '',
-  part_number_text: '',
   description: '',
   quantity: '1',
   unit_price: '',
-  estimated_lead_time_days: '',
-  valid_until: '',
 };
 
 /**
@@ -115,13 +104,9 @@ export function quoteToFormData(quote: Quote): QuoteFormData {
     customer_id: quote.customer_id,
     part_type: quote.part_id ? 'existing' : 'adhoc',
     part_id: quote.part_id || '',
-    part_number_text: quote.part_number_text || '',
     description: quote.description || '',
     quantity: String(quote.quantity),
     unit_price: quote.unit_price !== null ? String(quote.unit_price) : '',
-    estimated_lead_time_days:
-      quote.estimated_lead_time_days !== null ? String(quote.estimated_lead_time_days) : '',
-    valid_until: quote.valid_until || '',
     status: quote.status,
   };
 }

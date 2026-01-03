@@ -276,7 +276,7 @@ export default function QuotesPage() {
       flex: 1,
       minWidth: 150,
       valueGetter: (params) =>
-        params.data?.parts?.part_number || params.data?.part_number_text || '—',
+        params.data?.parts?.part_number || '—',
     },
     {
       field: 'quantity',

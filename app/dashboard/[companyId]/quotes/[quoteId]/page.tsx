@@ -364,15 +364,6 @@ export default function QuoteDetailPage() {
                     </Typography>
                   )}
                 </>
-              ) : quote.part_number_text ? (
-                <>
-                  <Typography variant="body1" fontWeight={500}>
-                    {quote.part_number_text}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    (Ad-hoc part)
-                  </Typography>
-                </>
               ) : (
                 <Typography color="text.secondary">No part specified</Typography>
               )}
@@ -487,38 +478,6 @@ export default function QuoteDetailPage() {
                   </Typography>
                   <Typography variant="h6" color="primary" fontWeight={600}>
                     {formatCurrency(quote.total_price)}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Timeline */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Timeline
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 6 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Lead Time
-                  </Typography>
-                  <Typography variant="body1" fontWeight={500}>
-                    {quote.estimated_lead_time_days
-                      ? `${quote.estimated_lead_time_days} days`
-                      : '—'}
-                  </Typography>
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Valid Until
-                  </Typography>
-                  <Typography variant="body1" fontWeight={500}>
-                    {formatDate(quote.valid_until)}
                   </Typography>
                 </Grid>
               </Grid>

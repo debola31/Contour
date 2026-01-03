@@ -100,7 +100,7 @@ export default function ConvertToJobModal({
             </Typography>
             <Typography variant="body2" sx={{ mb: 0.5 }}>
               <strong>Part:</strong>{' '}
-              {quote.parts?.part_number || quote.part_number_text || '—'}
+              {quote.parts?.part_number || '—'}
             </Typography>
             <Typography variant="body2" sx={{ mb: 0.5 }}>
               <strong>Quantity:</strong> {quote.quantity}

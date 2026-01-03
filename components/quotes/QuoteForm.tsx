@@ -351,28 +351,17 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
     <Box component="form" onSubmit={handleSubmit}>
       {/* Actions at top */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        {mode === 'edit' ? (
-          <Button variant="outlined" onClick={handleCancel} disabled={loading}>
-            Cancel
-          </Button>
-        ) : (
-          <Box />
-        )}
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          {mode === 'create' && (
-            <Button variant="outlined" onClick={handleCancel} disabled={loading}>
-              Cancel
-            </Button>
-          )}
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
-          >
-            {loading ? 'Saving...' : mode === 'create' ? 'Save as Draft' : 'Save'}
-          </Button>
-        </Box>
+        <Button variant="outlined" onClick={handleCancel} disabled={loading}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} /> : null}
+        >
+          {loading ? 'Saving...' : mode === 'create' ? 'Save as Draft' : 'Save'}
+        </Button>
       </Box>
 
       {error && (

@@ -3,6 +3,206 @@
 BEGIN;
 
 
+CREATE TABLE IF NOT EXISTS public.quotes
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    quote_number text COLLATE pg_catalog."default" NOT NULL,
+    customer_id uuid NOT NULL,
+    part_id uuid,
+    description text COLLATE pg_catalog."default",
+    routing_id uuid,
+    quantity integer NOT NULL DEFAULT 1,
+    unit_price numeric(12, 4),
+    total_price numeric(12, 4),
+    status text COLLATE pg_catalog."default" NOT NULL DEFAULT 'draft'::text,
+    status_changed_at timestamp with time zone,
+    converted_to_job_id uuid,
+    converted_at timestamp with time zone,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT quotes_pkey PRIMARY KEY (id),
+    CONSTRAINT quotes_company_id_quote_number_key UNIQUE (company_id, quote_number)
+);
+
+ALTER TABLE IF EXISTS public.quotes
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.quotes
+    IS 'Sales quotes/estimates sent to customers before work begins. Contains pricing, lead time estimates, and can be converted to jobs. Tracks quote status (draft, sent, accepted, rejected, expired) and links to the job if converted.';
+
+COMMENT ON COLUMN public.quotes.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.quotes.company_id
+    IS 'FK to companies. Cascades on delete.';
+
+COMMENT ON COLUMN public.quotes.quote_number
+    IS 'Unique quote identifier within company. Example: "Q-2024-001", "QTE-00042"';
+
+COMMENT ON COLUMN public.quotes.customer_id
+    IS 'FK to customers. RESTRICT on delete - cannot delete customer with quotes.';
+
+COMMENT ON COLUMN public.quotes.part_id
+    IS 'FK to parts. Optional. SET NULL if part deleted.';
+
+COMMENT ON COLUMN public.quotes.description
+    IS 'Description of quoted work. May differ from part description for custom work.';
+
+COMMENT ON COLUMN public.quotes.routing_id
+    IS 'FK to routings. Optional process template for this quote. SET NULL if routing deleted.';
+
+COMMENT ON COLUMN public.quotes.quantity
+    IS 'Number of units quoted. Default: 1';
+
+COMMENT ON COLUMN public.quotes.unit_price
+    IS 'Price per unit quoted to customer. Precision: 12,4 for accuracy.';
+
+COMMENT ON COLUMN public.quotes.total_price
+    IS 'Total quoted price (quantity × unit_price). Stored for quick access.';
+
+COMMENT ON COLUMN public.quotes.status
+    IS 'Quote lifecycle status. Values: draft, pending_approval, approved, rejected, expired, converted. Default: draft';
+
+COMMENT ON COLUMN public.quotes.status_changed_at
+    IS 'Timestamp when status last changed. For tracking response times.';
+
+COMMENT ON COLUMN public.quotes.converted_to_job_id
+    IS 'FK to jobs. Set when quote is accepted and converted to a job. SET NULL if job deleted.';
+
+COMMENT ON COLUMN public.quotes.converted_at
+    IS 'Timestamp when quote was converted to job.';
+
+COMMENT ON COLUMN public.quotes.created_by
+    IS 'UUID of user who created the quote. References Supabase auth.users.';
+
+COMMENT ON COLUMN public.quotes.created_at
+    IS 'Timestamp when quote was created.';
+
+COMMENT ON COLUMN public.quotes.updated_at
+    IS 'Timestamp of last update. Auto-updated via trigger.';
+
+CREATE TABLE IF NOT EXISTS public.companies
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    name text COLLATE pg_catalog."default" NOT NULL,
+    slug text COLLATE pg_catalog."default",
+    settings jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT companies_pkey PRIMARY KEY (id),
+    CONSTRAINT companies_slug_key UNIQUE (slug)
+);
+
+ALTER TABLE IF EXISTS public.companies
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.companies
+    IS 'Multi-tenant root table. Each company represents a separate manufacturing shop/business with isolated data. All other tables reference company_id for tenant isolation via RLS policies.';
+
+COMMENT ON COLUMN public.companies.id
+    IS 'Primary key. UUID auto-generated. Referenced by all other tables for multi-tenant isolation.';
+
+COMMENT ON COLUMN public.companies.name
+    IS 'Display name of the company/shop. Example: "Contour Tool & Machine"';
+
+COMMENT ON COLUMN public.companies.slug
+    IS 'URL-friendly unique identifier. Used in routes like /dashboard/{slug}/. Example: "contour-tool"';
+
+COMMENT ON COLUMN public.companies.settings
+    IS 'Company-wide settings as JSONB. May include: default currency, timezone, fiscal year start, feature flags.';
+
+COMMENT ON COLUMN public.companies.created_at
+    IS 'Timestamp when company record was created. Auto-set on insert.';
+
+COMMENT ON COLUMN public.companies.updated_at
+    IS 'Timestamp of last update. Auto-updated via trigger.';
+
+CREATE TABLE IF NOT EXISTS public.resource_groups
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    name text COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default",
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT resource_groups_pkey PRIMARY KEY (id),
+    CONSTRAINT resource_groups_company_id_name_key UNIQUE (company_id, name)
+);
+
+ALTER TABLE IF EXISTS public.resource_groups
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.resource_groups
+    IS 'Categories for organizing operation types (e.g., CNC, LATHE&MILL, Hone, EDM). Matches terminology from legacy system.';
+
+COMMENT ON COLUMN public.resource_groups.id
+    IS 'Primary key (auto-generated UUID)';
+
+COMMENT ON COLUMN public.resource_groups.company_id
+    IS 'Foreign key to companies table (multi-tenant isolation)';
+
+COMMENT ON COLUMN public.resource_groups.name
+    IS 'Group name (e.g., "CNC", "LATHE&MILL", "Hone", "EDM")';
+
+COMMENT ON COLUMN public.resource_groups.description
+    IS 'Optional description of the group';
+
+COMMENT ON COLUMN public.resource_groups.created_at
+    IS 'Timestamp when record was created';
+
+COMMENT ON COLUMN public.resource_groups.updated_at
+    IS 'Timestamp when record was last updated';
+
+CREATE TABLE IF NOT EXISTS public.operation_types
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    resource_group_id uuid,
+    name text COLLATE pg_catalog."default" NOT NULL,
+    labor_rate numeric(10, 2),
+    description text COLLATE pg_catalog."default",
+    metadata jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT operation_types_pkey PRIMARY KEY (id),
+    CONSTRAINT operation_types_company_id_name_key UNIQUE (company_id, name)
+);
+
+ALTER TABLE IF EXISTS public.operation_types
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.operation_types
+    IS 'Operation types available in the shop (e.g., HURCO Mill, Mazak Lathe). Defines what work can be done and at what hourly cost.';
+
+COMMENT ON COLUMN public.operation_types.id
+    IS 'Primary key (auto-generated UUID)';
+
+COMMENT ON COLUMN public.operation_types.company_id
+    IS 'Foreign key to companies table (multi-tenant isolation)';
+
+COMMENT ON COLUMN public.operation_types.resource_group_id
+    IS 'Foreign key to resource_groups (NULL = ungrouped)';
+
+COMMENT ON COLUMN public.operation_types.name
+    IS 'Operation type name (e.g., "HURCO Mill", "EDM", "GRINDING")';
+
+COMMENT ON COLUMN public.operation_types.labor_rate
+    IS 'Hourly rate in dollars (e.g., 135.00)';
+
+COMMENT ON COLUMN public.operation_types.description
+    IS 'Optional description or notes';
+
+COMMENT ON COLUMN public.operation_types.metadata
+    IS 'Flexible JSONB for shop-specific data (setup_time_minutes, capabilities, legacy_id, etc.)';
+
+COMMENT ON COLUMN public.operation_types.created_at
+    IS 'Timestamp when record was created';
+
+COMMENT ON COLUMN public.operation_types.updated_at
+    IS 'Timestamp when record was last updated';
+
 CREATE TABLE IF NOT EXISTS public.ai_config
 (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -47,40 +247,52 @@ COMMENT ON COLUMN public.ai_config.created_at
 COMMENT ON COLUMN public.ai_config.updated_at
     IS 'Timestamp of last update. Auto-updated via trigger.';
 
-CREATE TABLE IF NOT EXISTS public.companies
+CREATE TABLE IF NOT EXISTS public.parts
 (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
-    name text COLLATE pg_catalog."default" NOT NULL,
-    slug text COLLATE pg_catalog."default",
-    settings jsonb DEFAULT '{}'::jsonb,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT companies_pkey PRIMARY KEY (id),
-    CONSTRAINT companies_slug_key UNIQUE (slug)
+    company_id uuid NOT NULL,
+    customer_id uuid,
+    part_number text COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default",
+    pricing jsonb DEFAULT '[]'::jsonb,
+    material_cost numeric(10, 2),
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT parts_pkey PRIMARY KEY (id),
+    CONSTRAINT parts_unique_per_customer UNIQUE (company_id, customer_id, part_number)
 );
 
-ALTER TABLE IF EXISTS public.companies
+ALTER TABLE IF EXISTS public.parts
     ENABLE ROW LEVEL SECURITY;
 
-COMMENT ON TABLE public.companies
-    IS 'Multi-tenant root table. Each company represents a separate manufacturing shop/business with isolated data. All other tables reference company_id for tenant isolation via RLS policies.';
+COMMENT ON TABLE public.parts
+    IS 'Parts catalog with customer-specific or generic parts. Each part has a part number, description, and flexible volume-based pricing stored as JSONB. Parts can belong to a specific customer or be generic (customer_id = NULL). Referenced by quotes, jobs, and routings.';
 
-COMMENT ON COLUMN public.companies.id
-    IS 'Primary key. UUID auto-generated. Referenced by all other tables for multi-tenant isolation.';
+COMMENT ON COLUMN public.parts.id
+    IS 'Primary key. UUID auto-generated.';
 
-COMMENT ON COLUMN public.companies.name
-    IS 'Display name of the company/shop. Example: "Contour Tool & Machine"';
+COMMENT ON COLUMN public.parts.company_id
+    IS 'FK to companies. Cascades on delete. Isolates parts per tenant.';
 
-COMMENT ON COLUMN public.companies.slug
-    IS 'URL-friendly unique identifier. Used in routes like /dashboard/{slug}/. Example: "contour-tool"';
+COMMENT ON COLUMN public.parts.customer_id
+    IS 'FK to customers. NULL for generic parts not tied to a specific customer. SET NULL if customer deleted, converting to generic part.';
 
-COMMENT ON COLUMN public.companies.settings
-    IS 'Company-wide settings as JSONB. May include: default currency, timezone, fiscal year start, feature flags.';
+COMMENT ON COLUMN public.parts.part_number
+    IS 'Part identifier, typically customer-assigned. Unique per customer within company. Example: "AE36589E-RT", "WIDGET-001"';
 
-COMMENT ON COLUMN public.companies.created_at
-    IS 'Timestamp when company record was created. Auto-set on insert.';
+COMMENT ON COLUMN public.parts.description
+    IS 'Human-readable description of what the part is. Example: "Recess Tool Bit", "Aluminum Bracket Assembly"';
 
-COMMENT ON COLUMN public.companies.updated_at
+COMMENT ON COLUMN public.parts.pricing
+    IS 'Volume-based pricing tiers as JSONB array. Format: [{"qty": 1, "price": 50.00}, {"qty": 10, "price": 45.00}]. Validated by CHECK constraint to ensure correct structure.';
+
+COMMENT ON COLUMN public.parts.material_cost
+    IS 'Estimated raw material cost per unit. Used for margin calculations.';
+
+COMMENT ON COLUMN public.parts.created_at
+    IS 'Timestamp when part was created.';
+
+COMMENT ON COLUMN public.parts.updated_at
     IS 'Timestamp of last update. Auto-updated via trigger.';
 
 CREATE TABLE IF NOT EXISTS public.customers
@@ -157,6 +369,546 @@ COMMENT ON COLUMN public.customers.created_at
     IS 'Timestamp when customer was created.';
 
 COMMENT ON COLUMN public.customers.updated_at
+    IS 'Timestamp of last update. Auto-updated via trigger.';
+
+CREATE TABLE IF NOT EXISTS public.jobs
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    job_number text COLLATE pg_catalog."default" NOT NULL,
+    quote_id uuid,
+    routing_id uuid,
+    customer_id uuid NOT NULL,
+    part_id uuid,
+    description text COLLATE pg_catalog."default",
+    quantity_ordered integer NOT NULL,
+    quantity_completed integer DEFAULT 0,
+    quantity_scrapped integer DEFAULT 0,
+    due_date date,
+    priority text COLLATE pg_catalog."default" DEFAULT 'normal'::text,
+    status text COLLATE pg_catalog."default" NOT NULL DEFAULT 'pending'::text,
+    status_changed_at timestamp with time zone,
+    current_operation_sequence integer,
+    started_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    shipped_at timestamp with time zone,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT jobs_pkey PRIMARY KEY (id),
+    CONSTRAINT jobs_company_id_job_number_key UNIQUE (company_id, job_number)
+);
+
+ALTER TABLE IF EXISTS public.jobs
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.jobs
+    IS 'Active manufacturing work orders. Created from quotes or directly. Tracks quantities ordered/completed/scrapped, due dates, priority, and current status. Contains job_operations as child records for step-by-step tracking.';
+
+COMMENT ON COLUMN public.jobs.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.jobs.company_id
+    IS 'FK to companies. Cascades on delete.';
+
+COMMENT ON COLUMN public.jobs.job_number
+    IS 'Unique job/work order number within company. Example: "J-2024-001", "WO-00042"';
+
+COMMENT ON COLUMN public.jobs.quote_id
+    IS 'FK to quotes. Set if job created from accepted quote. SET NULL if quote deleted.';
+
+COMMENT ON COLUMN public.jobs.routing_id
+    IS 'FK to routings. Process template used for this job. SET NULL if routing deleted.';
+
+COMMENT ON COLUMN public.jobs.customer_id
+    IS 'FK to customers. Required - every job must have a customer. RESTRICT on delete.';
+
+COMMENT ON COLUMN public.jobs.part_id
+    IS 'FK to parts. Optional. SET NULL if part deleted.';
+
+COMMENT ON COLUMN public.jobs.description
+    IS 'Description of work to be performed.';
+
+COMMENT ON COLUMN public.jobs.quantity_ordered
+    IS 'Total quantity customer ordered.';
+
+COMMENT ON COLUMN public.jobs.quantity_completed
+    IS 'Quantity successfully completed and passed inspection. Updated as operations complete.';
+
+COMMENT ON COLUMN public.jobs.quantity_scrapped
+    IS 'Quantity scrapped/rejected during manufacturing.';
+
+COMMENT ON COLUMN public.jobs.due_date
+    IS 'Target completion/ship date. Used for scheduling and prioritization.';
+
+COMMENT ON COLUMN public.jobs.priority
+    IS 'Job priority level. Values: low, normal, high, urgent. Default: normal. Affects scheduling.';
+
+COMMENT ON COLUMN public.jobs.status
+    IS 'Job lifecycle status. Values: pending, in_progress, on_hold, completed, shipped, cancelled. Default: pending';
+
+COMMENT ON COLUMN public.jobs.status_changed_at
+    IS 'Timestamp when status last changed.';
+
+COMMENT ON COLUMN public.jobs.current_operation_sequence
+    IS 'Sequence number of currently active operation. For quick status display.';
+
+COMMENT ON COLUMN public.jobs.started_at
+    IS 'Timestamp when first operation began.';
+
+COMMENT ON COLUMN public.jobs.completed_at
+    IS 'Timestamp when all operations completed.';
+
+COMMENT ON COLUMN public.jobs.shipped_at
+    IS 'Timestamp when job was shipped to customer.';
+
+COMMENT ON COLUMN public.jobs.created_by
+    IS 'UUID of user who created the job. References Supabase auth.users.';
+
+COMMENT ON COLUMN public.jobs.created_at
+    IS 'Timestamp when job was created.';
+
+COMMENT ON COLUMN public.jobs.updated_at
+    IS 'Timestamp of last update. Auto-updated via trigger.';
+
+CREATE TABLE IF NOT EXISTS auth.users
+(
+    instance_id uuid,
+    id uuid NOT NULL,
+    aud character varying(255) COLLATE pg_catalog."default",
+    role character varying(255) COLLATE pg_catalog."default",
+    email character varying(255) COLLATE pg_catalog."default",
+    encrypted_password character varying(255) COLLATE pg_catalog."default",
+    email_confirmed_at timestamp with time zone,
+    invited_at timestamp with time zone,
+    confirmation_token character varying(255) COLLATE pg_catalog."default",
+    confirmation_sent_at timestamp with time zone,
+    recovery_token character varying(255) COLLATE pg_catalog."default",
+    recovery_sent_at timestamp with time zone,
+    email_change_token_new character varying(255) COLLATE pg_catalog."default",
+    email_change character varying(255) COLLATE pg_catalog."default",
+    email_change_sent_at timestamp with time zone,
+    last_sign_in_at timestamp with time zone,
+    raw_app_meta_data jsonb,
+    raw_user_meta_data jsonb,
+    is_super_admin boolean,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    phone text COLLATE pg_catalog."default" DEFAULT NULL::character varying,
+    phone_confirmed_at timestamp with time zone,
+    phone_change text COLLATE pg_catalog."default" DEFAULT ''::character varying,
+    phone_change_token character varying(255) COLLATE pg_catalog."default" DEFAULT ''::character varying,
+    phone_change_sent_at timestamp with time zone,
+    confirmed_at timestamp with time zone GENERATED ALWAYS AS (LEAST(email_confirmed_at, phone_confirmed_at)) STORED,
+    email_change_token_current character varying(255) COLLATE pg_catalog."default" DEFAULT ''::character varying,
+    email_change_confirm_status smallint DEFAULT 0,
+    banned_until timestamp with time zone,
+    reauthentication_token character varying(255) COLLATE pg_catalog."default" DEFAULT ''::character varying,
+    reauthentication_sent_at timestamp with time zone,
+    is_sso_user boolean NOT NULL DEFAULT false,
+    deleted_at timestamp with time zone,
+    is_anonymous boolean NOT NULL DEFAULT false,
+    CONSTRAINT users_pkey PRIMARY KEY (id),
+    CONSTRAINT users_phone_key UNIQUE (phone)
+);
+
+ALTER TABLE IF EXISTS auth.users
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE auth.users
+    IS 'Auth: Stores user login data within a secure schema.';
+
+COMMENT ON COLUMN auth.users.is_sso_user
+    IS 'Auth: Set this column to true when the account comes from SSO. These accounts can have duplicate emails.';
+
+CREATE TABLE IF NOT EXISTS auth.identities
+(
+    provider_id text COLLATE pg_catalog."default" NOT NULL,
+    user_id uuid NOT NULL,
+    identity_data jsonb NOT NULL,
+    provider text COLLATE pg_catalog."default" NOT NULL,
+    last_sign_in_at timestamp with time zone,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    email text COLLATE pg_catalog."default" GENERATED ALWAYS AS (lower((identity_data ->> 'email'::text))) STORED,
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    CONSTRAINT identities_pkey PRIMARY KEY (id),
+    CONSTRAINT identities_provider_id_provider_unique UNIQUE (provider_id, provider)
+);
+
+ALTER TABLE IF EXISTS auth.identities
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE auth.identities
+    IS 'Auth: Stores identities associated to a user.';
+
+COMMENT ON COLUMN auth.identities.email
+    IS 'Auth: Email is a generated column that references the optional email property in the identity_data';
+
+CREATE TABLE IF NOT EXISTS auth.sessions
+(
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    factor_id uuid,
+    aal auth.aal_level,
+    not_after timestamp with time zone,
+    refreshed_at timestamp without time zone,
+    user_agent text COLLATE pg_catalog."default",
+    ip inet,
+    tag text COLLATE pg_catalog."default",
+    oauth_client_id uuid,
+    refresh_token_hmac_key text COLLATE pg_catalog."default",
+    refresh_token_counter bigint,
+    scopes text COLLATE pg_catalog."default",
+    CONSTRAINT sessions_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE IF EXISTS auth.sessions
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE auth.sessions
+    IS 'Auth: Stores session data associated to a user.';
+
+COMMENT ON COLUMN auth.sessions.not_after
+    IS 'Auth: Not after is a nullable column that contains a timestamp after which the session should be regarded as expired.';
+
+COMMENT ON COLUMN auth.sessions.refresh_token_hmac_key
+    IS 'Holds a HMAC-SHA256 key used to sign refresh tokens for this session.';
+
+COMMENT ON COLUMN auth.sessions.refresh_token_counter
+    IS 'Holds the ID (counter) of the last issued refresh token.';
+
+CREATE TABLE IF NOT EXISTS auth.oauth_clients
+(
+    id uuid NOT NULL,
+    client_secret_hash text COLLATE pg_catalog."default",
+    registration_type auth.oauth_registration_type NOT NULL,
+    redirect_uris text COLLATE pg_catalog."default" NOT NULL,
+    grant_types text COLLATE pg_catalog."default" NOT NULL,
+    client_name text COLLATE pg_catalog."default",
+    client_uri text COLLATE pg_catalog."default",
+    logo_uri text COLLATE pg_catalog."default",
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    deleted_at timestamp with time zone,
+    client_type auth.oauth_client_type NOT NULL DEFAULT 'confidential'::auth.oauth_client_type,
+    CONSTRAINT oauth_clients_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS auth.oauth_authorizations
+(
+    id uuid NOT NULL,
+    authorization_id text COLLATE pg_catalog."default" NOT NULL,
+    client_id uuid NOT NULL,
+    user_id uuid,
+    redirect_uri text COLLATE pg_catalog."default" NOT NULL,
+    scope text COLLATE pg_catalog."default" NOT NULL,
+    state text COLLATE pg_catalog."default",
+    resource text COLLATE pg_catalog."default",
+    code_challenge text COLLATE pg_catalog."default",
+    code_challenge_method auth.code_challenge_method,
+    response_type auth.oauth_response_type NOT NULL DEFAULT 'code'::auth.oauth_response_type,
+    status auth.oauth_authorization_status NOT NULL DEFAULT 'pending'::auth.oauth_authorization_status,
+    authorization_code text COLLATE pg_catalog."default",
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    expires_at timestamp with time zone NOT NULL DEFAULT (now() + '00:03:00'::interval),
+    approved_at timestamp with time zone,
+    nonce text COLLATE pg_catalog."default",
+    CONSTRAINT oauth_authorizations_pkey PRIMARY KEY (id),
+    CONSTRAINT oauth_authorizations_authorization_code_key UNIQUE (authorization_code),
+    CONSTRAINT oauth_authorizations_authorization_id_key UNIQUE (authorization_id)
+);
+
+CREATE TABLE IF NOT EXISTS auth.oauth_consents
+(
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    client_id uuid NOT NULL,
+    scopes text COLLATE pg_catalog."default" NOT NULL,
+    granted_at timestamp with time zone NOT NULL DEFAULT now(),
+    revoked_at timestamp with time zone,
+    CONSTRAINT oauth_consents_pkey PRIMARY KEY (id),
+    CONSTRAINT oauth_consents_user_client_unique UNIQUE (user_id, client_id)
+);
+
+CREATE TABLE IF NOT EXISTS auth.refresh_tokens
+(
+    instance_id uuid,
+    id bigserial NOT NULL,
+    token character varying(255) COLLATE pg_catalog."default",
+    user_id character varying(255) COLLATE pg_catalog."default",
+    revoked boolean,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    parent character varying(255) COLLATE pg_catalog."default",
+    session_id uuid,
+    CONSTRAINT refresh_tokens_pkey PRIMARY KEY (id),
+    CONSTRAINT refresh_tokens_token_unique UNIQUE (token)
+);
+
+ALTER TABLE IF EXISTS auth.refresh_tokens
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE auth.refresh_tokens
+    IS 'Auth: Store of tokens used to refresh JWT tokens once they expire.';
+
+CREATE TABLE IF NOT EXISTS auth.mfa_amr_claims
+(
+    session_id uuid NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    authentication_method text COLLATE pg_catalog."default" NOT NULL,
+    id uuid NOT NULL,
+    CONSTRAINT amr_id_pk PRIMARY KEY (id),
+    CONSTRAINT mfa_amr_claims_session_id_authentication_method_pkey UNIQUE (session_id, authentication_method)
+);
+
+ALTER TABLE IF EXISTS auth.mfa_amr_claims
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE auth.mfa_amr_claims
+    IS 'auth: stores authenticator method reference claims for multi factor authentication';
+
+CREATE TABLE IF NOT EXISTS auth.mfa_factors
+(
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    friendly_name text COLLATE pg_catalog."default",
+    factor_type auth.factor_type NOT NULL,
+    status auth.factor_status NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    secret text COLLATE pg_catalog."default",
+    phone text COLLATE pg_catalog."default",
+    last_challenged_at timestamp with time zone,
+    web_authn_credential jsonb,
+    web_authn_aaguid uuid,
+    last_webauthn_challenge_data jsonb,
+    CONSTRAINT mfa_factors_pkey PRIMARY KEY (id),
+    CONSTRAINT mfa_factors_last_challenged_at_key UNIQUE (last_challenged_at)
+);
+
+ALTER TABLE IF EXISTS auth.mfa_factors
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE auth.mfa_factors
+    IS 'auth: stores metadata about factors';
+
+COMMENT ON COLUMN auth.mfa_factors.last_webauthn_challenge_data
+    IS 'Stores the latest WebAuthn challenge data including attestation/assertion for customer verification';
+
+CREATE TABLE IF NOT EXISTS auth.mfa_challenges
+(
+    id uuid NOT NULL,
+    factor_id uuid NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    verified_at timestamp with time zone,
+    ip_address inet NOT NULL,
+    otp_code text COLLATE pg_catalog."default",
+    web_authn_session_data jsonb,
+    CONSTRAINT mfa_challenges_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE IF EXISTS auth.mfa_challenges
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE auth.mfa_challenges
+    IS 'auth: stores metadata about challenge requests made';
+
+CREATE TABLE IF NOT EXISTS auth.one_time_tokens
+(
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    token_type auth.one_time_token_type NOT NULL,
+    token_hash text COLLATE pg_catalog."default" NOT NULL,
+    relates_to text COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp without time zone NOT NULL DEFAULT now(),
+    updated_at timestamp without time zone NOT NULL DEFAULT now(),
+    CONSTRAINT one_time_tokens_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE IF EXISTS auth.one_time_tokens
+    ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS public.user_company_access
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    company_id uuid NOT NULL,
+    role text COLLATE pg_catalog."default" DEFAULT 'operator'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT user_company_access_pkey PRIMARY KEY (id),
+    CONSTRAINT user_company_access_user_id_company_id_key UNIQUE (user_id, company_id)
+);
+
+ALTER TABLE IF EXISTS public.user_company_access
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.user_company_access
+    IS 'Junction table linking Supabase auth users to companies with role-based access. Enables multi-tenant access control. Users can belong to multiple companies with different roles (owner, admin, operator).';
+
+COMMENT ON COLUMN public.user_company_access.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.user_company_access.user_id
+    IS 'FK to Supabase auth.users. The user being granted access.';
+
+COMMENT ON COLUMN public.user_company_access.company_id
+    IS 'FK to companies. Cascades on delete. The company user can access.';
+
+COMMENT ON COLUMN public.user_company_access.role
+    IS 'User role within this company. Values: owner, admin, operator. Default: operator. Controls permissions.';
+
+COMMENT ON COLUMN public.user_company_access.created_at
+    IS 'Timestamp when access was granted.';
+
+CREATE TABLE IF NOT EXISTS public.user_preferences
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    last_company_id uuid,
+    preferences jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT user_preferences_pkey PRIMARY KEY (id),
+    CONSTRAINT user_preferences_user_id_key UNIQUE (user_id)
+);
+
+ALTER TABLE IF EXISTS public.user_preferences
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.user_preferences
+    IS 'Per-user preferences and settings. Stores last accessed company for quick switching, UI preferences, and other user-specific configuration as JSONB.';
+
+COMMENT ON COLUMN public.user_preferences.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.user_preferences.user_id
+    IS 'FK to Supabase auth.users. Unique - one preferences record per user.';
+
+COMMENT ON COLUMN public.user_preferences.last_company_id
+    IS 'FK to companies. Last company user accessed. For quick switching. SET NULL if company deleted.';
+
+COMMENT ON COLUMN public.user_preferences.preferences
+    IS 'User preferences as JSONB. May include: theme, default_view, notification_settings, UI preferences.';
+
+COMMENT ON COLUMN public.user_preferences.created_at
+    IS 'Timestamp when preferences record was created.';
+
+COMMENT ON COLUMN public.user_preferences.updated_at
+    IS 'Timestamp of last update. Auto-updated via trigger.';
+
+CREATE TABLE IF NOT EXISTS public.routings
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    part_id uuid,
+    name text COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default",
+    revision text COLLATE pg_catalog."default" DEFAULT 'A'::text,
+    estimated_total_hours numeric(10, 2),
+    estimated_lead_time_days integer,
+    is_default boolean DEFAULT false,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT routings_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE IF EXISTS public.routings
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.routings
+    IS 'Manufacturing process templates defining the sequence of operations to produce a part. Can be linked to a specific part or be standalone. Contains routing_operations as child records. Used as templates when creating jobs.';
+
+COMMENT ON COLUMN public.routings.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.routings.company_id
+    IS 'FK to companies. Cascades on delete.';
+
+COMMENT ON COLUMN public.routings.part_id
+    IS 'FK to parts. Optional - routing can be part-specific or standalone template. SET NULL if part deleted.';
+
+COMMENT ON COLUMN public.routings.name
+    IS 'Routing name/identifier. Example: "Standard Widget Process", "Rush Assembly"';
+
+COMMENT ON COLUMN public.routings.description
+    IS 'Detailed description of the manufacturing process.';
+
+COMMENT ON COLUMN public.routings.revision
+    IS 'Revision/version identifier. Default: "A". Increment for process changes.';
+
+COMMENT ON COLUMN public.routings.estimated_total_hours
+    IS 'Sum of all operation hours. Calculated from routing_operations.';
+
+COMMENT ON COLUMN public.routings.estimated_lead_time_days
+    IS 'Estimated days to complete using this routing.';
+
+COMMENT ON COLUMN public.routings.is_default
+    IS 'If true, this is the default routing for the linked part. Only one routing per part should be default.';
+
+COMMENT ON COLUMN public.routings.created_by
+    IS 'UUID of user who created the routing.';
+
+COMMENT ON COLUMN public.routings.created_at
+    IS 'Timestamp when routing was created.';
+
+COMMENT ON COLUMN public.routings.updated_at
+    IS 'Timestamp of last update. Auto-updated via trigger.';
+
+CREATE TABLE IF NOT EXISTS public.routing_operations
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    routing_id uuid NOT NULL,
+    sequence integer NOT NULL,
+    operation_name text COLLATE pg_catalog."default" NOT NULL,
+    station_id uuid,
+    estimated_setup_hours numeric(8, 2) DEFAULT 0,
+    estimated_run_hours_per_unit numeric(8, 4) DEFAULT 0,
+    instructions text COLLATE pg_catalog."default",
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT routing_operations_pkey PRIMARY KEY (id),
+    CONSTRAINT routing_operations_routing_id_sequence_key UNIQUE (routing_id, sequence)
+);
+
+ALTER TABLE IF EXISTS public.routing_operations
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.routing_operations
+    IS 'Individual operation steps within a routing template. Defines the sequence, station/work center, and time estimates. Copied to job_operations when a job is created from a routing.';
+
+COMMENT ON COLUMN public.routing_operations.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.routing_operations.routing_id
+    IS 'FK to routings. Cascades on delete - operations deleted with routing.';
+
+COMMENT ON COLUMN public.routing_operations.sequence
+    IS 'Order of operation within routing. Unique per routing. Example: 10, 20, 30 (allows inserting steps).';
+
+COMMENT ON COLUMN public.routing_operations.operation_name
+    IS 'Name/description of the operation. Example: "CNC Rough Cut", "Deburr", "Final Inspection"';
+
+COMMENT ON COLUMN public.routing_operations.station_id
+    IS 'FK to stations. Where this operation is performed. SET NULL if station deleted.';
+
+COMMENT ON COLUMN public.routing_operations.estimated_setup_hours
+    IS 'Estimated hours for machine/station setup before production.';
+
+COMMENT ON COLUMN public.routing_operations.estimated_run_hours_per_unit
+    IS 'Estimated hours to produce one unit after setup. Precision for small parts.';
+
+COMMENT ON COLUMN public.routing_operations.instructions
+    IS 'Detailed work instructions for operators. May include specifications, tolerances, tool requirements.';
+
+COMMENT ON COLUMN public.routing_operations.created_at
+    IS 'Timestamp when operation was created.';
+
+COMMENT ON COLUMN public.routing_operations.updated_at
     IS 'Timestamp of last update. Auto-updated via trigger.';
 
 CREATE TABLE IF NOT EXISTS public.job_operations
@@ -255,809 +1007,6 @@ COMMENT ON COLUMN public.job_operations.created_at
 COMMENT ON COLUMN public.job_operations.updated_at
     IS 'Timestamp of last update. Auto-updated via trigger.';
 
-CREATE TABLE IF NOT EXISTS public.jobs
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    company_id uuid NOT NULL,
-    job_number text COLLATE pg_catalog."default" NOT NULL,
-    quote_id uuid,
-    routing_id uuid,
-    customer_id uuid NOT NULL,
-    part_id uuid,
-    part_number_text text COLLATE pg_catalog."default",
-    description text COLLATE pg_catalog."default",
-    quantity_ordered integer NOT NULL,
-    quantity_completed integer DEFAULT 0,
-    quantity_scrapped integer DEFAULT 0,
-    due_date date,
-    priority text COLLATE pg_catalog."default" DEFAULT 'normal'::text,
-    status text COLLATE pg_catalog."default" NOT NULL DEFAULT 'pending'::text,
-    status_changed_at timestamp with time zone,
-    current_operation_sequence integer,
-    started_at timestamp with time zone,
-    completed_at timestamp with time zone,
-    shipped_at timestamp with time zone,
-    created_by uuid,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT jobs_pkey PRIMARY KEY (id),
-    CONSTRAINT jobs_company_id_job_number_key UNIQUE (company_id, job_number)
-);
-
-ALTER TABLE IF EXISTS public.jobs
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.jobs
-    IS 'Active manufacturing work orders. Created from quotes or directly. Tracks quantities ordered/completed/scrapped, due dates, priority, and current status. Contains job_operations as child records for step-by-step tracking.';
-
-COMMENT ON COLUMN public.jobs.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.jobs.company_id
-    IS 'FK to companies. Cascades on delete.';
-
-COMMENT ON COLUMN public.jobs.job_number
-    IS 'Unique job/work order number within company. Example: "J-2024-001", "WO-00042"';
-
-COMMENT ON COLUMN public.jobs.quote_id
-    IS 'FK to quotes. Set if job created from accepted quote. SET NULL if quote deleted.';
-
-COMMENT ON COLUMN public.jobs.routing_id
-    IS 'FK to routings. Process template used for this job. SET NULL if routing deleted.';
-
-COMMENT ON COLUMN public.jobs.customer_id
-    IS 'FK to customers. Required - every job must have a customer. RESTRICT on delete.';
-
-COMMENT ON COLUMN public.jobs.part_id
-    IS 'FK to parts. Optional - use part_number_text for one-off jobs. SET NULL if part deleted.';
-
-COMMENT ON COLUMN public.jobs.part_number_text
-    IS 'Denormalized part number. Preserved even if part_id becomes NULL.';
-
-COMMENT ON COLUMN public.jobs.description
-    IS 'Description of work to be performed.';
-
-COMMENT ON COLUMN public.jobs.quantity_ordered
-    IS 'Total quantity customer ordered.';
-
-COMMENT ON COLUMN public.jobs.quantity_completed
-    IS 'Quantity successfully completed and passed inspection. Updated as operations complete.';
-
-COMMENT ON COLUMN public.jobs.quantity_scrapped
-    IS 'Quantity scrapped/rejected during manufacturing.';
-
-COMMENT ON COLUMN public.jobs.due_date
-    IS 'Target completion/ship date. Used for scheduling and prioritization.';
-
-COMMENT ON COLUMN public.jobs.priority
-    IS 'Job priority level. Values: low, normal, high, urgent. Default: normal. Affects scheduling.';
-
-COMMENT ON COLUMN public.jobs.status
-    IS 'Job lifecycle status. Values: pending, in_progress, on_hold, completed, shipped, cancelled. Default: pending';
-
-COMMENT ON COLUMN public.jobs.status_changed_at
-    IS 'Timestamp when status last changed.';
-
-COMMENT ON COLUMN public.jobs.current_operation_sequence
-    IS 'Sequence number of currently active operation. For quick status display.';
-
-COMMENT ON COLUMN public.jobs.started_at
-    IS 'Timestamp when first operation began.';
-
-COMMENT ON COLUMN public.jobs.completed_at
-    IS 'Timestamp when all operations completed.';
-
-COMMENT ON COLUMN public.jobs.shipped_at
-    IS 'Timestamp when job was shipped to customer.';
-
-COMMENT ON COLUMN public.jobs.created_by
-    IS 'UUID of user who created the job. References Supabase auth.users.';
-
-COMMENT ON COLUMN public.jobs.created_at
-    IS 'Timestamp when job was created.';
-
-COMMENT ON COLUMN public.jobs.updated_at
-    IS 'Timestamp of last update. Auto-updated via trigger.';
-
-CREATE TABLE IF NOT EXISTS public.operation_types
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    company_id uuid NOT NULL,
-    resource_group_id uuid,
-    name text COLLATE pg_catalog."default" NOT NULL,
-    labor_rate numeric(10, 2),
-    description text COLLATE pg_catalog."default",
-    metadata jsonb DEFAULT '{}'::jsonb,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    updated_at timestamp with time zone NOT NULL DEFAULT now(),
-    CONSTRAINT operation_types_pkey PRIMARY KEY (id),
-    CONSTRAINT operation_types_company_id_name_key UNIQUE (company_id, name)
-);
-
-ALTER TABLE IF EXISTS public.operation_types
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.operation_types
-    IS 'Operation types available in the shop (e.g., HURCO Mill, Mazak Lathe). Defines what work can be done and at what hourly cost.';
-
-COMMENT ON COLUMN public.operation_types.id
-    IS 'Primary key (auto-generated UUID)';
-
-COMMENT ON COLUMN public.operation_types.company_id
-    IS 'Foreign key to companies table (multi-tenant isolation)';
-
-COMMENT ON COLUMN public.operation_types.resource_group_id
-    IS 'Foreign key to resource_groups (NULL = ungrouped)';
-
-COMMENT ON COLUMN public.operation_types.name
-    IS 'Operation type name (e.g., "HURCO Mill", "EDM", "GRINDING")';
-
-COMMENT ON COLUMN public.operation_types.labor_rate
-    IS 'Hourly rate in dollars (e.g., 135.00)';
-
-COMMENT ON COLUMN public.operation_types.description
-    IS 'Optional description or notes';
-
-COMMENT ON COLUMN public.operation_types.metadata
-    IS 'Flexible JSONB for shop-specific data (setup_time_minutes, capabilities, legacy_id, etc.)';
-
-COMMENT ON COLUMN public.operation_types.created_at
-    IS 'Timestamp when record was created';
-
-COMMENT ON COLUMN public.operation_types.updated_at
-    IS 'Timestamp when record was last updated';
-
-CREATE TABLE IF NOT EXISTS public.parts
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    company_id uuid NOT NULL,
-    customer_id uuid,
-    part_number text COLLATE pg_catalog."default" NOT NULL,
-    description text COLLATE pg_catalog."default",
-    pricing jsonb DEFAULT '[]'::jsonb,
-    material_cost numeric(10, 2),
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    updated_at timestamp with time zone NOT NULL DEFAULT now(),
-    CONSTRAINT parts_pkey PRIMARY KEY (id),
-    CONSTRAINT parts_unique_per_customer UNIQUE (company_id, customer_id, part_number)
-);
-
-ALTER TABLE IF EXISTS public.parts
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.parts
-    IS 'Parts catalog with customer-specific or generic parts. Each part has a part number, description, and flexible volume-based pricing stored as JSONB. Parts can belong to a specific customer or be generic (customer_id = NULL). Referenced by quotes, jobs, and routings.';
-
-COMMENT ON COLUMN public.parts.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.parts.company_id
-    IS 'FK to companies. Cascades on delete. Isolates parts per tenant.';
-
-COMMENT ON COLUMN public.parts.customer_id
-    IS 'FK to customers. NULL for generic parts not tied to a specific customer. SET NULL if customer deleted, converting to generic part.';
-
-COMMENT ON COLUMN public.parts.part_number
-    IS 'Part identifier, typically customer-assigned. Unique per customer within company. Example: "AE36589E-RT", "WIDGET-001"';
-
-COMMENT ON COLUMN public.parts.description
-    IS 'Human-readable description of what the part is. Example: "Recess Tool Bit", "Aluminum Bracket Assembly"';
-
-COMMENT ON COLUMN public.parts.pricing
-    IS 'Volume-based pricing tiers as JSONB array. Format: [{"qty": 1, "price": 50.00}, {"qty": 10, "price": 45.00}]. Validated by CHECK constraint to ensure correct structure.';
-
-COMMENT ON COLUMN public.parts.material_cost
-    IS 'Estimated raw material cost per unit. Used for margin calculations.';
-
-COMMENT ON COLUMN public.parts.created_at
-    IS 'Timestamp when part was created.';
-
-COMMENT ON COLUMN public.parts.updated_at
-    IS 'Timestamp of last update. Auto-updated via trigger.';
-
-CREATE TABLE IF NOT EXISTS public.quotes
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    company_id uuid NOT NULL,
-    quote_number text COLLATE pg_catalog."default" NOT NULL,
-    customer_id uuid NOT NULL,
-    part_id uuid,
-    part_number_text text COLLATE pg_catalog."default",
-    description text COLLATE pg_catalog."default",
-    routing_id uuid,
-    quantity integer NOT NULL DEFAULT 1,
-    unit_price numeric(12, 4),
-    total_price numeric(12, 4),
-    estimated_material_cost numeric(12, 4),
-    estimated_labor_hours numeric(8, 2),
-    estimated_lead_time_days integer,
-    valid_until date,
-    status text COLLATE pg_catalog."default" NOT NULL DEFAULT 'draft'::text,
-    status_changed_at timestamp with time zone,
-    converted_to_job_id uuid,
-    converted_at timestamp with time zone,
-    legacy_quote_number text COLLATE pg_catalog."default",
-    created_by uuid,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT quotes_pkey PRIMARY KEY (id),
-    CONSTRAINT quotes_company_id_quote_number_key UNIQUE (company_id, quote_number)
-);
-
-ALTER TABLE IF EXISTS public.quotes
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.quotes
-    IS 'Sales quotes/estimates sent to customers before work begins. Contains pricing, lead time estimates, and can be converted to jobs. Tracks quote status (draft, sent, accepted, rejected, expired) and links to the job if converted.';
-
-COMMENT ON COLUMN public.quotes.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.quotes.company_id
-    IS 'FK to companies. Cascades on delete.';
-
-COMMENT ON COLUMN public.quotes.quote_number
-    IS 'Unique quote identifier within company. Example: "Q-2024-001", "QTE-00042"';
-
-COMMENT ON COLUMN public.quotes.customer_id
-    IS 'FK to customers. RESTRICT on delete - cannot delete customer with quotes.';
-
-COMMENT ON COLUMN public.quotes.part_id
-    IS 'FK to parts. Optional - use part_number_text for one-off quotes. SET NULL if part deleted.';
-
-COMMENT ON COLUMN public.quotes.part_number_text
-    IS 'Denormalized part number string. Preserved even if part_id becomes NULL. Allows quotes for parts not in catalog.';
-
-COMMENT ON COLUMN public.quotes.description
-    IS 'Description of quoted work. May differ from part description for custom work.';
-
-COMMENT ON COLUMN public.quotes.routing_id
-    IS 'FK to routings. Optional process template for this quote. SET NULL if routing deleted.';
-
-COMMENT ON COLUMN public.quotes.quantity
-    IS 'Number of units quoted. Default: 1';
-
-COMMENT ON COLUMN public.quotes.unit_price
-    IS 'Price per unit quoted to customer. Precision: 12,4 for accuracy.';
-
-COMMENT ON COLUMN public.quotes.total_price
-    IS 'Total quoted price (quantity × unit_price). Stored for quick access.';
-
-COMMENT ON COLUMN public.quotes.estimated_material_cost
-    IS 'Estimated material cost for margin analysis.';
-
-COMMENT ON COLUMN public.quotes.estimated_labor_hours
-    IS 'Estimated total labor hours for the quoted work.';
-
-COMMENT ON COLUMN public.quotes.estimated_lead_time_days
-    IS 'Estimated days from order to delivery.';
-
-COMMENT ON COLUMN public.quotes.valid_until
-    IS 'Quote expiration date. After this date, pricing may change.';
-
-COMMENT ON COLUMN public.quotes.status
-    IS 'Quote lifecycle status. Values: draft, pending_approval, approved, rejected, expired, converted. Default: draft';
-
-COMMENT ON COLUMN public.quotes.status_changed_at
-    IS 'Timestamp when status last changed. For tracking response times.';
-
-COMMENT ON COLUMN public.quotes.converted_to_job_id
-    IS 'FK to jobs. Set when quote is accepted and converted to a job. SET NULL if job deleted.';
-
-COMMENT ON COLUMN public.quotes.converted_at
-    IS 'Timestamp when quote was converted to job.';
-
-COMMENT ON COLUMN public.quotes.legacy_quote_number
-    IS 'Original quote number from legacy system. For migration/reference.';
-
-COMMENT ON COLUMN public.quotes.created_by
-    IS 'UUID of user who created the quote. References Supabase auth.users.';
-
-COMMENT ON COLUMN public.quotes.created_at
-    IS 'Timestamp when quote was created.';
-
-COMMENT ON COLUMN public.quotes.updated_at
-    IS 'Timestamp of last update. Auto-updated via trigger.';
-
-CREATE TABLE IF NOT EXISTS public.resource_groups
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    company_id uuid NOT NULL,
-    name text COLLATE pg_catalog."default" NOT NULL,
-    description text COLLATE pg_catalog."default",
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    updated_at timestamp with time zone NOT NULL DEFAULT now(),
-    CONSTRAINT resource_groups_pkey PRIMARY KEY (id),
-    CONSTRAINT resource_groups_company_id_name_key UNIQUE (company_id, name)
-);
-
-ALTER TABLE IF EXISTS public.resource_groups
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.resource_groups
-    IS 'Categories for organizing operation types (e.g., CNC, LATHE&MILL, Hone, EDM). Matches terminology from legacy system.';
-
-COMMENT ON COLUMN public.resource_groups.id
-    IS 'Primary key (auto-generated UUID)';
-
-COMMENT ON COLUMN public.resource_groups.company_id
-    IS 'Foreign key to companies table (multi-tenant isolation)';
-
-COMMENT ON COLUMN public.resource_groups.name
-    IS 'Group name (e.g., "CNC", "LATHE&MILL", "Hone", "EDM")';
-
-COMMENT ON COLUMN public.resource_groups.description
-    IS 'Optional description of the group';
-
-COMMENT ON COLUMN public.resource_groups.created_at
-    IS 'Timestamp when record was created';
-
-COMMENT ON COLUMN public.resource_groups.updated_at
-    IS 'Timestamp when record was last updated';
-
-CREATE TABLE IF NOT EXISTS public.routing_operations
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    routing_id uuid NOT NULL,
-    sequence integer NOT NULL,
-    operation_name text COLLATE pg_catalog."default" NOT NULL,
-    station_id uuid,
-    estimated_setup_hours numeric(8, 2) DEFAULT 0,
-    estimated_run_hours_per_unit numeric(8, 4) DEFAULT 0,
-    instructions text COLLATE pg_catalog."default",
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT routing_operations_pkey PRIMARY KEY (id),
-    CONSTRAINT routing_operations_routing_id_sequence_key UNIQUE (routing_id, sequence)
-);
-
-ALTER TABLE IF EXISTS public.routing_operations
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.routing_operations
-    IS 'Individual operation steps within a routing template. Defines the sequence, station/work center, and time estimates. Copied to job_operations when a job is created from a routing.';
-
-COMMENT ON COLUMN public.routing_operations.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.routing_operations.routing_id
-    IS 'FK to routings. Cascades on delete - operations deleted with routing.';
-
-COMMENT ON COLUMN public.routing_operations.sequence
-    IS 'Order of operation within routing. Unique per routing. Example: 10, 20, 30 (allows inserting steps).';
-
-COMMENT ON COLUMN public.routing_operations.operation_name
-    IS 'Name/description of the operation. Example: "CNC Rough Cut", "Deburr", "Final Inspection"';
-
-COMMENT ON COLUMN public.routing_operations.station_id
-    IS 'FK to stations. Where this operation is performed. SET NULL if station deleted.';
-
-COMMENT ON COLUMN public.routing_operations.estimated_setup_hours
-    IS 'Estimated hours for machine/station setup before production.';
-
-COMMENT ON COLUMN public.routing_operations.estimated_run_hours_per_unit
-    IS 'Estimated hours to produce one unit after setup. Precision for small parts.';
-
-COMMENT ON COLUMN public.routing_operations.instructions
-    IS 'Detailed work instructions for operators. May include specifications, tolerances, tool requirements.';
-
-COMMENT ON COLUMN public.routing_operations.created_at
-    IS 'Timestamp when operation was created.';
-
-COMMENT ON COLUMN public.routing_operations.updated_at
-    IS 'Timestamp of last update. Auto-updated via trigger.';
-
-CREATE TABLE IF NOT EXISTS public.routings
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    company_id uuid NOT NULL,
-    part_id uuid,
-    name text COLLATE pg_catalog."default" NOT NULL,
-    description text COLLATE pg_catalog."default",
-    revision text COLLATE pg_catalog."default" DEFAULT 'A'::text,
-    estimated_total_hours numeric(10, 2),
-    estimated_lead_time_days integer,
-    is_default boolean DEFAULT false,
-    created_by uuid,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT routings_pkey PRIMARY KEY (id)
-);
-
-ALTER TABLE IF EXISTS public.routings
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.routings
-    IS 'Manufacturing process templates defining the sequence of operations to produce a part. Can be linked to a specific part or be standalone. Contains routing_operations as child records. Used as templates when creating jobs.';
-
-COMMENT ON COLUMN public.routings.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.routings.company_id
-    IS 'FK to companies. Cascades on delete.';
-
-COMMENT ON COLUMN public.routings.part_id
-    IS 'FK to parts. Optional - routing can be part-specific or standalone template. SET NULL if part deleted.';
-
-COMMENT ON COLUMN public.routings.name
-    IS 'Routing name/identifier. Example: "Standard Widget Process", "Rush Assembly"';
-
-COMMENT ON COLUMN public.routings.description
-    IS 'Detailed description of the manufacturing process.';
-
-COMMENT ON COLUMN public.routings.revision
-    IS 'Revision/version identifier. Default: "A". Increment for process changes.';
-
-COMMENT ON COLUMN public.routings.estimated_total_hours
-    IS 'Sum of all operation hours. Calculated from routing_operations.';
-
-COMMENT ON COLUMN public.routings.estimated_lead_time_days
-    IS 'Estimated days to complete using this routing.';
-
-COMMENT ON COLUMN public.routings.is_default
-    IS 'If true, this is the default routing for the linked part. Only one routing per part should be default.';
-
-COMMENT ON COLUMN public.routings.created_by
-    IS 'UUID of user who created the routing.';
-
-COMMENT ON COLUMN public.routings.created_at
-    IS 'Timestamp when routing was created.';
-
-COMMENT ON COLUMN public.routings.updated_at
-    IS 'Timestamp of last update. Auto-updated via trigger.';
-
-CREATE TABLE IF NOT EXISTS public.user_company_access
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    user_id uuid NOT NULL,
-    company_id uuid NOT NULL,
-    role text COLLATE pg_catalog."default" DEFAULT 'operator'::text,
-    created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT user_company_access_pkey PRIMARY KEY (id),
-    CONSTRAINT user_company_access_user_id_company_id_key UNIQUE (user_id, company_id)
-);
-
-ALTER TABLE IF EXISTS public.user_company_access
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.user_company_access
-    IS 'Junction table linking Supabase auth users to companies with role-based access. Enables multi-tenant access control. Users can belong to multiple companies with different roles (owner, admin, operator).';
-
-COMMENT ON COLUMN public.user_company_access.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.user_company_access.user_id
-    IS 'FK to Supabase auth.users. The user being granted access.';
-
-COMMENT ON COLUMN public.user_company_access.company_id
-    IS 'FK to companies. Cascades on delete. The company user can access.';
-
-COMMENT ON COLUMN public.user_company_access.role
-    IS 'User role within this company. Values: owner, admin, operator. Default: operator. Controls permissions.';
-
-COMMENT ON COLUMN public.user_company_access.created_at
-    IS 'Timestamp when access was granted.';
-
-CREATE TABLE IF NOT EXISTS public.user_preferences
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    user_id uuid NOT NULL,
-    last_company_id uuid,
-    preferences jsonb DEFAULT '{}'::jsonb,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT user_preferences_pkey PRIMARY KEY (id),
-    CONSTRAINT user_preferences_user_id_key UNIQUE (user_id)
-);
-
-ALTER TABLE IF EXISTS public.user_preferences
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.user_preferences
-    IS 'Per-user preferences and settings. Stores last accessed company for quick switching, UI preferences, and other user-specific configuration as JSONB.';
-
-COMMENT ON COLUMN public.user_preferences.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.user_preferences.user_id
-    IS 'FK to Supabase auth.users. Unique - one preferences record per user.';
-
-COMMENT ON COLUMN public.user_preferences.last_company_id
-    IS 'FK to companies. Last company user accessed. For quick switching. SET NULL if company deleted.';
-
-COMMENT ON COLUMN public.user_preferences.preferences
-    IS 'User preferences as JSONB. May include: theme, default_view, notification_settings, UI preferences.';
-
-COMMENT ON COLUMN public.user_preferences.created_at
-    IS 'Timestamp when preferences record was created.';
-
-COMMENT ON COLUMN public.user_preferences.updated_at
-    IS 'Timestamp of last update. Auto-updated via trigger.';
-
-ALTER TABLE IF EXISTS public.ai_config
-    ADD CONSTRAINT ai_config_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-
-
-ALTER TABLE IF EXISTS public.customers
-    ADD CONSTRAINT customers_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_customers_company
-    ON public.customers(company_id);
-
-
-ALTER TABLE IF EXISTS public.job_operations
-    ADD CONSTRAINT job_operations_job_id_fkey FOREIGN KEY (job_id)
-    REFERENCES public.jobs (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_job_ops_job
-    ON public.job_operations(job_id);
-
-
-ALTER TABLE IF EXISTS public.job_operations
-    ADD CONSTRAINT job_operations_routing_operation_id_fkey FOREIGN KEY (routing_operation_id)
-    REFERENCES public.routing_operations (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_job_ops_routing_op
-    ON public.job_operations(routing_operation_id);
-
-
-ALTER TABLE IF EXISTS public.jobs
-    ADD CONSTRAINT jobs_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_jobs_company
-    ON public.jobs(company_id);
-
-
-ALTER TABLE IF EXISTS public.jobs
-    ADD CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id)
-    REFERENCES public.customers (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE RESTRICT;
-CREATE INDEX IF NOT EXISTS idx_jobs_customer
-    ON public.jobs(customer_id);
-
-
-ALTER TABLE IF EXISTS public.jobs
-    ADD CONSTRAINT jobs_part_id_fkey FOREIGN KEY (part_id)
-    REFERENCES public.parts (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_jobs_part
-    ON public.jobs(part_id);
-
-
-ALTER TABLE IF EXISTS public.jobs
-    ADD CONSTRAINT jobs_quote_id_fkey FOREIGN KEY (quote_id)
-    REFERENCES public.quotes (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_jobs_quote
-    ON public.jobs(quote_id);
-
-
-ALTER TABLE IF EXISTS public.jobs
-    ADD CONSTRAINT jobs_routing_id_fkey FOREIGN KEY (routing_id)
-    REFERENCES public.routings (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_jobs_routing
-    ON public.jobs(routing_id);
-
-
-ALTER TABLE IF EXISTS public.operation_types
-    ADD CONSTRAINT resources_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_operation_types_company
-    ON public.operation_types(company_id);
-
-
-ALTER TABLE IF EXISTS public.operation_types
-    ADD CONSTRAINT resources_resource_group_id_fkey FOREIGN KEY (resource_group_id)
-    REFERENCES public.resource_groups (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_operation_types_group
-    ON public.operation_types(resource_group_id);
-
-
-ALTER TABLE IF EXISTS public.parts
-    ADD CONSTRAINT parts_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_parts_company_id
-    ON public.parts(company_id);
-
-
-ALTER TABLE IF EXISTS public.parts
-    ADD CONSTRAINT parts_customer_id_fkey FOREIGN KEY (customer_id)
-    REFERENCES public.customers (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_parts_customer_id
-    ON public.parts(customer_id);
-
-
-ALTER TABLE IF EXISTS public.quotes
-    ADD CONSTRAINT quotes_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_quotes_company
-    ON public.quotes(company_id);
-
-
-ALTER TABLE IF EXISTS public.quotes
-    ADD CONSTRAINT quotes_converted_to_job_id_fkey FOREIGN KEY (converted_to_job_id)
-    REFERENCES public.jobs (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-
-
-ALTER TABLE IF EXISTS public.quotes
-    ADD CONSTRAINT quotes_customer_id_fkey FOREIGN KEY (customer_id)
-    REFERENCES public.customers (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE RESTRICT;
-CREATE INDEX IF NOT EXISTS idx_quotes_customer
-    ON public.quotes(customer_id);
-
-
-ALTER TABLE IF EXISTS public.quotes
-    ADD CONSTRAINT quotes_part_id_fkey FOREIGN KEY (part_id)
-    REFERENCES public.parts (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_quotes_part
-    ON public.quotes(part_id);
-
-
-ALTER TABLE IF EXISTS public.quotes
-    ADD CONSTRAINT quotes_routing_id_fkey FOREIGN KEY (routing_id)
-    REFERENCES public.routings (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_quotes_routing
-    ON public.quotes(routing_id);
-
--- Quote status check constraint
--- Valid statuses: draft, pending_approval, approved, rejected, expired
-ALTER TABLE IF EXISTS public.quotes
-    DROP CONSTRAINT IF EXISTS quotes_status_check;
-ALTER TABLE IF EXISTS public.quotes
-    ADD CONSTRAINT quotes_status_check
-    CHECK (status IN ('draft', 'pending_approval', 'approved', 'rejected', 'expired'));
-
-
-ALTER TABLE IF EXISTS public.resource_groups
-    ADD CONSTRAINT resource_groups_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_resource_groups_company
-    ON public.resource_groups(company_id);
-
-
-ALTER TABLE IF EXISTS public.routing_operations
-    ADD CONSTRAINT routing_operations_routing_id_fkey FOREIGN KEY (routing_id)
-    REFERENCES public.routings (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_routing_ops_routing
-    ON public.routing_operations(routing_id);
-
-
-ALTER TABLE IF EXISTS public.routings
-    ADD CONSTRAINT routings_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_routings_company
-    ON public.routings(company_id);
-
-
-ALTER TABLE IF EXISTS public.routings
-    ADD CONSTRAINT routings_part_id_fkey FOREIGN KEY (part_id)
-    REFERENCES public.parts (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_routings_part
-    ON public.routings(part_id);
-
-
-ALTER TABLE IF EXISTS public.user_company_access
-    ADD CONSTRAINT user_company_access_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_user_company_access_company_id
-    ON public.user_company_access(company_id);
-
-
-ALTER TABLE IF EXISTS public.user_preferences
-    ADD CONSTRAINT user_preferences_last_company_id_fkey FOREIGN KEY (last_company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE SET NULL;
-
-
-CREATE TABLE IF NOT EXISTS public.quote_attachments
-(
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    quote_id uuid NOT NULL,
-    company_id uuid NOT NULL,
-    file_name text COLLATE pg_catalog."default" NOT NULL,
-    file_path text COLLATE pg_catalog."default" NOT NULL,
-    file_size integer NOT NULL,
-    mime_type text COLLATE pg_catalog."default" NOT NULL DEFAULT 'application/pdf'::text,
-    uploaded_by uuid,
-    uploaded_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT quote_attachments_pkey PRIMARY KEY (id)
-);
-
-ALTER TABLE IF EXISTS public.quote_attachments
-    ENABLE ROW LEVEL SECURITY;
-
-COMMENT ON TABLE public.quote_attachments
-    IS 'PDF attachments for quotes. Phase 0 limits to one attachment per quote (enforced in UI). When quote converts to job, attachment is COPIED to job_attachments.';
-
-COMMENT ON COLUMN public.quote_attachments.id
-    IS 'Primary key. UUID auto-generated.';
-
-COMMENT ON COLUMN public.quote_attachments.quote_id
-    IS 'FK to quotes. Cascades on delete - attachment deleted with quote.';
-
-COMMENT ON COLUMN public.quote_attachments.company_id
-    IS 'FK to companies. Cascades on delete. Isolates attachments per tenant.';
-
-COMMENT ON COLUMN public.quote_attachments.file_name
-    IS 'Original filename as uploaded by user.';
-
-COMMENT ON COLUMN public.quote_attachments.file_path
-    IS 'Storage path: {companyId}/quotes/{quoteId}/{uuid}_{filename}';
-
-COMMENT ON COLUMN public.quote_attachments.file_size
-    IS 'File size in bytes. Maximum 10MB enforced in application.';
-
-COMMENT ON COLUMN public.quote_attachments.mime_type
-    IS 'MIME type. Default: application/pdf. Phase 0 only supports PDF.';
-
-COMMENT ON COLUMN public.quote_attachments.uploaded_by
-    IS 'UUID of user who uploaded the attachment. References Supabase auth.users.';
-
-COMMENT ON COLUMN public.quote_attachments.uploaded_at
-    IS 'Timestamp when attachment was uploaded.';
-
-ALTER TABLE IF EXISTS public.quote_attachments
-    ADD CONSTRAINT quote_attachments_quote_id_fkey FOREIGN KEY (quote_id)
-    REFERENCES public.quotes (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-
-ALTER TABLE IF EXISTS public.quote_attachments
-    ADD CONSTRAINT quote_attachments_company_id_fkey FOREIGN KEY (company_id)
-    REFERENCES public.companies (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-
-CREATE INDEX IF NOT EXISTS idx_quote_attachments_quote
-    ON public.quote_attachments(quote_id);
-
-CREATE INDEX IF NOT EXISTS idx_quote_attachments_company
-    ON public.quote_attachments(company_id);
-
-
 CREATE TABLE IF NOT EXISTS public.job_attachments
 (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -1109,75 +1058,454 @@ COMMENT ON COLUMN public.job_attachments.uploaded_by
 COMMENT ON COLUMN public.job_attachments.uploaded_at
     IS 'Timestamp when attachment was uploaded/copied.';
 
-ALTER TABLE IF EXISTS public.job_attachments
-    ADD CONSTRAINT job_attachments_job_id_fkey FOREIGN KEY (job_id)
+CREATE TABLE IF NOT EXISTS public.quote_attachments
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    quote_id uuid NOT NULL,
+    company_id uuid NOT NULL,
+    file_name text COLLATE pg_catalog."default" NOT NULL,
+    file_path text COLLATE pg_catalog."default" NOT NULL,
+    file_size integer NOT NULL,
+    mime_type text COLLATE pg_catalog."default" NOT NULL DEFAULT 'application/pdf'::text,
+    uploaded_by uuid,
+    uploaded_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT quote_attachments_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE IF EXISTS public.quote_attachments
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.quote_attachments
+    IS 'PDF attachments for quotes. Phase 0 limits to one attachment per quote (enforced in UI). When quote converts to job, attachment is COPIED to job_attachments.';
+
+COMMENT ON COLUMN public.quote_attachments.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.quote_attachments.quote_id
+    IS 'FK to quotes. Cascades on delete - attachment deleted with quote.';
+
+COMMENT ON COLUMN public.quote_attachments.company_id
+    IS 'FK to companies. Cascades on delete. Isolates attachments per tenant.';
+
+COMMENT ON COLUMN public.quote_attachments.file_name
+    IS 'Original filename as uploaded by user.';
+
+COMMENT ON COLUMN public.quote_attachments.file_path
+    IS 'Storage path: {companyId}/quotes/{quoteId}/{uuid}_{filename}';
+
+COMMENT ON COLUMN public.quote_attachments.file_size
+    IS 'File size in bytes. Maximum 10MB enforced in application.';
+
+COMMENT ON COLUMN public.quote_attachments.mime_type
+    IS 'MIME type. Default: application/pdf. Phase 0 only supports PDF.';
+
+COMMENT ON COLUMN public.quote_attachments.uploaded_by
+    IS 'UUID of user who uploaded the attachment. References Supabase auth.users.';
+
+COMMENT ON COLUMN public.quote_attachments.uploaded_at
+    IS 'Timestamp when attachment was uploaded.';
+
+ALTER TABLE IF EXISTS public.quotes
+    ADD CONSTRAINT quotes_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_quotes_company
+    ON public.quotes(company_id);
+
+
+ALTER TABLE IF EXISTS public.quotes
+    ADD CONSTRAINT quotes_converted_to_job_id_fkey FOREIGN KEY (converted_to_job_id)
+    REFERENCES public.jobs (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+
+
+ALTER TABLE IF EXISTS public.quotes
+    ADD CONSTRAINT quotes_created_by_fkey FOREIGN KEY (created_by)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.quotes
+    ADD CONSTRAINT quotes_customer_id_fkey FOREIGN KEY (customer_id)
+    REFERENCES public.customers (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE RESTRICT;
+CREATE INDEX IF NOT EXISTS idx_quotes_customer
+    ON public.quotes(customer_id);
+
+
+ALTER TABLE IF EXISTS public.quotes
+    ADD CONSTRAINT quotes_part_id_fkey FOREIGN KEY (part_id)
+    REFERENCES public.parts (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_quotes_part
+    ON public.quotes(part_id);
+
+
+ALTER TABLE IF EXISTS public.quotes
+    ADD CONSTRAINT quotes_routing_id_fkey FOREIGN KEY (routing_id)
+    REFERENCES public.routings (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_quotes_routing
+    ON public.quotes(routing_id);
+
+
+ALTER TABLE IF EXISTS public.resource_groups
+    ADD CONSTRAINT resource_groups_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_resource_groups_company
+    ON public.resource_groups(company_id);
+
+
+ALTER TABLE IF EXISTS public.operation_types
+    ADD CONSTRAINT resources_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_operation_types_company
+    ON public.operation_types(company_id);
+
+
+ALTER TABLE IF EXISTS public.operation_types
+    ADD CONSTRAINT resources_resource_group_id_fkey FOREIGN KEY (resource_group_id)
+    REFERENCES public.resource_groups (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_operation_types_group
+    ON public.operation_types(resource_group_id);
+
+
+ALTER TABLE IF EXISTS public.ai_config
+    ADD CONSTRAINT ai_config_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public.parts
+    ADD CONSTRAINT parts_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_parts_company_id
+    ON public.parts(company_id);
+
+
+ALTER TABLE IF EXISTS public.parts
+    ADD CONSTRAINT parts_customer_id_fkey FOREIGN KEY (customer_id)
+    REFERENCES public.customers (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_parts_customer_id
+    ON public.parts(customer_id);
+
+
+ALTER TABLE IF EXISTS public.customers
+    ADD CONSTRAINT customers_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_customers_company
+    ON public.customers(company_id);
+
+
+ALTER TABLE IF EXISTS public.jobs
+    ADD CONSTRAINT jobs_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_jobs_company
+    ON public.jobs(company_id);
+
+
+ALTER TABLE IF EXISTS public.jobs
+    ADD CONSTRAINT jobs_created_by_fkey FOREIGN KEY (created_by)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.jobs
+    ADD CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id)
+    REFERENCES public.customers (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE RESTRICT;
+CREATE INDEX IF NOT EXISTS idx_jobs_customer
+    ON public.jobs(customer_id);
+
+
+ALTER TABLE IF EXISTS public.jobs
+    ADD CONSTRAINT jobs_part_id_fkey FOREIGN KEY (part_id)
+    REFERENCES public.parts (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_jobs_part
+    ON public.jobs(part_id);
+
+
+ALTER TABLE IF EXISTS public.jobs
+    ADD CONSTRAINT jobs_quote_id_fkey FOREIGN KEY (quote_id)
+    REFERENCES public.quotes (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_jobs_quote
+    ON public.jobs(quote_id);
+
+
+ALTER TABLE IF EXISTS public.jobs
+    ADD CONSTRAINT jobs_routing_id_fkey FOREIGN KEY (routing_id)
+    REFERENCES public.routings (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_jobs_routing
+    ON public.jobs(routing_id);
+
+
+ALTER TABLE IF EXISTS auth.identities
+    ADD CONSTRAINT identities_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS identities_user_id_idx
+    ON auth.identities(user_id);
+
+
+ALTER TABLE IF EXISTS auth.sessions
+    ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id)
+    REFERENCES auth.oauth_clients (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS sessions_oauth_client_id_idx
+    ON auth.sessions(oauth_client_id);
+
+
+ALTER TABLE IF EXISTS auth.sessions
+    ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS sessions_user_id_idx
+    ON auth.sessions(user_id);
+
+
+ALTER TABLE IF EXISTS auth.oauth_authorizations
+    ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id)
+    REFERENCES auth.oauth_clients (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS auth.oauth_authorizations
+    ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS auth.oauth_consents
+    ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id)
+    REFERENCES auth.oauth_clients (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS oauth_consents_active_client_idx
+    ON auth.oauth_consents(client_id);
+
+
+ALTER TABLE IF EXISTS auth.oauth_consents
+    ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS auth.refresh_tokens
+    ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id)
+    REFERENCES auth.sessions (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS auth.mfa_amr_claims
+    ADD CONSTRAINT mfa_amr_claims_session_id_fkey FOREIGN KEY (session_id)
+    REFERENCES auth.sessions (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS auth.mfa_factors
+    ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS mfa_factors_user_id_idx
+    ON auth.mfa_factors(user_id);
+
+
+ALTER TABLE IF EXISTS auth.mfa_challenges
+    ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id)
+    REFERENCES auth.mfa_factors (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS auth.one_time_tokens
+    ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public.user_company_access
+    ADD CONSTRAINT user_company_access_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_user_company_access_company_id
+    ON public.user_company_access(company_id);
+
+
+ALTER TABLE IF EXISTS public.user_company_access
+    ADD CONSTRAINT user_company_access_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_user_company_access_user_id
+    ON public.user_company_access(user_id);
+
+
+ALTER TABLE IF EXISTS public.user_preferences
+    ADD CONSTRAINT user_preferences_last_company_id_fkey FOREIGN KEY (last_company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+
+
+ALTER TABLE IF EXISTS public.user_preferences
+    ADD CONSTRAINT user_preferences_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS user_preferences_user_id_key
+    ON public.user_preferences(user_id);
+
+
+ALTER TABLE IF EXISTS public.routings
+    ADD CONSTRAINT routings_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_routings_company
+    ON public.routings(company_id);
+
+
+ALTER TABLE IF EXISTS public.routings
+    ADD CONSTRAINT routings_created_by_fkey FOREIGN KEY (created_by)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.routings
+    ADD CONSTRAINT routings_part_id_fkey FOREIGN KEY (part_id)
+    REFERENCES public.parts (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_routings_part
+    ON public.routings(part_id);
+
+
+ALTER TABLE IF EXISTS public.routing_operations
+    ADD CONSTRAINT routing_operations_routing_id_fkey FOREIGN KEY (routing_id)
+    REFERENCES public.routings (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_routing_ops_routing
+    ON public.routing_operations(routing_id);
+
+
+ALTER TABLE IF EXISTS public.job_operations
+    ADD CONSTRAINT job_operations_assigned_to_fkey FOREIGN KEY (assigned_to)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+CREATE INDEX IF NOT EXISTS idx_job_ops_assigned
+    ON public.job_operations(assigned_to);
+
+
+ALTER TABLE IF EXISTS public.job_operations
+    ADD CONSTRAINT job_operations_completed_by_fkey FOREIGN KEY (completed_by)
+    REFERENCES auth.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.job_operations
+    ADD CONSTRAINT job_operations_job_id_fkey FOREIGN KEY (job_id)
     REFERENCES public.jobs (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_job_ops_job
+    ON public.job_operations(job_id);
+
+
+ALTER TABLE IF EXISTS public.job_operations
+    ADD CONSTRAINT job_operations_routing_operation_id_fkey FOREIGN KEY (routing_operation_id)
+    REFERENCES public.routing_operations (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_job_ops_routing_op
+    ON public.job_operations(routing_operation_id);
+
 
 ALTER TABLE IF EXISTS public.job_attachments
     ADD CONSTRAINT job_attachments_company_id_fkey FOREIGN KEY (company_id)
     REFERENCES public.companies (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_job_attachments_company
+    ON public.job_attachments(company_id);
+
+
+ALTER TABLE IF EXISTS public.job_attachments
+    ADD CONSTRAINT job_attachments_job_id_fkey FOREIGN KEY (job_id)
+    REFERENCES public.jobs (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_job_attachments_job
+    ON public.job_attachments(job_id);
+
 
 ALTER TABLE IF EXISTS public.job_attachments
     ADD CONSTRAINT job_attachments_source_fkey FOREIGN KEY (source_quote_attachment_id)
     REFERENCES public.quote_attachments (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE SET NULL;
-
-CREATE INDEX IF NOT EXISTS idx_job_attachments_job
-    ON public.job_attachments(job_id);
-
-CREATE INDEX IF NOT EXISTS idx_job_attachments_company
-    ON public.job_attachments(company_id);
-
 CREATE INDEX IF NOT EXISTS idx_job_attachments_source
     ON public.job_attachments(source_quote_attachment_id);
 
 
--- RLS Policies for quote_attachments
-CREATE POLICY "quote_attachments_select" ON quote_attachments
-  FOR SELECT USING (
-    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
-  );
-
-CREATE POLICY "quote_attachments_insert" ON quote_attachments
-  FOR INSERT WITH CHECK (
-    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
-  );
-
-CREATE POLICY "quote_attachments_update" ON quote_attachments
-  FOR UPDATE USING (
-    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
-  );
-
-CREATE POLICY "quote_attachments_delete" ON quote_attachments
-  FOR DELETE USING (
-    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
-  );
+ALTER TABLE IF EXISTS public.quote_attachments
+    ADD CONSTRAINT quote_attachments_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_quote_attachments_company
+    ON public.quote_attachments(company_id);
 
 
--- RLS Policies for job_attachments
-CREATE POLICY "job_attachments_select" ON job_attachments
-  FOR SELECT USING (
-    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
-  );
-
-CREATE POLICY "job_attachments_insert" ON job_attachments
-  FOR INSERT WITH CHECK (
-    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
-  );
-
-CREATE POLICY "job_attachments_update" ON job_attachments
-  FOR UPDATE USING (
-    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
-  );
-
-CREATE POLICY "job_attachments_delete" ON job_attachments
-  FOR DELETE USING (
-    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
-  );
+ALTER TABLE IF EXISTS public.quote_attachments
+    ADD CONSTRAINT quote_attachments_quote_id_fkey FOREIGN KEY (quote_id)
+    REFERENCES public.quotes (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_quote_attachments_quote
+    ON public.quote_attachments(quote_id);
 
 END;

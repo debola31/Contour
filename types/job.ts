@@ -24,7 +24,6 @@ export interface Job {
   quote_id: string | null;
   customer_id: string;
   part_id: string | null;
-  part_number_text: string | null;
   description: string | null;
   quantity_ordered: number;
   quantity_completed: number;
