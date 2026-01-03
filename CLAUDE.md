@@ -227,3 +227,41 @@ cd api && python index.py
 # Build for production
 pnpm build
 ```
+
+---
+
+## Notion Integration
+
+Product documentation is hosted in Notion. Use the Notion CLI for all Notion interactions.
+
+### Notion CLI
+
+```bash
+# CLI is available in conda environment
+notion --help
+
+# Search for documents
+notion search "keyword"
+
+# Get page content
+notion blocks children <page_id> --recursive
+```
+
+### Key Documents
+
+| Document | ID |
+|----------|-----|
+| PRD | `2dc5314e-8475-8144-bb28-ea4f0f89ec8c` |
+| Build Sequence | `2dc5314e-8475-8144-8aa1-f6a66ba97780` |
+| Customers | `2dc5314e-8475-813f-8b4c-d8966b8d6a33` |
+| Parts | `2dc5314e-8475-8133-957d-fdb3a940d3be` |
+| Quotes | `2dc5314e-8475-812a-967b-c15335f63274` |
+| Jobs | `2dc5314e-8475-8176-a163-c8b17702327d` |
+| Operations | `2dc5314e-8475-81d3-8ed0-d6f3bc09e96e` |
+| Dashboard | `2dc5314e-8475-81d5-9b82-f3f1c53e95ab` |
+
+### Guidelines
+
+- **Consult PRD** before implementing new features
+- **Check module specs** for detailed requirements
+- **Keep docs in sync** - update Notion if implementation diverges

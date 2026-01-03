@@ -14,14 +14,16 @@ import PeopleIcon from '@mui/icons-material/People';
 import CategoryIcon from '@mui/icons-material/Category';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import BuildIcon from '@mui/icons-material/Build';
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import CompanySwitcher from './CompanySwitcher';
 
 const menuItems = [
   { name: 'Dashboard', path: '', icon: DashboardIcon },
   { name: 'Customers', path: '/customers', icon: PeopleIcon },
   { name: 'Parts', path: '/parts', icon: CategoryIcon },
-  { name: 'Operations', path: '/operations', icon: BuildIcon },
+  { name: 'Quotes', path: '/quotes', icon: RequestQuoteIcon },
   { name: 'Jobs', path: '/jobs', icon: WorkIcon },
+  { name: 'Operations', path: '/operations', icon: BuildIcon },
   { name: 'Routings', path: '/routings', icon: AccountTreeIcon },
 ];
 

@@ -10,9 +10,9 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Alert from '@mui/material/Alert';
-import MenuItem from '@mui/material/MenuItem';
 import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
+import SearchableSelect, { type SelectOption } from '@/components/common/SearchableSelect';
 import {
   createOperation,
   updateOperation,
@@ -188,24 +188,20 @@ export default function OperationForm({
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                select
-                label="Resource Group"
+              <SearchableSelect
+                options={groups.map((g): SelectOption => ({
+                  id: g.id,
+                  label: g.name,
+                }))}
                 value={formData.resource_group_id}
-                onChange={handleChange('resource_group_id')}
-                fullWidth
+                onChange={(value) => setFormData((prev) => ({ ...prev, resource_group_id: value }))}
+                label="Resource Group"
                 disabled={loading || loadingGroups}
+                loading={loadingGroups}
+                allowNone
+                noneLabel="None (Ungrouped)"
                 helperText="Category for this operation (optional)"
-              >
-                <MenuItem value="">
-                  <em>None (Ungrouped)</em>
-                </MenuItem>
-                {groups.map((group) => (
-                  <MenuItem key={group.id} value={group.id}>
-                    {group.name}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField

@@ -329,7 +329,6 @@ describe('PartForm', () => {
         { qty: 50, price: 8.0 },
       ],
       material_cost: '5.00',
-      notes: 'Important part',
     };
 
     const existingPart: Part = {
@@ -369,7 +368,6 @@ describe('PartForm', () => {
       // Check that form fields are pre-filled
       expect(screen.getByLabelText(/part number/i)).toHaveValue('EXIST-001');
       expect(screen.getByLabelText(/description/i)).toHaveValue('Existing Part');
-      expect(screen.getByLabelText(/internal notes/i)).toHaveValue('Important part');
 
       // Delete button should be visible in edit mode
       expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();

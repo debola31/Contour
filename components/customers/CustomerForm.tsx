@@ -16,7 +16,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Grid from '@mui/material/Grid';
-import type { CustomerFormData } from '@/types/customer';
+import type { Customer, CustomerFormData } from '@/types/customer';
 import {
   createCustomer,
   updateCustomer,
@@ -28,12 +28,25 @@ interface CustomerFormProps {
   mode: 'create' | 'edit';
   initialData: CustomerFormData;
   customerId?: string;
+  /** Optional: companyId override for modal usage */
+  companyId?: string;
+  /** Optional: Callback when customer is created/updated successfully (modal mode) */
+  onSuccess?: (customer: Customer) => void;
+  /** Optional: Callback when cancel is clicked (modal mode) */
+  onCancel?: () => void;
 }
 
-export default function CustomerForm({ mode, initialData, customerId }: CustomerFormProps) {
+export default function CustomerForm({
+  mode,
+  initialData,
+  customerId,
+  companyId: companyIdProp,
+  onSuccess,
+  onCancel,
+}: CustomerFormProps) {
   const router = useRouter();
   const params = useParams();
-  const companyId = params.companyId as string;
+  const companyId = companyIdProp || (params.companyId as string);
 
   const [formData, setFormData] = useState<CustomerFormData>(initialData);
   const [loading, setLoading] = useState(false);
@@ -90,6 +103,7 @@ export default function CustomerForm({ mode, initialData, customerId }: Customer
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent bubbling to parent forms (e.g., QuoteForm)
     setError(null);
 
     const isValid = await validateForm();
@@ -100,10 +114,18 @@ export default function CustomerForm({ mode, initialData, customerId }: Customer
     try {
       if (mode === 'create') {
         const customer = await createCustomer(companyId, formData);
-        router.push(`/dashboard/${companyId}/customers/${customer.id}`);
+        if (onSuccess) {
+          onSuccess(customer);
+        } else {
+          router.push(`/dashboard/${companyId}/customers/${customer.id}`);
+        }
       } else if (customerId) {
-        await updateCustomer(customerId, formData);
-        router.push(`/dashboard/${companyId}/customers/${customerId}`);
+        const customer = await updateCustomer(customerId, formData);
+        if (onSuccess) {
+          onSuccess(customer);
+        } else {
+          router.push(`/dashboard/${companyId}/customers/${customerId}`);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -128,7 +150,11 @@ export default function CustomerForm({ mode, initialData, customerId }: Customer
   };
 
   const handleCancel = () => {
-    router.push(`/dashboard/${companyId}/customers`);
+    if (onCancel) {
+      onCancel();
+    } else {
+      router.push(`/dashboard/${companyId}/customers`);
+    }
   };
 
   return (

@@ -15,10 +15,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Grid from '@mui/material/Grid';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -32,6 +28,7 @@ import type { Part, PartFormData } from '@/types/part';
 import { validatePricingTiers } from '@/types/part';
 import { createPart, updatePart, deletePart, checkPartNumberExists } from '@/utils/partsAccess';
 import { getAllCustomers } from '@/utils/customerAccess';
+import SearchableSelect, { type SelectOption } from '@/components/common/SearchableSelect';
 import type { Customer } from '@/types/customer';
 
 interface PartFormProps {
@@ -40,7 +37,9 @@ interface PartFormProps {
   initialData: PartFormData;
   partId?: string;
   part?: Part; // Full Part with relations for delete dialog
-  onSuccess?: () => void;
+  /** Optional: Pre-selected customer ID (for modal usage from QuoteForm) */
+  preselectedCustomerId?: string;
+  onSuccess?: (part?: Part) => void;
   onCancel?: () => void;
 }
 
@@ -50,6 +49,7 @@ export default function PartForm({
   initialData,
   partId,
   part,
+  preselectedCustomerId,
   onSuccess,
   onCancel,
 }: PartFormProps) {
@@ -181,6 +181,7 @@ export default function PartForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent bubbling to parent forms (e.g., QuoteForm)
     setError(null);
 
     const isValid = await validateForm();
@@ -192,14 +193,14 @@ export default function PartForm({
       if (mode === 'create') {
         const newPart = await createPart(companyId, formData);
         if (onSuccess) {
-          onSuccess();
+          onSuccess(newPart);
         } else {
           router.push(`/dashboard/${companyId}/parts/${newPart.id}`);
         }
       } else if (partId) {
-        await updatePart(partId, formData);
+        const updatedPart = await updatePart(partId, formData);
         if (onSuccess) {
-          onSuccess();
+          onSuccess(updatedPart);
         } else {
           router.push(`/dashboard/${companyId}/parts/${partId}`);
         }
@@ -273,25 +274,20 @@ export default function PartForm({
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <FormControl fullWidth>
-                <InputLabel id="customer-label">Customer</InputLabel>
-                <Select
-                  labelId="customer-label"
-                  value={formData.customer_id}
-                  onChange={(e) => handleCustomerChange(e.target.value)}
-                  label="Customer"
-                  disabled={loading || customersLoading}
-                >
-                  <MenuItem value="">
-                    <em>No Customer</em>
-                  </MenuItem>
-                  {customers.map((customer) => (
-                    <MenuItem key={customer.id} value={customer.id}>
-                      {customer.customer_code} - {customer.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <SearchableSelect
+                options={customers.map((c): SelectOption => ({
+                  id: c.id,
+                  label: c.name,
+                  secondaryLabel: c.customer_code,
+                }))}
+                value={formData.customer_id}
+                onChange={handleCustomerChange}
+                label="Customer"
+                disabled={loading || customersLoading}
+                loading={customersLoading}
+                allowNone
+                noneLabel="No Customer (Generic Part)"
+              />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField
@@ -410,25 +406,6 @@ export default function PartForm({
               />
             </Grid>
           </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Notes */}
-      <Card elevation={2} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Notes
-          </Typography>
-          <TextField
-            fullWidth
-            label="Internal Notes"
-            value={formData.notes}
-            onChange={handleChange('notes')}
-            disabled={loading}
-            multiline
-            rows={4}
-            placeholder="Additional notes about this part"
-          />
         </CardContent>
       </Card>
 

@@ -3,8 +3,6 @@ export interface Customer {
   company_id: string;
   customer_code: string;
   name: string;
-  phone: string | null;
-  email: string | null;
   website: string | null;
   contact_name: string | null;
   contact_phone: string | null;
@@ -15,7 +13,6 @@ export interface Customer {
   state: string | null;
   postal_code: string | null;
   country: string;
-  notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,8 +20,6 @@ export interface Customer {
 export interface CustomerFormData {
   customer_code: string;
   name: string;
-  phone: string;
-  email: string;
   website: string;
   contact_name: string;
   contact_phone: string;
@@ -35,7 +30,6 @@ export interface CustomerFormData {
   state: string;
   postal_code: string;
   country: string;
-  notes: string;
 }
 
 export type CustomerFilter = 'all' | 'active' | 'inactive';
@@ -60,8 +54,6 @@ export interface ImportResult {
 export const EMPTY_CUSTOMER_FORM: CustomerFormData = {
   customer_code: '',
   name: '',
-  phone: '',
-  email: '',
   website: '',
   contact_name: '',
   contact_phone: '',
@@ -72,15 +64,12 @@ export const EMPTY_CUSTOMER_FORM: CustomerFormData = {
   state: '',
   postal_code: '',
   country: 'USA',
-  notes: '',
 };
 
 export function customerToFormData(customer: Customer): CustomerFormData {
   return {
     customer_code: customer.customer_code,
     name: customer.name,
-    phone: customer.phone || '',
-    email: customer.email || '',
     website: customer.website || '',
     contact_name: customer.contact_name || '',
     contact_phone: customer.contact_phone || '',
@@ -91,6 +80,5 @@ export function customerToFormData(customer: Customer): CustomerFormData {
     state: customer.state || '',
     postal_code: customer.postal_code || '',
     country: customer.country || 'USA',
-    notes: customer.notes || '',
   };
 }
