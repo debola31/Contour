@@ -194,7 +194,7 @@ export default function QuoteAttachmentUpload({
         onTempAttachmentsChange?.(tempAttachments.filter(a => a.file_path !== tempPath));
       } else if (attachmentId) {
         // Delete permanent attachment
-        await deleteQuoteAttachment(attachmentId);
+        await deleteQuoteAttachment(attachmentId, companyId);
         onAttachmentChange();
       }
     } catch (err) {
@@ -283,6 +283,8 @@ export default function QuoteAttachmentUpload({
                     color="primary"
                     onClick={() => triggerReplaceInput(attachment.id)}
                     title="Replace attachment"
+                    aria-label="Replace attachment"
+                    sx={{ minWidth: 48, minHeight: 48 }}
                   >
                     <EditIcon />
                   </IconButton>
@@ -290,6 +292,8 @@ export default function QuoteAttachmentUpload({
                     color="error"
                     onClick={() => handleDelete(attachment.id)}
                     title="Delete attachment"
+                    aria-label="Delete attachment"
+                    sx={{ minWidth: 48, minHeight: 48 }}
                   >
                     <DeleteIcon />
                   </IconButton>
@@ -331,6 +335,8 @@ export default function QuoteAttachmentUpload({
                   color="error"
                   onClick={() => handleDelete(undefined, attachment.file_path)}
                   title="Delete attachment"
+                  aria-label="Delete attachment"
+                  sx={{ minWidth: 48, minHeight: 48 }}
                 >
                   <DeleteIcon />
                 </IconButton>
@@ -371,6 +377,7 @@ export default function QuoteAttachmentUpload({
             onChange={handleFileInputChange}
             style={{ display: 'none' }}
             disabled={uploading}
+            aria-label="Upload PDF attachments"
           />
 
           {uploading ? (

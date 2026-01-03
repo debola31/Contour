@@ -52,6 +52,8 @@ export interface QuoteWithRelations extends Quote {
     job_number: string;
     status: string;
   } | null;
+  // Joined attachments
+  quote_attachments?: QuoteAttachment[];
 }
 
 /**

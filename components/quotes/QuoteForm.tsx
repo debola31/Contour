@@ -304,6 +304,7 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling to parent forms
     setError(null);
 
     if (!validateForm()) return;
@@ -312,8 +313,13 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
 
     try {
       if (mode === 'create') {
-        const quote = await createQuote(companyId, formData, tempAttachments);
-        router.push(`/dashboard/${companyId}/quotes/${quote.id}`);
+        const result = await createQuote(companyId, formData, tempAttachments);
+        // Show warning if some attachments failed
+        if (result.attachmentErrors && result.attachmentErrors.length > 0) {
+          console.warn('Some attachments failed to save:', result.attachmentErrors);
+          // Could show a snackbar warning here, but continue to the quote page
+        }
+        router.push(`/dashboard/${companyId}/quotes/${result.quote.id}`);
       } else if (quoteId) {
         await updateQuote(quoteId, formData);
         if (onSave) {
@@ -351,21 +357,6 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
-      {/* Actions at top */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Button variant="outlined" onClick={handleCancel} disabled={loading}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
-        >
-          {loading ? 'Saving...' : mode === 'create' ? 'Save as Draft' : 'Save'}
-        </Button>
-      </Box>
-
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
@@ -653,6 +644,21 @@ export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave
           />
         </CardContent>
       </Card>
+
+      {/* Actions at bottom */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3 }}>
+        <Button variant="outlined" onClick={handleCancel} disabled={loading}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} /> : null}
+        >
+          {loading ? 'Saving...' : mode === 'create' ? 'Save as Draft' : 'Save'}
+        </Button>
+      </Box>
 
       {/* Quick Create Customer Modal */}
       <CustomerFormModal

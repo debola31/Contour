@@ -28,6 +28,18 @@ export const MAX_ATTACHMENTS_PER_QUOTE = 5;
 // Maximum file size (50MB)
 export const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
+/**
+ * Sanitize search string for use in LIKE/ILIKE queries
+ * Escapes SQL wildcards to prevent unintended pattern matching
+ */
+function sanitizeSearchString(search: string): string {
+  return search
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/%/g, '\\%')    // Escape percent signs
+    .replace(/_/g, '\\_')    // Escape underscores
+    .substring(0, 100);      // Limit length
+}
+
 // ============== CRUD Operations ==============
 
 /**
@@ -69,8 +81,9 @@ export async function getQuotes(
   }
 
   if (filters.search?.trim()) {
+    const sanitized = sanitizeSearchString(filters.search.trim());
     query = query.or(
-      `quote_number.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+      `quote_number.ilike.%${sanitized}%,description.ilike.%${sanitized}%`
     );
   }
 
@@ -169,8 +182,9 @@ export async function getQuotesCount(
   }
 
   if (filters.search?.trim()) {
+    const sanitized = sanitizeSearchString(filters.search.trim());
     query = query.or(
-      `quote_number.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+      `quote_number.ilike.%${sanitized}%,description.ilike.%${sanitized}%`
     );
   }
 
@@ -186,14 +200,18 @@ export async function getQuotesCount(
 
 /**
  * Get a single quote by ID
+ * @param quoteId - The quote ID
+ * @param companyId - The company ID for security validation
+ * @returns Quote if found, null if not found (PGRST116)
  */
-export async function getQuote(quoteId: string): Promise<Quote | null> {
+export async function getQuote(quoteId: string, companyId: string): Promise<Quote | null> {
   const supabase = getSupabase();
 
   const { data, error } = await supabase
     .from('quotes')
     .select('*')
     .eq('id', quoteId)
+    .eq('company_id', companyId)
     .single();
 
   if (error && error.code !== 'PGRST116') {
@@ -206,8 +224,11 @@ export async function getQuote(quoteId: string): Promise<Quote | null> {
 
 /**
  * Get a quote with all relations
+ * @param quoteId - The quote ID
+ * @param companyId - The company ID for security validation
+ * @returns Quote with relations if found, null if not found (PGRST116)
  */
-export async function getQuoteWithRelations(quoteId: string): Promise<QuoteWithRelations | null> {
+export async function getQuoteWithRelations(quoteId: string, companyId: string): Promise<QuoteWithRelations | null> {
   const supabase = getSupabase();
 
   const { data, error } = await supabase
@@ -222,6 +243,7 @@ export async function getQuoteWithRelations(quoteId: string): Promise<QuoteWithR
     `
     )
     .eq('id', quoteId)
+    .eq('company_id', companyId)
     .single();
 
   if (error && error.code !== 'PGRST116') {
@@ -239,11 +261,24 @@ export async function createQuote(
   companyId: string,
   formData: QuoteFormData,
   tempAttachments?: TempAttachment[]
-): Promise<Quote> {
+): Promise<{ quote: Quote; attachmentErrors: string[] }> {
   const supabase = getSupabase();
 
-  const quantity = parseInt(formData.quantity, 10) || 1;
+  // Input validation
+  const quantity = parseInt(formData.quantity, 10);
+  if (isNaN(quantity) || quantity < 1 || quantity > 1000000) {
+    throw new Error('Quantity must be between 1 and 1,000,000');
+  }
+
   const unitPrice = formData.unit_price ? parseFloat(formData.unit_price) : null;
+  if (unitPrice !== null && (isNaN(unitPrice) || unitPrice < 0 || unitPrice > 999999.99)) {
+    throw new Error('Unit price must be between 0 and 999,999.99');
+  }
+
+  if (formData.description && formData.description.length > 5000) {
+    throw new Error('Description cannot exceed 5000 characters');
+  }
+
   const totalPrice = calculateTotalPrice(quantity, unitPrice);
 
   const { data, error } = await supabase
@@ -268,19 +303,19 @@ export async function createQuote(
   }
 
   // If there are temp attachments, move them to permanent location
+  const attachmentErrors: string[] = [];
   if (tempAttachments && tempAttachments.length > 0 && data.id) {
     for (const tempAttachment of tempAttachments) {
       try {
         await moveTempAttachmentToPermanent(tempAttachment, data.id, companyId);
       } catch (attachmentError) {
         console.error('Failed to move temp attachment:', attachmentError);
-        // Quote is already created, so just log the error
-        // User can upload attachment again if needed
+        attachmentErrors.push(`Failed to save attachment: ${tempAttachment.file_name}`);
       }
     }
   }
 
-  return data;
+  return { quote: data, attachmentErrors };
 }
 
 /**
@@ -305,8 +340,21 @@ export async function updateQuote(quoteId: string, formData: QuoteFormData): Pro
     throw new Error('Only draft or rejected quotes can be edited');
   }
 
-  const quantity = parseInt(formData.quantity, 10) || 1;
+  // Input validation
+  const quantity = parseInt(formData.quantity, 10);
+  if (isNaN(quantity) || quantity < 1 || quantity > 1000000) {
+    throw new Error('Quantity must be between 1 and 1,000,000');
+  }
+
   const unitPrice = formData.unit_price ? parseFloat(formData.unit_price) : null;
+  if (unitPrice !== null && (isNaN(unitPrice) || unitPrice < 0 || unitPrice > 999999.99)) {
+    throw new Error('Unit price must be between 0 and 999,999.99');
+  }
+
+  if (formData.description && formData.description.length > 5000) {
+    throw new Error('Description cannot exceed 5000 characters');
+  }
+
   const totalPrice = calculateTotalPrice(quantity, unitPrice);
 
   const { data, error } = await supabase
@@ -333,12 +381,36 @@ export async function updateQuote(quoteId: string, formData: QuoteFormData): Pro
 }
 
 /**
- * Delete a quote
+ * Delete a quote and its attachments from storage
  */
-export async function deleteQuote(quoteId: string): Promise<void> {
+export async function deleteQuote(quoteId: string, companyId: string): Promise<void> {
   const supabase = getSupabase();
 
-  const { error } = await supabase.from('quotes').delete().eq('id', quoteId);
+  // 1. Get quote's attachments for storage cleanup
+  const { data: attachments } = await supabase
+    .from('quote_attachments')
+    .select('file_path')
+    .eq('quote_id', quoteId)
+    .eq('company_id', companyId);
+
+  // 2. Delete storage files (best effort - don't fail if cleanup fails)
+  if (attachments && attachments.length > 0) {
+    for (const attachment of attachments) {
+      try {
+        await deleteFileFromStorage(attachment.file_path);
+      } catch (storageError) {
+        console.warn('Failed to delete storage file:', attachment.file_path, storageError);
+        // Continue with deletion even if storage cleanup fails
+      }
+    }
+  }
+
+  // 3. Delete the quote record (cascade will delete attachments from DB)
+  const { error } = await supabase
+    .from('quotes')
+    .delete()
+    .eq('id', quoteId)
+    .eq('company_id', companyId);
 
   if (error) {
     console.error('Error deleting quote:', error);
@@ -347,24 +419,44 @@ export async function deleteQuote(quoteId: string): Promise<void> {
 }
 
 /**
- * Bulk delete quotes
+ * Bulk delete quotes and their attachments from storage
  */
-export async function bulkDeleteQuotes(quoteIds: string[]): Promise<void> {
+export async function bulkDeleteQuotes(quoteIds: string[], companyId: string): Promise<void> {
   if (quoteIds.length === 0) return;
 
   const validIds = quoteIds.filter((id) => id && typeof id === 'string');
   if (validIds.length === 0) return;
 
   const supabase = getSupabase();
-  const BATCH_SIZE = 100;
 
+  // 1. Get all attachments for these quotes
+  const { data: attachments } = await supabase
+    .from('quote_attachments')
+    .select('file_path')
+    .in('quote_id', validIds)
+    .eq('company_id', companyId);
+
+  // 2. Delete storage files (best effort)
+  if (attachments && attachments.length > 0) {
+    for (const attachment of attachments) {
+      try {
+        await deleteFileFromStorage(attachment.file_path);
+      } catch (storageError) {
+        console.warn('Failed to delete storage file:', attachment.file_path, storageError);
+      }
+    }
+  }
+
+  // 3. Delete quotes in batches
+  const BATCH_SIZE = 100;
   for (let i = 0; i < validIds.length; i += BATCH_SIZE) {
     const batch = validIds.slice(i, i + BATCH_SIZE);
 
     const { error } = await supabase
       .from('quotes')
       .delete()
-      .in('id', batch);
+      .in('id', batch)
+      .eq('company_id', companyId);
 
     if (error) {
       if (error.code === '23503') {
@@ -755,13 +847,16 @@ export async function uploadQuoteAttachment(
 
 /**
  * Delete attachment for a quote (draft only)
+ * @param attachmentId - The attachment ID
+ * @param companyId - The company ID for security validation
  */
 export async function deleteQuoteAttachment(
-  attachmentId: string
+  attachmentId: string,
+  companyId: string
 ): Promise<void> {
   const supabase = getSupabase();
 
-  // 1. Get attachment with quote status
+  // 1. Get attachment with quote status, validating company ownership
   const { data: attachment, error: fetchError } = await supabase
     .from('quote_attachments')
     .select(`
@@ -770,14 +865,16 @@ export async function deleteQuoteAttachment(
       quotes!inner (status)
     `)
     .eq('id', attachmentId)
+    .eq('company_id', companyId)
     .single();
 
   if (fetchError || !attachment) {
     throw new Error('Attachment not found');
   }
 
-  // 2. Verify quote is in draft or rejected status (APPLICATION-LEVEL CHECK)
-  if ((attachment.quotes as any).status !== 'draft' && (attachment.quotes as any).status !== 'rejected') {
+  // 2. Verify quote is in draft or rejected status
+  const quoteStatus = (attachment.quotes as { status: string }).status;
+  if (quoteStatus !== 'draft' && quoteStatus !== 'rejected') {
     throw new Error('Attachments can only be deleted from draft or rejected quotes');
   }
 
@@ -788,7 +885,8 @@ export async function deleteQuoteAttachment(
   const { error: dbError } = await supabase
     .from('quote_attachments')
     .delete()
-    .eq('id', attachmentId);
+    .eq('id', attachmentId)
+    .eq('company_id', companyId);
 
   if (dbError) {
     console.error('Error deleting attachment record:', dbError);
@@ -816,7 +914,7 @@ export async function replaceQuoteAttachment(
     throw new Error('File size must be 50MB or less');
   }
 
-  // 2. Get existing attachment info with quote status
+  // 2. Get existing attachment info with quote status, validating company ownership
   const { data: existing, error: fetchError } = await supabase
     .from('quote_attachments')
     .select(`
@@ -824,13 +922,15 @@ export async function replaceQuoteAttachment(
       quotes!inner (status)
     `)
     .eq('id', attachmentId)
+    .eq('company_id', companyId)
     .single();
 
   if (fetchError || !existing) {
     throw new Error('Attachment not found');
   }
 
-  if ((existing.quotes as any).status !== 'draft' && (existing.quotes as any).status !== 'rejected') {
+  const quoteStatus = (existing.quotes as { status: string }).status;
+  if (quoteStatus !== 'draft' && quoteStatus !== 'rejected') {
     throw new Error('Attachments can only be replaced in draft or rejected quotes');
   }
 

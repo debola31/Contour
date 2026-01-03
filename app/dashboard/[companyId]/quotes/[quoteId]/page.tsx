@@ -68,7 +68,7 @@ export default function QuoteDetailPage() {
   const fetchQuote = async () => {
     try {
       setLoading(true);
-      const data = await getQuoteWithRelations(quoteId);
+      const data = await getQuoteWithRelations(quoteId, companyId);
       setQuote(data);
       setError(null);
     } catch (err) {
@@ -94,7 +94,7 @@ export default function QuoteDetailPage() {
   const handleDelete = async () => {
     setActionLoading(true);
     try {
-      await deleteQuote(quoteId);
+      await deleteQuote(quoteId, companyId);
       router.push(`/dashboard/${companyId}/quotes`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete quote');
@@ -131,7 +131,7 @@ export default function QuoteDetailPage() {
   const handleDeleteAttachment = async (attachmentId: string) => {
     setActionLoading(true);
     try {
-      await deleteQuoteAttachment(attachmentId);
+      await deleteQuoteAttachment(attachmentId, companyId);
       await fetchQuote();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete attachment');
@@ -198,7 +198,7 @@ export default function QuoteDetailPage() {
       >
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
-            {quote.quote_number}
+            {quote.quote_number || 'Quote'}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <QuoteStatusChip status={quote.status} size="medium" />

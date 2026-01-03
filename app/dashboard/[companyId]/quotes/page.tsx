@@ -214,7 +214,7 @@ export default function QuotesPage() {
     setDeleting(true);
     try {
       if (deleteDialog.type === 'single' && deleteDialog.quoteId) {
-        await deleteQuote(deleteDialog.quoteId);
+        await deleteQuote(deleteDialog.quoteId, companyId);
         setSnackbar({
           open: true,
           message: 'Quote deleted successfully',
@@ -222,7 +222,7 @@ export default function QuotesPage() {
         });
       } else if (deleteDialog.type === 'bulk') {
         const countToDelete = selectedIds.length;
-        await bulkDeleteQuotes(selectedIds);
+        await bulkDeleteQuotes(selectedIds, companyId);
         setSelectedIds([]);
         if (gridRef.current?.api) {
           gridRef.current.api.deselectAll();
@@ -484,13 +484,19 @@ export default function QuotesPage() {
               onSortChanged={handleSortChanged}
               onGridReady={handleGridReady}
               loading={loading}
-              suppressCellFocus={true}
+              suppressCellFocus={false}
               suppressMenuHide={false}
               getRowId={(params) => params.data.id}
               enableCellTextSelection={true}
               ensureDomOrder={true}
               onRowClicked={(event) => {
                 if (event.data) {
+                  router.push(`/dashboard/${companyId}/quotes/${event.data.id}`);
+                }
+              }}
+              onCellKeyDown={(event) => {
+                const keyboardEvent = event.event as KeyboardEvent | undefined;
+                if (keyboardEvent?.key === 'Enter' && event.data) {
                   router.push(`/dashboard/${companyId}/quotes/${event.data.id}`);
                 }
               }}
