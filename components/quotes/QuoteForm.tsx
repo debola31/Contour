@@ -10,18 +10,13 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogActions from '@mui/material/DialogActions';
 import Grid from '@mui/material/Grid';
 import Autocomplete from '@mui/material/Autocomplete';
 import InputAdornment from '@mui/material/InputAdornment';
 import type { QuoteFormData, QuoteAttachment, TempAttachment } from '@/types/quote';
 import { calculateUnitPrice, calculateTotalPrice } from '@/types/quote';
 import type { PricingTier } from '@/types/part';
-import { createQuote, updateQuote, deleteQuote, getCustomerParts, getQuoteAttachments } from '@/utils/quotesAccess';
+import { createQuote, updateQuote, getCustomerParts, getQuoteAttachments } from '@/utils/quotesAccess';
 import { getAllCustomers } from '@/utils/customerAccess';
 import CustomerFormModal from '@/components/customers/CustomerFormModal';
 import PartFormModal from '@/components/parts/PartFormModal';
@@ -38,6 +33,8 @@ interface QuoteFormProps {
   mode: 'create' | 'edit';
   initialData: QuoteFormData;
   quoteId?: string;
+  onCancel?: () => void; // Optional callback for edit mode cancel
+  onSave?: () => void; // Optional callback for edit mode save success
 }
 
 interface CustomerOption {
@@ -71,7 +68,7 @@ const CREATE_NEW_PART: PartOption = {
   isCreateNew: true,
 };
 
-export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps) {
+export default function QuoteForm({ mode, initialData, quoteId, onCancel, onSave }: QuoteFormProps) {
   const router = useRouter();
   const params = useParams();
   const companyId = params.companyId as string;
@@ -80,7 +77,6 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Modal states for quick create
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -200,19 +196,7 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
     }
   }, [selectedPart, formData.quantity, formData.part_type]);
 
-  // Auto-fill description from part
-  useEffect(() => {
-    if (
-      formData.part_type === 'existing' &&
-      selectedPart?.description &&
-      !formData.description
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        description: selectedPart.description || '',
-      }));
-    }
-  }, [selectedPart, formData.part_type, formData.description]);
+  // NOTE: Description is NOT auto-filled from part. Quote description is separate.
 
   const handleChange =
     (field: keyof QuoteFormData) =>
@@ -252,7 +236,6 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
     setFormData((prev) => ({
       ...prev,
       part_id: value?.id || '',
-      description: value?.description || prev.description,
     }));
     if (fieldErrors.part_id) {
       setFieldErrors((prev) => ({ ...prev, part_id: '' }));
@@ -291,7 +274,6 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
     setFormData((prev) => ({
       ...prev,
       part_id: part.id,
-      description: part.description || prev.description,
     }));
     // Always clear the error when a part is selected
     setFieldErrors((prev) => ({ ...prev, part_id: '' }));
@@ -332,7 +314,11 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
         router.push(`/dashboard/${companyId}/quotes/${quote.id}`);
       } else if (quoteId) {
         await updateQuote(quoteId, formData);
-        router.push(`/dashboard/${companyId}/quotes/${quoteId}`);
+        if (onSave) {
+          onSave();
+        } else {
+          router.push(`/dashboard/${companyId}/quotes/${quoteId}`);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -341,23 +327,10 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
     }
   };
 
-  const handleDelete = async () => {
-    if (!quoteId) return;
-
-    setLoading(true);
-    try {
-      await deleteQuote(quoteId);
-      router.push(`/dashboard/${companyId}/quotes`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-      setDeleteDialogOpen(false);
-    }
-  };
-
   const handleCancel = () => {
-    if (mode === 'edit' && quoteId) {
+    if (onCancel) {
+      onCancel();
+    } else if (mode === 'edit' && quoteId) {
       router.push(`/dashboard/${companyId}/quotes/${quoteId}`);
     } else {
       router.push(`/dashboard/${companyId}/quotes`);
@@ -376,6 +349,32 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
+      {/* Actions at top */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        {mode === 'edit' ? (
+          <Button variant="outlined" onClick={handleCancel} disabled={loading}>
+            Cancel
+          </Button>
+        ) : (
+          <Box />
+        )}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {mode === 'create' && (
+            <Button variant="outlined" onClick={handleCancel} disabled={loading}>
+              Cancel
+            </Button>
+          )}
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            {loading ? 'Saving...' : mode === 'create' ? 'Save as Draft' : 'Save'}
+          </Button>
+        </Box>
+      </Box>
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
@@ -568,38 +567,6 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
                     ))}
                 </Box>
               )}
-
-              {/* Description */}
-              <TextField
-                fullWidth
-                label="Description"
-                value={formData.description}
-                onChange={handleChange('description')}
-                disabled={loading}
-                multiline
-                rows={2}
-                sx={{ mt: 3 }}
-                placeholder="Quote description"
-              />
-        </CardContent>
-      </Card>
-
-      {/* Attachments */}
-      <Card elevation={2} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-            Attachments
-          </Typography>
-          <QuoteAttachmentUpload
-            quoteId={mode === 'edit' ? quoteId! : null}
-            companyId={companyId}
-            sessionId={sessionId}
-            existingAttachments={attachments}
-            tempAttachment={tempAttachment}
-            onAttachmentChange={loadAttachments}
-            onTempAttachmentChange={setTempAttachment}
-            disabled={mode === 'edit' && formData.status !== 'draft'}
-          />
         </CardContent>
       </Card>
 
@@ -658,87 +625,43 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
         </CardContent>
       </Card>
 
-      {/* Timeline */}
+      {/* Description */}
       <Card elevation={2} sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Timeline
+            Description
           </Typography>
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Estimated Lead Time"
-                type="number"
-                value={formData.estimated_lead_time_days}
-                onChange={handleChange('estimated_lead_time_days')}
-                disabled={loading}
-                slotProps={{
-                  input: {
-                    endAdornment: <InputAdornment position="end">days</InputAdornment>,
-                  },
-                  htmlInput: { min: 0 },
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Valid Until"
-                type="date"
-                value={formData.valid_until}
-                onChange={handleChange('valid_until')}
-                disabled={loading}
-                slotProps={{
-                  inputLabel: { shrink: true },
-                }}
-              />
-            </Grid>
-          </Grid>
+          <TextField
+            fullWidth
+            label="Quote Description"
+            value={formData.description}
+            onChange={handleChange('description')}
+            disabled={loading}
+            multiline
+            rows={3}
+            placeholder="Describe the work to be quoted"
+          />
         </CardContent>
       </Card>
 
-      {/* Actions */}
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-        {mode === 'edit' && (
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={() => setDeleteDialogOpen(true)}
-            disabled={loading}
-          >
-            Delete
-          </Button>
-        )}
-        <Box sx={{ flex: 1 }} />
-        <Button variant="outlined" onClick={handleCancel} disabled={loading}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
-        >
-          {loading ? 'Saving...' : mode === 'create' ? 'Save as Draft' : 'Save'}
-        </Button>
-      </Box>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Quote?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this quote? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Attachments */}
+      <Card elevation={2} sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+            Attachments
+          </Typography>
+          <QuoteAttachmentUpload
+            quoteId={mode === 'edit' ? quoteId! : null}
+            companyId={companyId}
+            sessionId={sessionId}
+            existingAttachments={attachments}
+            tempAttachment={tempAttachment}
+            onAttachmentChange={loadAttachments}
+            onTempAttachmentChange={setTempAttachment}
+            disabled={mode === 'edit' && formData.status !== 'draft' && formData.status !== 'rejected'}
+          />
+        </CardContent>
+      </Card>
 
       {/* Quick Create Customer Modal */}
       <CustomerFormModal

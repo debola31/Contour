@@ -155,17 +155,21 @@ export default function QuoteDetailPage() {
     );
   }
 
-  // If in edit mode and quote is draft, show the form
-  if (editMode && quote.status === 'draft') {
+  // If in edit mode and quote is draft or rejected, show the form
+  if (editMode && (quote.status === 'draft' || quote.status === 'rejected')) {
+    const handleSaveSuccess = async () => {
+      setEditMode(false);
+      await fetchQuote();
+    };
+
     return (
-      <Box>
-        <Box sx={{ mb: 3 }}>
-          <Button variant="text" onClick={() => setEditMode(false)}>
-            Cancel Edit
-          </Button>
-        </Box>
-        <QuoteForm mode="edit" initialData={quoteToFormData(quote)} quoteId={quote.id} />
-      </Box>
+      <QuoteForm
+        mode="edit"
+        initialData={quoteToFormData(quote)}
+        quoteId={quote.id}
+        onCancel={() => setEditMode(false)}
+        onSave={handleSaveSuccess}
+      />
     );
   }
 
@@ -205,7 +209,7 @@ export default function QuoteDetailPage() {
 
         {/* Action Buttons */}
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {quote.status === 'draft' && (
+          {(quote.status === 'draft' || quote.status === 'rejected') && (
             <>
               <Button
                 variant="outlined"
@@ -221,7 +225,7 @@ export default function QuoteDetailPage() {
                 onClick={() => handleAction(() => markQuoteAsPendingApproval(quoteId))}
                 disabled={actionLoading}
               >
-                Send for Approval
+                {quote.status === 'rejected' ? 'Re-submit for Approval' : 'Send for Approval'}
               </Button>
             </>
           )}
@@ -423,7 +427,7 @@ export default function QuoteDetailPage() {
                     >
                       Download
                     </Button>
-                    {quote.status === 'draft' && (
+                    {(quote.status === 'draft' || quote.status === 'rejected') && (
                       <IconButton
                         color="error"
                         onClick={() => handleDeleteAttachment(attachment.id)}

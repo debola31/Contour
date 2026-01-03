@@ -72,6 +72,7 @@ export interface QuoteFormData {
   unit_price: string; // String for form input
   estimated_lead_time_days: string;
   valid_until: string;
+  status?: QuoteStatus; // For edit mode to check permissions
 }
 
 /**
@@ -121,6 +122,7 @@ export function quoteToFormData(quote: Quote): QuoteFormData {
     estimated_lead_time_days:
       quote.estimated_lead_time_days !== null ? String(quote.estimated_lead_time_days) : '',
     valid_until: quote.valid_until || '',
+    status: quote.status,
   };
 }
 

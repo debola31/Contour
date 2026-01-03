@@ -305,8 +305,8 @@ export async function updateQuote(quoteId: string, formData: QuoteFormData): Pro
     throw checkError;
   }
 
-  if (existing.status !== 'draft') {
-    throw new Error('Only draft quotes can be edited');
+  if (existing.status !== 'draft' && existing.status !== 'rejected') {
+    throw new Error('Only draft or rejected quotes can be edited');
   }
 
   const quantity = parseInt(formData.quantity, 10) || 1;
@@ -443,10 +443,10 @@ async function updateQuoteStatus(
 }
 
 /**
- * Mark quote as pending approval (draft → pending_approval)
+ * Mark quote as pending approval (draft or rejected → pending_approval)
  */
 export async function markQuoteAsPendingApproval(quoteId: string): Promise<Quote> {
-  return updateQuoteStatus(quoteId, 'draft', 'pending_approval');
+  return updateQuoteStatus(quoteId, ['draft', 'rejected'], 'pending_approval');
 }
 
 /**
@@ -722,8 +722,8 @@ export async function uploadQuoteAttachment(
     throw new Error('Quote not found');
   }
 
-  if (quote.status !== 'draft') {
-    throw new Error('Attachments can only be added to draft quotes');
+  if (quote.status !== 'draft' && quote.status !== 'rejected') {
+    throw new Error('Attachments can only be added to draft or rejected quotes');
   }
 
   // 4. Check attachment limit
@@ -791,9 +791,9 @@ export async function deleteQuoteAttachment(
     throw new Error('Attachment not found');
   }
 
-  // 2. Verify quote is in draft status (APPLICATION-LEVEL CHECK)
-  if ((attachment.quotes as any).status !== 'draft') {
-    throw new Error('Attachments can only be deleted from draft quotes');
+  // 2. Verify quote is in draft or rejected status (APPLICATION-LEVEL CHECK)
+  if ((attachment.quotes as any).status !== 'draft' && (attachment.quotes as any).status !== 'rejected') {
+    throw new Error('Attachments can only be deleted from draft or rejected quotes');
   }
 
   // 3. Delete from storage
@@ -846,8 +846,8 @@ export async function replaceQuoteAttachment(
     throw new Error('Attachment not found');
   }
 
-  if ((existing.quotes as any).status !== 'draft') {
-    throw new Error('Attachments can only be replaced in draft quotes');
+  if ((existing.quotes as any).status !== 'draft' && (existing.quotes as any).status !== 'rejected') {
+    throw new Error('Attachments can only be replaced in draft or rejected quotes');
   }
 
   const oldFilePath = existing.file_path;

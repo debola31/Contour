@@ -931,6 +931,14 @@ ALTER TABLE IF EXISTS public.quotes
 CREATE INDEX IF NOT EXISTS idx_quotes_routing
     ON public.quotes(routing_id);
 
+-- Quote status check constraint
+-- Valid statuses: draft, pending_approval, approved, rejected, expired
+ALTER TABLE IF EXISTS public.quotes
+    DROP CONSTRAINT IF EXISTS quotes_status_check;
+ALTER TABLE IF EXISTS public.quotes
+    ADD CONSTRAINT quotes_status_check
+    CHECK (status IN ('draft', 'pending_approval', 'approved', 'rejected', 'expired'));
+
 
 ALTER TABLE IF EXISTS public.resource_groups
     ADD CONSTRAINT resource_groups_company_id_fkey FOREIGN KEY (company_id)
