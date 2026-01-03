@@ -6,9 +6,24 @@ import type {
   QuoteFilters,
   QuoteStatus,
   ConvertToJobData,
+  QuoteAttachment,
+  TempAttachment,
 } from '@/types/quote';
 import { calculateTotalPrice } from '@/types/quote';
 import type { PricingTier } from '@/types/part';
+import type { JobAttachment } from '@/types/job';
+import {
+  generateStoragePath,
+  uploadFileToStorage,
+  deleteFileFromStorage,
+  getSignedUrl,
+  downloadFileFromStorage,
+  moveFileInStorage,
+  generateTempStoragePath,
+} from './storageHelpers';
+
+// Maximum attachments per quote (Phase 0)
+const MAX_ATTACHMENTS_PER_QUOTE = 1;
 
 // ============== CRUD Operations ==============
 
@@ -199,7 +214,8 @@ export async function getQuoteWithRelations(quoteId: string): Promise<QuoteWithR
       *,
       customers!left(id, name, customer_code),
       parts!left(id, part_number, description, pricing),
-      jobs:converted_to_job_id!left(id, job_number, status)
+      jobs:converted_to_job_id!left(id, job_number, status),
+      quote_attachments(*)
     `
     )
     .eq('id', quoteId)
@@ -218,7 +234,8 @@ export async function getQuoteWithRelations(quoteId: string): Promise<QuoteWithR
  */
 export async function createQuote(
   companyId: string,
-  formData: QuoteFormData
+  formData: QuoteFormData,
+  tempAttachment?: TempAttachment | null
 ): Promise<Quote> {
   const supabase = getSupabase();
 
@@ -254,6 +271,17 @@ export async function createQuote(
   if (error) {
     console.error('Error creating quote:', error);
     throw error;
+  }
+
+  // If there's a temp attachment, move it to permanent location
+  if (tempAttachment && data.id) {
+    try {
+      await moveTempAttachmentToPermanent(tempAttachment, data.id, companyId);
+    } catch (attachmentError) {
+      console.error('Failed to move temp attachment:', attachmentError);
+      // Quote is already created, so just log the error
+      // User can upload attachment again if needed
+    }
   }
 
   return data;
@@ -454,10 +482,13 @@ export async function convertQuoteToJob(
 ): Promise<ConvertToJobResult> {
   const supabase = getSupabase();
 
-  // 1. Get quote with full details
+  // 1. Get quote with full details and attachments
   const { data: quote, error: quoteError } = await supabase
     .from('quotes')
-    .select('*')
+    .select(`
+      *,
+      quote_attachments (*)
+    `)
     .eq('id', quoteId)
     .single();
 
@@ -475,7 +506,10 @@ export async function convertQuoteToJob(
     throw new Error('This quote has already been converted to a job');
   }
 
-  // 3. Create job
+  // 3. Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // 4. Create job
   const { data: job, error: jobError } = await supabase
     .from('jobs')
     .insert({
@@ -501,7 +535,24 @@ export async function convertQuoteToJob(
     throw jobError;
   }
 
-  // 4. Update quote with job reference
+  // 5. Copy attachment if exists
+  const quoteAttachment = quote.quote_attachments?.[0];
+  if (quoteAttachment) {
+    try {
+      await copyAttachmentToJob(
+        quoteAttachment,
+        job.id,
+        quote.company_id,
+        user?.id || null
+      );
+    } catch (attachmentError) {
+      console.error('Failed to copy attachment to job:', attachmentError);
+      // Don't fail the entire conversion if attachment copy fails
+      // The job is already created, just log the error
+    }
+  }
+
+  // 6. Update quote with job reference
   const { data: updatedQuote, error: updateError } = await supabase
     .from('quotes')
     .update({
@@ -594,4 +645,386 @@ export async function getPartWithPricing(
     description: string | null;
     pricing: PricingTier[];
   } | null;
+}
+
+// ============== Attachment Operations ==============
+
+/**
+ * Get attachments for a quote
+ */
+export async function getQuoteAttachments(
+  quoteId: string
+): Promise<QuoteAttachment[]> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('quote_attachments')
+    .select('*')
+    .eq('quote_id', quoteId)
+    .order('uploaded_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching quote attachments:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Get count of attachments for a quote (for UI limit enforcement)
+ */
+export async function getQuoteAttachmentCount(quoteId: string): Promise<number> {
+  const supabase = getSupabase();
+
+  const { count, error } = await supabase
+    .from('quote_attachments')
+    .select('*', { count: 'exact', head: true })
+    .eq('quote_id', quoteId);
+
+  if (error) {
+    console.error('Error counting quote attachments:', error);
+    throw error;
+  }
+
+  return count || 0;
+}
+
+/**
+ * Upload a PDF attachment for a quote (draft only)
+ */
+export async function uploadQuoteAttachment(
+  quoteId: string,
+  companyId: string,
+  file: File
+): Promise<QuoteAttachment> {
+  const supabase = getSupabase();
+
+  // 1. Validate file type
+  if (file.type !== 'application/pdf') {
+    throw new Error('Only PDF files are allowed');
+  }
+
+  // 2. Validate file size (10MB)
+  const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+  if (file.size > MAX_SIZE) {
+    throw new Error('File size must be 10MB or less');
+  }
+
+  // 3. Check quote status (must be draft)
+  const { data: quote, error: quoteError } = await supabase
+    .from('quotes')
+    .select('status')
+    .eq('id', quoteId)
+    .single();
+
+  if (quoteError || !quote) {
+    throw new Error('Quote not found');
+  }
+
+  if (quote.status !== 'draft') {
+    throw new Error('Attachments can only be added to draft quotes');
+  }
+
+  // 4. Check attachment limit
+  const existingCount = await getQuoteAttachmentCount(quoteId);
+  if (existingCount >= MAX_ATTACHMENTS_PER_QUOTE) {
+    throw new Error(
+      `Maximum ${MAX_ATTACHMENTS_PER_QUOTE} attachment(s) allowed. Delete existing attachment first.`
+    );
+  }
+
+  // 5. Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // 6. Generate storage path
+  const filePath = generateStoragePath(companyId, 'quotes', quoteId, file.name);
+
+  // 7. Upload to storage
+  await uploadFileToStorage(filePath, file);
+
+  // 8. Create database record
+  const { data: attachment, error: insertError } = await supabase
+    .from('quote_attachments')
+    .insert({
+      quote_id: quoteId,
+      company_id: companyId,
+      file_name: file.name,
+      file_path: filePath,
+      file_size: file.size,
+      mime_type: file.type,
+      uploaded_by: user?.id || null,
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    // Cleanup: try to delete uploaded file
+    await deleteFileFromStorage(filePath).catch(console.error);
+    console.error('Error creating attachment record:', insertError);
+    throw new Error('Failed to save attachment');
+  }
+
+  return attachment;
+}
+
+/**
+ * Delete attachment for a quote (draft only)
+ */
+export async function deleteQuoteAttachment(
+  attachmentId: string
+): Promise<void> {
+  const supabase = getSupabase();
+
+  // 1. Get attachment with quote status
+  const { data: attachment, error: fetchError } = await supabase
+    .from('quote_attachments')
+    .select(`
+      id,
+      file_path,
+      quotes!inner (status)
+    `)
+    .eq('id', attachmentId)
+    .single();
+
+  if (fetchError || !attachment) {
+    throw new Error('Attachment not found');
+  }
+
+  // 2. Verify quote is in draft status (APPLICATION-LEVEL CHECK)
+  if ((attachment.quotes as any).status !== 'draft') {
+    throw new Error('Attachments can only be deleted from draft quotes');
+  }
+
+  // 3. Delete from storage
+  await deleteFileFromStorage(attachment.file_path);
+
+  // 4. Delete database record
+  const { error: dbError } = await supabase
+    .from('quote_attachments')
+    .delete()
+    .eq('id', attachmentId);
+
+  if (dbError) {
+    console.error('Error deleting attachment record:', dbError);
+    throw new Error('Failed to delete attachment');
+  }
+}
+
+/**
+ * Replace quote attachment (upload new first, then delete old)
+ */
+export async function replaceQuoteAttachment(
+  attachmentId: string,
+  companyId: string,
+  quoteId: string,
+  newFile: File
+): Promise<QuoteAttachment> {
+  const supabase = getSupabase();
+
+  // 1. Validate file type and size
+  if (newFile.type !== 'application/pdf') {
+    throw new Error('Only PDF files are allowed');
+  }
+
+  const MAX_SIZE = 10 * 1024 * 1024;
+  if (newFile.size > MAX_SIZE) {
+    throw new Error('File size must be 10MB or less');
+  }
+
+  // 2. Get existing attachment info with quote status
+  const { data: existing, error: fetchError } = await supabase
+    .from('quote_attachments')
+    .select(`
+      file_path,
+      quotes!inner (status)
+    `)
+    .eq('id', attachmentId)
+    .single();
+
+  if (fetchError || !existing) {
+    throw new Error('Attachment not found');
+  }
+
+  if ((existing.quotes as any).status !== 'draft') {
+    throw new Error('Attachments can only be replaced in draft quotes');
+  }
+
+  const oldFilePath = existing.file_path;
+
+  // 3. Upload NEW file first (if this fails, old file is still intact)
+  const newPath = generateStoragePath(companyId, 'quotes', quoteId, newFile.name);
+  await uploadFileToStorage(newPath, newFile);
+
+  // 4. Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // 5. Update database record
+  const { data: updated, error: updateError } = await supabase
+    .from('quote_attachments')
+    .update({
+      file_name: newFile.name,
+      file_path: newPath,
+      file_size: newFile.size,
+      uploaded_by: user?.id || null,
+      uploaded_at: new Date().toISOString(),
+    })
+    .eq('id', attachmentId)
+    .select()
+    .single();
+
+  if (updateError) {
+    // Cleanup: delete newly uploaded file
+    await deleteFileFromStorage(newPath).catch(console.error);
+    throw new Error('Failed to update attachment');
+  }
+
+  // 6. Delete old file from storage (best effort - orphaned files can be cleaned up later)
+  if (oldFilePath) {
+    await deleteFileFromStorage(oldFilePath)
+      .catch(err => console.warn('Failed to delete old file:', err));
+  }
+
+  return updated;
+}
+
+/**
+ * Get signed URL for attachment download (fetch fresh each time)
+ */
+export async function getQuoteAttachmentUrl(filePath: string): Promise<string> {
+  return getSignedUrl(filePath, 3600);
+}
+
+/**
+ * Upload a PDF attachment to temporary storage (before quote is created)
+ */
+export async function uploadTempQuoteAttachment(
+  companyId: string,
+  sessionId: string,
+  file: File
+): Promise<TempAttachment> {
+  // 1. Validate file type
+  if (file.type !== 'application/pdf') {
+    throw new Error('Only PDF files are allowed');
+  }
+
+  // 2. Validate file size (10MB)
+  const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+  if (file.size > MAX_SIZE) {
+    throw new Error('File size must be 10MB or less');
+  }
+
+  // 3. Generate temp storage path
+  const filePath = generateTempStoragePath(companyId, sessionId, file.name);
+
+  // 4. Upload to storage
+  await uploadFileToStorage(filePath, file);
+
+  return {
+    file_name: file.name,
+    file_path: filePath,
+    file_size: file.size,
+    mime_type: file.type,
+  };
+}
+
+/**
+ * Delete temporary attachment
+ */
+export async function deleteTempQuoteAttachment(filePath: string): Promise<void> {
+  await deleteFileFromStorage(filePath);
+}
+
+/**
+ * Move temporary attachment to permanent location (internal helper for createQuote)
+ */
+async function moveTempAttachmentToPermanent(
+  tempAttachment: TempAttachment,
+  quoteId: string,
+  companyId: string
+): Promise<void> {
+  const supabase = getSupabase();
+
+  // 1. Generate permanent path
+  const permanentPath = generateStoragePath(
+    companyId,
+    'quotes',
+    quoteId,
+    tempAttachment.file_name
+  );
+
+  // 2. Move file in storage
+  await moveFileInStorage(tempAttachment.file_path, permanentPath);
+
+  // 3. Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // 4. Create database record
+  const { error: insertError } = await supabase
+    .from('quote_attachments')
+    .insert({
+      quote_id: quoteId,
+      company_id: companyId,
+      file_name: tempAttachment.file_name,
+      file_path: permanentPath,
+      file_size: tempAttachment.file_size,
+      mime_type: tempAttachment.mime_type,
+      uploaded_by: user?.id || null,
+    });
+
+  if (insertError) {
+    console.error('Failed to create attachment record:', insertError);
+    throw new Error('Failed to save attachment');
+  }
+}
+
+/**
+ * Copy attachment from quote to job (internal helper)
+ */
+async function copyAttachmentToJob(
+  quoteAttachment: QuoteAttachment,
+  jobId: string,
+  companyId: string,
+  userId: string | null
+): Promise<JobAttachment> {
+  const supabase = getSupabase();
+
+  // 1. Download file from quote attachment
+  const fileData = await downloadFileFromStorage(quoteAttachment.file_path);
+
+  // 2. Generate new path for job
+  const newPath = generateStoragePath(
+    companyId,
+    'jobs',
+    jobId,
+    quoteAttachment.file_name
+  );
+
+  // 3. Upload to job attachments bucket
+  await uploadFileToStorage(newPath, fileData);
+
+  // 4. Create job_attachments record
+  const { data: jobAttachment, error: insertError } = await supabase
+    .from('job_attachments')
+    .insert({
+      job_id: jobId,
+      company_id: companyId,
+      file_name: quoteAttachment.file_name,
+      file_path: newPath,
+      file_size: quoteAttachment.file_size,
+      mime_type: quoteAttachment.mime_type,
+      source_quote_attachment_id: quoteAttachment.id,
+      uploaded_by: userId,
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error('Failed to create job attachment record:', insertError);
+    // Cleanup: delete uploaded file
+    await deleteFileFromStorage(newPath).catch(console.error);
+    throw new Error('Failed to copy attachment to job');
+  }
+
+  return jobAttachment;
 }

@@ -20,6 +20,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DownloadIcon from '@mui/icons-material/Download';
+import IconButton from '@mui/material/IconButton';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -31,9 +34,11 @@ import {
   markQuoteAsApproved,
   markQuoteAsRejected,
   deleteQuote,
+  getQuoteAttachmentUrl,
+  deleteQuoteAttachment,
 } from '@/utils/quotesAccess';
 import { quoteToFormData } from '@/types/quote';
-import type { QuoteWithRelations } from '@/types/quote';
+import type { QuoteWithRelations, QuoteAttachment } from '@/types/quote';
 import QuoteStatusChip from '@/components/quotes/QuoteStatusChip';
 import QuoteForm from '@/components/quotes/QuoteForm';
 import ConvertToJobModal from '@/components/quotes/ConvertToJobModal';
@@ -105,6 +110,33 @@ export default function QuoteDetailPage() {
   const formatDate = (dateStr: string | null): string => {
     if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString();
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleDownloadAttachment = async (attachment: QuoteAttachment) => {
+    try {
+      const url = await getQuoteAttachmentUrl(attachment.file_path);
+      window.open(url, '_blank');
+    } catch (err) {
+      setError('Failed to download attachment');
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    setActionLoading(true);
+    try {
+      await deleteQuoteAttachment(attachmentId);
+      await fetchQuote();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete attachment');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   if (loading) {
@@ -344,6 +376,65 @@ export default function QuoteDetailPage() {
                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                   {quote.description}
                 </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
+        {/* Attachments */}
+        {quote.quote_attachments && quote.quote_attachments.length > 0 && (
+          <Grid size={{ xs: 12 }}>
+            <Card elevation={2}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                  Attachments
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                {quote.quote_attachments.map((attachment) => (
+                  <Box
+                    key={attachment.id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: 2,
+                      bgcolor: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: 1,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      mb: 1,
+                      '&:last-child': { mb: 0 },
+                    }}
+                  >
+                    <PictureAsPdfIcon sx={{ fontSize: 40, color: 'error.main' }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body1" fontWeight={500}>
+                        {attachment.file_name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatFileSize(attachment.file_size)} • Uploaded{' '}
+                        {formatDate(attachment.uploaded_at)}
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      startIcon={<DownloadIcon />}
+                      onClick={() => handleDownloadAttachment(attachment)}
+                      disabled={actionLoading}
+                    >
+                      Download
+                    </Button>
+                    {quote.status === 'draft' && (
+                      <IconButton
+                        color="error"
+                        onClick={() => handleDeleteAttachment(attachment.id)}
+                        disabled={actionLoading}
+                        title="Delete attachment"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    )}
+                  </Box>
+                ))}
               </CardContent>
             </Card>
           </Grid>

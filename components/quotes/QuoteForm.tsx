@@ -18,16 +18,21 @@ import DialogActions from '@mui/material/DialogActions';
 import Grid from '@mui/material/Grid';
 import Autocomplete from '@mui/material/Autocomplete';
 import InputAdornment from '@mui/material/InputAdornment';
-import type { QuoteFormData } from '@/types/quote';
+import type { QuoteFormData, QuoteAttachment, TempAttachment } from '@/types/quote';
 import { calculateUnitPrice, calculateTotalPrice } from '@/types/quote';
 import type { PricingTier } from '@/types/part';
-import { createQuote, updateQuote, deleteQuote, getCustomerParts } from '@/utils/quotesAccess';
+import { createQuote, updateQuote, deleteQuote, getCustomerParts, getQuoteAttachments } from '@/utils/quotesAccess';
 import { getAllCustomers } from '@/utils/customerAccess';
 import CustomerFormModal from '@/components/customers/CustomerFormModal';
 import PartFormModal from '@/components/parts/PartFormModal';
+import QuoteAttachmentUpload from '@/components/quotes/QuoteAttachmentUpload';
 import type { Customer } from '@/types/customer';
 import type { Part } from '@/types/part';
 import AddIcon from '@mui/icons-material/Add';
+import { deleteTempQuoteAttachment } from '@/utils/quotesAccess';
+
+// Generate unique session ID for temp uploads
+const generateSessionId = () => crypto.randomUUID();
 
 interface QuoteFormProps {
   mode: 'create' | 'edit';
@@ -91,6 +96,12 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(null);
   const [selectedPart, setSelectedPart] = useState<PartOption | null>(null);
 
+  // Attachments
+  const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
+  const [loadingAttachments, setLoadingAttachments] = useState(false);
+  const [tempAttachment, setTempAttachment] = useState<TempAttachment | null>(null);
+  const [sessionId] = useState(() => generateSessionId()); // Generate once on mount
+
   // Load customers on mount
   useEffect(() => {
     const loadCustomers = async () => {
@@ -145,6 +156,35 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
       loadParts(formData.customer_id);
     }
   }, [formData.customer_id, loadParts]);
+
+  // Load attachments in edit mode
+  const loadAttachments = useCallback(async () => {
+    if (mode === 'edit' && quoteId) {
+      setLoadingAttachments(true);
+      try {
+        const data = await getQuoteAttachments(quoteId);
+        setAttachments(data);
+      } catch (err) {
+        console.error('Error loading attachments:', err);
+      } finally {
+        setLoadingAttachments(false);
+      }
+    }
+  }, [mode, quoteId]);
+
+  useEffect(() => {
+    loadAttachments();
+  }, [loadAttachments]);
+
+  // Cleanup temp attachment on unmount (if in create mode and quote wasn't saved)
+  useEffect(() => {
+    return () => {
+      if (mode === 'create' && tempAttachment?.file_path) {
+        // Best effort cleanup - don't block unmount
+        deleteTempQuoteAttachment(tempAttachment.file_path).catch(console.error);
+      }
+    };
+  }, [mode, tempAttachment]);
 
   // Auto-fill price when part or quantity changes
   useEffect(() => {
@@ -288,7 +328,7 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
 
     try {
       if (mode === 'create') {
-        const quote = await createQuote(companyId, formData);
+        const quote = await createQuote(companyId, formData, tempAttachment);
         router.push(`/dashboard/${companyId}/quotes/${quote.id}`);
       } else if (quoteId) {
         await updateQuote(quoteId, formData);
@@ -541,6 +581,25 @@ export default function QuoteForm({ mode, initialData, quoteId }: QuoteFormProps
                 sx={{ mt: 3 }}
                 placeholder="Quote description"
               />
+        </CardContent>
+      </Card>
+
+      {/* Attachments */}
+      <Card elevation={2} sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+            Attachments
+          </Typography>
+          <QuoteAttachmentUpload
+            quoteId={mode === 'edit' ? quoteId! : null}
+            companyId={companyId}
+            sessionId={sessionId}
+            existingAttachments={attachments}
+            tempAttachment={tempAttachment}
+            onAttachmentChange={loadAttachments}
+            onTempAttachmentChange={setTempAttachment}
+            disabled={mode === 'edit' && formData.status !== 'draft'}
+          />
         </CardContent>
       </Card>
 

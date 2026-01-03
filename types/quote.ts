@@ -155,3 +155,36 @@ export const QUOTE_STATUS_CONFIG: Record<
   rejected: { label: 'Rejected', color: 'error' },
   expired: { label: 'Expired', color: 'warning' },
 };
+
+/**
+ * Quote attachment record from database
+ */
+export interface QuoteAttachment {
+  id: string;
+  quote_id: string;
+  company_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_by: string | null;
+  uploaded_at: string;
+}
+
+/**
+ * Quote with attachments included
+ */
+export interface QuoteWithAttachments extends QuoteWithRelations {
+  quote_attachments?: QuoteAttachment[];
+}
+
+/**
+ * Temporary attachment info (before quote is created)
+ */
+export interface TempAttachment {
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+}
+

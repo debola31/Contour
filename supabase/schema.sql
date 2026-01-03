@@ -983,4 +983,193 @@ ALTER TABLE IF EXISTS public.user_preferences
     ON UPDATE NO ACTION
     ON DELETE SET NULL;
 
+
+CREATE TABLE IF NOT EXISTS public.quote_attachments
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    quote_id uuid NOT NULL,
+    company_id uuid NOT NULL,
+    file_name text COLLATE pg_catalog."default" NOT NULL,
+    file_path text COLLATE pg_catalog."default" NOT NULL,
+    file_size integer NOT NULL,
+    mime_type text COLLATE pg_catalog."default" NOT NULL DEFAULT 'application/pdf'::text,
+    uploaded_by uuid,
+    uploaded_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT quote_attachments_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE IF EXISTS public.quote_attachments
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.quote_attachments
+    IS 'PDF attachments for quotes. Phase 0 limits to one attachment per quote (enforced in UI). When quote converts to job, attachment is COPIED to job_attachments.';
+
+COMMENT ON COLUMN public.quote_attachments.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.quote_attachments.quote_id
+    IS 'FK to quotes. Cascades on delete - attachment deleted with quote.';
+
+COMMENT ON COLUMN public.quote_attachments.company_id
+    IS 'FK to companies. Cascades on delete. Isolates attachments per tenant.';
+
+COMMENT ON COLUMN public.quote_attachments.file_name
+    IS 'Original filename as uploaded by user.';
+
+COMMENT ON COLUMN public.quote_attachments.file_path
+    IS 'Storage path: {companyId}/quotes/{quoteId}/{uuid}_{filename}';
+
+COMMENT ON COLUMN public.quote_attachments.file_size
+    IS 'File size in bytes. Maximum 10MB enforced in application.';
+
+COMMENT ON COLUMN public.quote_attachments.mime_type
+    IS 'MIME type. Default: application/pdf. Phase 0 only supports PDF.';
+
+COMMENT ON COLUMN public.quote_attachments.uploaded_by
+    IS 'UUID of user who uploaded the attachment. References Supabase auth.users.';
+
+COMMENT ON COLUMN public.quote_attachments.uploaded_at
+    IS 'Timestamp when attachment was uploaded.';
+
+ALTER TABLE IF EXISTS public.quote_attachments
+    ADD CONSTRAINT quote_attachments_quote_id_fkey FOREIGN KEY (quote_id)
+    REFERENCES public.quotes (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS public.quote_attachments
+    ADD CONSTRAINT quote_attachments_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_quote_attachments_quote
+    ON public.quote_attachments(quote_id);
+
+CREATE INDEX IF NOT EXISTS idx_quote_attachments_company
+    ON public.quote_attachments(company_id);
+
+
+CREATE TABLE IF NOT EXISTS public.job_attachments
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    job_id uuid NOT NULL,
+    company_id uuid NOT NULL,
+    file_name text COLLATE pg_catalog."default" NOT NULL,
+    file_path text COLLATE pg_catalog."default" NOT NULL,
+    file_size integer NOT NULL,
+    mime_type text COLLATE pg_catalog."default" NOT NULL DEFAULT 'application/pdf'::text,
+    source_quote_attachment_id uuid,
+    uploaded_by uuid,
+    uploaded_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT job_attachments_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE IF EXISTS public.job_attachments
+    ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.job_attachments
+    IS 'PDF attachments for jobs. Created either by copying from quote on conversion, or uploaded directly to job. Phase 0 limits to one attachment per job (enforced in UI).';
+
+COMMENT ON COLUMN public.job_attachments.id
+    IS 'Primary key. UUID auto-generated.';
+
+COMMENT ON COLUMN public.job_attachments.job_id
+    IS 'FK to jobs. Cascades on delete - attachment deleted with job.';
+
+COMMENT ON COLUMN public.job_attachments.company_id
+    IS 'FK to companies. Cascades on delete. Isolates attachments per tenant.';
+
+COMMENT ON COLUMN public.job_attachments.file_name
+    IS 'Original filename. Either from quote attachment copy or direct upload.';
+
+COMMENT ON COLUMN public.job_attachments.file_path
+    IS 'Storage path: {companyId}/jobs/{jobId}/{uuid}_{filename}';
+
+COMMENT ON COLUMN public.job_attachments.file_size
+    IS 'File size in bytes. Maximum 10MB enforced in application.';
+
+COMMENT ON COLUMN public.job_attachments.mime_type
+    IS 'MIME type. Default: application/pdf. Phase 0 only supports PDF.';
+
+COMMENT ON COLUMN public.job_attachments.source_quote_attachment_id
+    IS 'If this attachment was copied from a quote, references the original. NULL if uploaded directly to job.';
+
+COMMENT ON COLUMN public.job_attachments.uploaded_by
+    IS 'UUID of user who uploaded/copied the attachment. References Supabase auth.users.';
+
+COMMENT ON COLUMN public.job_attachments.uploaded_at
+    IS 'Timestamp when attachment was uploaded/copied.';
+
+ALTER TABLE IF EXISTS public.job_attachments
+    ADD CONSTRAINT job_attachments_job_id_fkey FOREIGN KEY (job_id)
+    REFERENCES public.jobs (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS public.job_attachments
+    ADD CONSTRAINT job_attachments_company_id_fkey FOREIGN KEY (company_id)
+    REFERENCES public.companies (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS public.job_attachments
+    ADD CONSTRAINT job_attachments_source_fkey FOREIGN KEY (source_quote_attachment_id)
+    REFERENCES public.quote_attachments (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_job_attachments_job
+    ON public.job_attachments(job_id);
+
+CREATE INDEX IF NOT EXISTS idx_job_attachments_company
+    ON public.job_attachments(company_id);
+
+CREATE INDEX IF NOT EXISTS idx_job_attachments_source
+    ON public.job_attachments(source_quote_attachment_id);
+
+
+-- RLS Policies for quote_attachments
+CREATE POLICY "quote_attachments_select" ON quote_attachments
+  FOR SELECT USING (
+    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "quote_attachments_insert" ON quote_attachments
+  FOR INSERT WITH CHECK (
+    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "quote_attachments_update" ON quote_attachments
+  FOR UPDATE USING (
+    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "quote_attachments_delete" ON quote_attachments
+  FOR DELETE USING (
+    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
+  );
+
+
+-- RLS Policies for job_attachments
+CREATE POLICY "job_attachments_select" ON job_attachments
+  FOR SELECT USING (
+    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "job_attachments_insert" ON job_attachments
+  FOR INSERT WITH CHECK (
+    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "job_attachments_update" ON job_attachments
+  FOR UPDATE USING (
+    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "job_attachments_delete" ON job_attachments
+  FOR DELETE USING (
+    company_id IN (SELECT company_id FROM user_company_access WHERE user_id = auth.uid())
+  );
+
 END;
