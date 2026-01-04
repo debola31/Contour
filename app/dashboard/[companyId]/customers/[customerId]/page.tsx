@@ -190,7 +190,7 @@ export default function CustomerDetailPage() {
                       href={customer.website.startsWith('http') ? customer.website : `https://${customer.website}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontWeight: 500, color: 'text.primary' }}
+                      sx={{ fontWeight: 500 }}
                     >
                       {customer.website}
                     </MuiLink>
@@ -227,7 +227,7 @@ export default function CustomerDetailPage() {
                     Phone
                   </Typography>
                   {customer.contact_phone ? (
-                    <MuiLink href={`tel:${customer.contact_phone}`} sx={{ fontWeight: 500, color: 'text.primary' }}>
+                    <MuiLink href={`tel:${customer.contact_phone}`} sx={{ fontWeight: 500 }}>
                       {customer.contact_phone}
                     </MuiLink>
                   ) : (
@@ -241,7 +241,7 @@ export default function CustomerDetailPage() {
                     Email
                   </Typography>
                   {customer.contact_email ? (
-                    <MuiLink href={`mailto:${customer.contact_email}`} sx={{ fontWeight: 500, color: 'text.primary' }}>
+                    <MuiLink href={`mailto:${customer.contact_email}`} sx={{ fontWeight: 500 }}>
                       {customer.contact_email}
                     </MuiLink>
                   ) : (
