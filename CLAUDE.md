@@ -35,33 +35,31 @@ Jigged is a web-based ERP system designed for small-scale precision manufacturin
 | Error | `#ef4444` | Late jobs, critical issues, overdue |
 | Info | `#3b82f6` | Active work, informational notices |
 
-### Background Gradients
+### Background Gradient
 
 ```css
-/* Light Mode - Evokes machined metal surfaces */
-linear-gradient(135deg, #f0f4f8 0%, #d4dce6 100%)
-
-/* Dark Mode - Industrial machine shop aesthetic */
+/* Dark theme - Industrial machine shop aesthetic */
 linear-gradient(135deg, #111439 0%, #1a1f4a 100%)
 ```
 
 ### MUI Theme Configuration
 
-The design system uses MUI's `createTheme()` with custom palette and component overrides. Light/dark mode switches automatically based on system preference using MUI's `useMediaQuery` and `ThemeProvider`.
+The design system uses MUI's `createTheme()` with custom palette and component overrides. The application uses a single dark theme optimized for shop floor environments.
 
 **Key Theme Settings:**
 - Primary: Steel Blue (`#4682B4`) with light/dark variants for hover/pressed states
 - Border Radius: 8px globally via `theme.shape.borderRadius`
-- Buttons: `textTransform: 'none'` (no ALL CAPS)
+- Buttons: `textTransform: 'none'` (no ALL CAPS), subtle hover lift effect
 - TextFields: `variant: 'outlined'` default
 - Typography: System font stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`)
+- Cards: Use MUI elevation system with subtle hover lift animation
 
 ### Design Principles
 
 1. **Professional, Not Trendy** - Must appeal to 50-60 year old shop owners. Focus on clarity and function.
 2. **Industrial Aesthetic** - Evoke machined metal and precision. Colors should feel substantial, not playful.
 3. **Readable in Bright Environments** - Ensure sufficient contrast for use under bright fluorescent lighting on tablets.
-4. **Automatic Theme Switching** - Respect user's system preference using `useMediaQuery('(prefers-color-scheme: dark)')`.
+4. **Single Dark Theme** - Optimized for shop floor environments with consistent dark UI.
 5. **Material Design Compliance** - Follow MD3 guidelines for consistency and accessibility.
 
 ### Component Guidelines
@@ -194,6 +192,7 @@ All app routes include a `companyId` to ensure data isolation:
 │   └── providers/           # Context providers
 ├── lib/
 │   ├── theme.ts            # MUI theme configuration
+│   ├── agGridTheme.ts      # AG Grid theme (matches MUI theme)
 │   └── supabase.ts         # Supabase client
 ├── utils/
 │   └── companyAccess.ts    # Company access helpers
