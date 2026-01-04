@@ -17,7 +17,7 @@ const jiggedTheme = createTheme({
       dark: '#9a9da1',
     },
     background: {
-      default: '#0a0e1a',   // Very dark for gradient overlay
+      default: '#111439',   // Deep Indigo (per design system spec)
       paper: 'rgba(26, 31, 74, 0.35)',  // More transparent cards on gradient
     },
     text: {
