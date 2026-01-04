@@ -62,20 +62,19 @@ const jiggedTheme = createTheme({
           },
         },
         outlined: {
-          borderColor: 'rgba(255, 255, 255, 0.5)',
-          color: '#ffffff',
-          backgroundColor: 'rgba(17, 20, 57, 0.4)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
+          borderColor: 'rgba(255, 255, 255, 0.35)',
+          color: 'rgba(255, 255, 255, 0.85)',
+          backgroundColor: 'transparent',
           '&:hover': {
-            borderColor: '#ffffff',
-            backgroundColor: 'rgba(70, 130, 180, 0.3)',
+            borderColor: 'rgba(255, 255, 255, 0.6)',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
           },
         },
         text: {
-          color: '#ffffff',
+          color: '#6FA3D8',  // primary.light - visible against gradient
           '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'rgba(111, 163, 216, 0.12)',
+            textDecoration: 'underline',
           },
         },
         sizeLarge: {
