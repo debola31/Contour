@@ -74,16 +74,20 @@ The design system uses MUI's `createTheme()` with custom palette and component o
 **Styling approach:**
 - Use MUI's `sx` prop for component-level styles
 - Use `theme.spacing(n)` where n * 8px for consistent spacing
-- Use MUI's elevation system (`elevation={0-24}`) instead of custom shadows
+- Cards combine MUI elevation (for shadows) with glassmorphism (backdrop blur + transparency)
 - Never use external CSS files for MUI components
 - Never use plain HTML elements when MUI equivalents exist
 
-**Elevation Usage:**
-- `0`: Flat surfaces
-- `2`: Standard cards
+**Elevation + Glassmorphism:**
+Cards use both MUI elevation and glassmorphism together:
+- `elevation={2}` provides consistent MUI shadows via `theme.shadows[2]`
+- Semi-transparent `backgroundColor: rgba(...)` allows background to show through
+- `backdropFilter: blur()` creates the frosted glass effect
+
+Standard elevation values:
+- `2`: Standard cards (default)
 - `3`: Auth cards, modals
-- `4`: App bar
-- `8`: Floating action buttons
+- `4`: App bar, floating elements
 
 **Typography Scale:**
 - `h1`: 2.5rem (40px) - Page titles

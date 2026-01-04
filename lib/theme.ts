@@ -80,17 +80,19 @@ const jiggedTheme = createTheme({
       },
     },
     MuiCard: {
+      defaultProps: {
+        elevation: 2,  // Use MUI shadow system
+      },
       styleOverrides: {
         root: {
-          backgroundColor: 'rgba(26, 31, 74, 0.35)',  // 35% opacity - glassmorphism
-          backdropFilter: 'blur(15px)',               // Strong blur
+          backgroundColor: 'rgba(26, 31, 74, 0.35)',  // Semi-transparent for glassmorphism
+          backdropFilter: 'blur(15px)',               // Frosted glass effect
           WebkitBackdropFilter: 'blur(15px)',         // Safari support
           border: '1px solid rgba(255, 255, 255, 0.15)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          // boxShadow handled by elevation prop
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
           '&:hover': {
             transform: 'translateY(-2px)',
-            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
           },
         },
       },
