@@ -20,8 +20,10 @@
     "@mui/material": "^7.3.6",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
+    "@xyflow/react": "^12.10.0",
     "ag-grid-community": "^35.0.0",
     "ag-grid-react": "^35.0.0",
+    "dagre": "^0.8.5",
     "next": "16.1.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
@@ -30,6 +32,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
+    "@types/dagre": "^0.7.53",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
