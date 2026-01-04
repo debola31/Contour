@@ -16,7 +16,7 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
       <Box
         sx={{
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #111439 0%, #4682B4 50%, #111439 100%)',
+          background: 'linear-gradient(135deg, #111439 0%, #1a1f4a 100%)',
           backgroundAttachment: 'fixed',
         }}
       >
