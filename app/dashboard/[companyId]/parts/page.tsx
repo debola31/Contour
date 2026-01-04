@@ -26,7 +26,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CategoryIcon from '@mui/icons-material/Category';
 
 import { AgGridReact } from 'ag-grid-react';
-import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community';
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import type {
   ColDef,
   GridReadyEvent,
@@ -38,29 +38,7 @@ import type {
 // Register AG Grid modules (required for v35+)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-// Create custom dark theme for Jigged using new Theming API
-const jiggedDarkTheme = themeQuartz.withParams({
-  backgroundColor: 'transparent',
-  oddRowBackgroundColor: 'rgba(255, 255, 255, 0.02)',
-  headerBackgroundColor: 'rgba(255, 255, 255, 0.05)',
-  foregroundColor: '#ffffff',
-  textColor: '#ffffff',
-  headerTextColor: '#ffffff',
-  borderColor: 'rgba(255, 255, 255, 0.12)',
-  rowBorder: true,
-  rowHoverColor: 'rgba(255, 255, 255, 0.04)',
-  selectedRowBackgroundColor: 'rgba(90, 150, 201, 0.2)',
-  rangeSelectionBackgroundColor: 'rgba(90, 150, 201, 0.3)',
-  accentColor: '#4682B4',
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  fontSize: 16,
-  spacing: 8,
-  cellHorizontalPadding: 16,
-  rowHeight: 52,
-  headerHeight: 56,
-  iconSize: 20,
-});
-
+import { jiggedAgGridTheme } from '@/lib/agGridTheme';
 import { getAllParts, deletePart, bulkDeleteParts } from '@/utils/partsAccess';
 import ExportCsvButton from '@/components/common/ExportCsvButton';
 import type { Part } from '@/types/part';
@@ -451,7 +429,7 @@ export default function PartsPage() {
               ref={gridRef}
               rowData={parts}
               columnDefs={columnDefs}
-              theme={jiggedDarkTheme}
+              theme={jiggedAgGridTheme}
               defaultColDef={{
                 sortable: true,
                 resizable: true,

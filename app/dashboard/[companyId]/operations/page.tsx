@@ -29,7 +29,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import EditIcon from '@mui/icons-material/Edit';
 
 import { AgGridReact } from 'ag-grid-react';
-import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community';
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import type {
   ColDef,
   GridReadyEvent,
@@ -41,29 +41,7 @@ import type {
 // Register AG Grid modules (required for v35+)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-// Create custom dark theme for Jigged using new Theming API
-const jiggedDarkTheme = themeQuartz.withParams({
-  backgroundColor: 'transparent',
-  oddRowBackgroundColor: 'rgba(255, 255, 255, 0.02)',
-  headerBackgroundColor: 'rgba(255, 255, 255, 0.05)',
-  foregroundColor: '#ffffff',
-  textColor: '#ffffff',
-  headerTextColor: '#ffffff',
-  borderColor: 'rgba(255, 255, 255, 0.12)',
-  rowBorder: true,
-  rowHoverColor: 'rgba(255, 255, 255, 0.04)',
-  selectedRowBackgroundColor: 'rgba(90, 150, 201, 0.2)',
-  rangeSelectionBackgroundColor: 'rgba(90, 150, 201, 0.3)',
-  accentColor: '#4682B4',
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  fontSize: 16,
-  spacing: 8,
-  cellHorizontalPadding: 16,
-  rowHeight: 52,
-  headerHeight: 56,
-  iconSize: 20,
-});
-
+import { jiggedAgGridTheme } from '@/lib/agGridTheme';
 import {
   getAllOperations,
   deleteOperation,
@@ -600,7 +578,7 @@ export default function OperationsPage() {
                 ref={operationsGridRef}
                 rowData={operations}
                 columnDefs={operationsColumnDefs}
-                theme={jiggedDarkTheme}
+                theme={jiggedAgGridTheme}
                 defaultColDef={{ sortable: true, resizable: true }}
                 rowSelection={{ mode: 'multiRow', checkboxes: true, headerCheckbox: true, enableClickSelection: false, selectAll: 'all' }}
                 onSelectionChanged={handleOperationsSelectionChanged}
@@ -705,7 +683,7 @@ export default function OperationsPage() {
                 ref={groupsGridRef}
                 rowData={groups}
                 columnDefs={groupsColumnDefs}
-                theme={jiggedDarkTheme}
+                theme={jiggedAgGridTheme}
                 defaultColDef={{ sortable: true, resizable: true }}
                 rowSelection={{ mode: 'multiRow', checkboxes: true, headerCheckbox: true, enableClickSelection: false, selectAll: 'all' }}
                 onSelectionChanged={handleGroupsSelectionChanged}

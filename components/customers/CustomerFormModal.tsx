@@ -51,8 +51,6 @@ export default function CustomerFormModal({
       scroll="paper"
       PaperProps={{
         sx: {
-          bgcolor: '#111439',
-          backgroundImage: 'linear-gradient(135deg, #111439 0%, #1a1f4a 100%)',
           maxHeight: '90vh',
         },
       }}

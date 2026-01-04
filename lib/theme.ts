@@ -6,9 +6,9 @@ const jiggedTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#5a96c9',      // Brighter Steel Blue
-      light: '#6fa3d8',     // Hover state
-      dark: '#4682B4',      // Pressed state
+      main: '#4682B4',      // Steel Blue (per design system spec)
+      light: '#6FA3D8',     // Hover state
+      dark: '#3A6B94',      // Pressed state
       contrastText: '#fff',
     },
     secondary: {
@@ -17,8 +17,8 @@ const jiggedTheme = createTheme({
       dark: '#9a9da1',
     },
     background: {
-      default: '#0a0e1a',   // Very dark for gradient overlay
-      paper: 'rgba(26, 31, 74, 0.35)',  // More transparent cards on gradient
+      default: '#111439',   // Deep Indigo (per design system spec)
+      paper: 'rgba(26, 31, 74, 0.35)',  // Transparent for glassmorphism cards
     },
     text: {
       primary: '#ffffff',
@@ -61,6 +61,22 @@ const jiggedTheme = createTheme({
             transform: 'translateY(-1px)',
           },
         },
+        outlined: {
+          borderColor: 'rgba(255, 255, 255, 0.35)',
+          color: 'rgba(255, 255, 255, 0.85)',
+          backgroundColor: 'transparent',
+          '&:hover': {
+            borderColor: 'rgba(255, 255, 255, 0.6)',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          },
+        },
+        text: {
+          color: '#6FA3D8',  // primary.light - visible against gradient
+          '&:hover': {
+            backgroundColor: 'rgba(111, 163, 216, 0.12)',
+            textDecoration: 'underline',
+          },
+        },
         sizeLarge: {
           padding: '12px 24px',
           fontSize: '1rem',
@@ -80,17 +96,19 @@ const jiggedTheme = createTheme({
       },
     },
     MuiCard: {
+      defaultProps: {
+        elevation: 2,  // Use MUI shadow system
+      },
       styleOverrides: {
         root: {
-          backgroundColor: 'rgba(26, 31, 74, 0.35)',  // 35% opacity - very transparent
-          backdropFilter: 'blur(15px)',               // Strong blur
+          backgroundColor: 'rgba(26, 31, 74, 0.35)',  // Semi-transparent for glassmorphism
+          backdropFilter: 'blur(15px)',               // Frosted glass effect
           WebkitBackdropFilter: 'blur(15px)',         // Safari support
           border: '1px solid rgba(255, 255, 255, 0.15)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          // boxShadow handled by elevation prop
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
           '&:hover': {
             transform: 'translateY(-2px)',
-            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
           },
         },
       },
@@ -105,8 +123,8 @@ const jiggedTheme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#1a1f4a',  // Fully opaque Deep Indigo
-          backgroundImage: 'none',
+          backgroundColor: '#111439',  // Deep Indigo (per design system spec)
+          backgroundImage: 'linear-gradient(135deg, #111439 0%, #1a1f4a 100%)',
           border: '1px solid rgba(255, 255, 255, 0.12)',
         },
       },
@@ -133,6 +151,28 @@ const jiggedTheme = createTheme({
           backgroundColor: '#1a1f4a',  // Solid Deep Indigo for popovers (Select menus)
           backgroundImage: 'none',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+        },
+      },
+    },
+    MuiAutocomplete: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1a1f4a',  // Solid Deep Indigo for autocomplete dropdowns
+          backgroundImage: 'none',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+        },
+        option: {
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          },
+          '&[aria-selected="true"]': {
+            backgroundColor: 'rgba(70, 130, 180, 0.2)',
+          },
+        },
+        groupLabel: {
+          fontWeight: 600,
+          color: '#4682B4',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
         },
       },
     },

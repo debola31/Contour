@@ -136,30 +136,7 @@ export default function SearchableSelect({
           </li>
         );
       }}
-      slotProps={{
-        paper: {
-          sx: {
-            bgcolor: '#1a1f4a',
-            backgroundImage: 'none',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-          },
-        },
-        listbox: {
-          sx: {
-            '& .MuiAutocomplete-option': {
-              '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.08)',
-              },
-              '&[aria-selected="true"]': {
-                bgcolor: 'rgba(90, 150, 201, 0.2)',
-              },
-              '&[aria-selected="true"]:hover': {
-                bgcolor: 'rgba(90, 150, 201, 0.3)',
-              },
-            },
-          },
-        },
-      }}
+      slotProps={{}}
       fullWidth={fullWidth}
       clearOnBlur
       handleHomeEndKeys
