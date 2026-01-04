@@ -24,15 +24,13 @@ function OperationNodeComponent({ id, data, selected }: OperationNodeProps) {
         minWidth: 200,
         backgroundColor: selected
           ? 'rgba(70, 130, 180, 0.25)'
-          : 'rgba(26, 31, 74, 0.85)',
+          : 'rgba(26, 31, 74, 0.95)',
         border: selected ? '2px solid #4682B4' : '1px solid rgba(255, 255, 255, 0.15)',
         borderRadius: 2,
-        backdropFilter: 'blur(10px)',
         overflow: 'hidden',
-        transition: 'all 0.2s ease',
+        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         '&:hover': {
           borderColor: 'rgba(70, 130, 180, 0.5)',
-          transform: 'translateY(-2px)',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
         },
       }}

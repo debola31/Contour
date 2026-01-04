@@ -467,7 +467,33 @@ export default function RoutingWorkflowBuilder({
         </Box>
 
         {/* React Flow Canvas */}
-        <Box ref={reactFlowWrapper} sx={{ flex: 1 }}>
+        <Box
+          ref={reactFlowWrapper}
+          sx={{
+            flex: 1,
+            // Style React Flow controls for dark theme
+            '& .react-flow__controls': {
+              backgroundColor: 'rgba(17, 20, 57, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 1,
+            },
+            '& .react-flow__controls-button': {
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              color: '#fff',
+              '&:hover': {
+                backgroundColor: 'rgba(70, 130, 180, 0.3)',
+              },
+              '&:last-child': {
+                borderBottom: 'none',
+              },
+              '& svg': {
+                fill: '#fff',
+              },
+            },
+          }}
+        >
           <ReactFlow
             nodes={nodes}
             edges={edges}
