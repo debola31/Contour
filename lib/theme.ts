@@ -136,6 +136,28 @@ const jiggedTheme = createTheme({
         },
       },
     },
+    MuiAutocomplete: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1a1f4a',  // Solid Deep Indigo for autocomplete dropdowns
+          backgroundImage: 'none',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+        },
+        option: {
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          },
+          '&[aria-selected="true"]': {
+            backgroundColor: 'rgba(70, 130, 180, 0.2)',
+          },
+        },
+        groupLabel: {
+          fontWeight: 600,
+          color: '#4682B4',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+        },
+      },
+    },
   },
 });
 

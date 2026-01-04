@@ -114,7 +114,7 @@ export default function Header() {
           textTransform: 'none',
           '&:hover': {
             bgcolor: 'rgba(239, 68, 68, 0.1)',
-            color: '#ef4444',
+            color: 'error.main',
           },
         }}
       >
