@@ -176,6 +176,16 @@ const jiggedTheme = createTheme({
         },
       },
     },
+    MuiLink: {
+      styleOverrides: {
+        root: {
+          color: '#ffffff',  // text.primary - visible against gradient background
+          '&:hover': {
+            color: '#6FA3D8',  // primary.light on hover
+          },
+        },
+      },
+    },
   },
 });
 
