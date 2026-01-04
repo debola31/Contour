@@ -18,7 +18,7 @@ const jiggedTheme = createTheme({
     },
     background: {
       default: '#111439',   // Deep Indigo (per design system spec)
-      paper: '#1a1f4a',     // Solid paper background for cards
+      paper: 'rgba(26, 31, 74, 0.35)',  // Transparent for glassmorphism cards
     },
     text: {
       primary: '#ffffff',
@@ -80,15 +80,17 @@ const jiggedTheme = createTheme({
       },
     },
     MuiCard: {
-      defaultProps: {
-        elevation: 2,  // Standard cards use elevation 2 per design system
-      },
       styleOverrides: {
         root: {
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          backgroundColor: 'rgba(26, 31, 74, 0.35)',  // 35% opacity - glassmorphism
+          backdropFilter: 'blur(15px)',               // Strong blur
+          WebkitBackdropFilter: 'blur(15px)',         // Safari support
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
           '&:hover': {
             transform: 'translateY(-2px)',
+            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
           },
         },
       },

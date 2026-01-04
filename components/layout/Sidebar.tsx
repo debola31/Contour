@@ -43,7 +43,8 @@ export default function Sidebar() {
         width: 240,
         height: '100vh',
         zIndex: 1200,
-        bgcolor: '#111439',  // Solid background (per design system)
+        bgcolor: 'rgba(17, 20, 57, 0.8)',
+        backdropFilter: 'blur(10px)',
         borderRight: '1px solid rgba(255, 255, 255, 0.1)',
         display: 'flex',
         flexDirection: 'column',

@@ -23,8 +23,8 @@ export const jiggedAgGridTheme = themeQuartz.withParams({
 
   // Selection and interaction
   rowHoverColor: 'rgba(255, 255, 255, 0.04)',
-  selectedRowBackgroundColor: 'rgba(70, 130, 180, 0.2)', // Steel Blue with opacity
-  rangeSelectionBackgroundColor: 'rgba(70, 130, 180, 0.3)',
+  selectedRowBackgroundColor: 'rgba(90, 150, 201, 0.2)', // Original Steel Blue with opacity
+  rangeSelectionBackgroundColor: 'rgba(90, 150, 201, 0.3)',
 
   // Accent color (Steel Blue - matches theme primary)
   accentColor: '#4682B4',

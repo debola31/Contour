@@ -52,7 +52,8 @@ The design system uses MUI's `createTheme()` with custom palette and component o
 - Buttons: `textTransform: 'none'` (no ALL CAPS), subtle hover lift effect
 - TextFields: `variant: 'outlined'` default
 - Typography: System font stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`)
-- Cards: Use MUI elevation system with subtle hover lift animation
+- Cards: Glassmorphism style with backdrop blur, transparency, and hover lift animation
+- Header/Sidebar: Semi-transparent with backdrop blur for depth
 
 ### Design Principles
 
