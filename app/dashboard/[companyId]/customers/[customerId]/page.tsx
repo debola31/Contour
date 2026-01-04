@@ -1,67 +1,340 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
-import { CustomerForm } from '@/components/customers';
-import { getCustomer } from '@/utils/customerAccess';
-import { customerToFormData, EMPTY_CUSTOMER_FORM } from '@/types/customer';
-import type { CustomerFormData } from '@/types/customer';
+import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid';
+import Link from 'next/link';
+import MuiLink from '@mui/material/Link';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+
+import { getCustomerWithRelations, softDeleteCustomer } from '@/utils/customerAccess';
+import type { CustomerWithRelations } from '@/types/customer';
 
 export default function CustomerDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const companyId = params.companyId as string;
   const customerId = params.customerId as string;
 
-  const [initialData, setInitialData] = useState<CustomerFormData | null>(null);
+  const [customer, setCustomer] = useState<CustomerWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
-    async function fetchCustomer() {
-      try {
-        const customer = await getCustomer(customerId);
-        if (!customer) {
-          setError('Customer not found');
-          setInitialData(EMPTY_CUSTOMER_FORM);
-        } else {
-          setInitialData(customerToFormData(customer));
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-        setInitialData(EMPTY_CUSTOMER_FORM);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchCustomer();
   }, [customerId]);
 
+  const fetchCustomer = async () => {
+    try {
+      setLoading(true);
+      const data = await getCustomerWithRelations(customerId);
+      setCustomer(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load customer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setActionLoading(true);
+    try {
+      await softDeleteCustomer(customerId);
+      router.push(`/dashboard/${companyId}/customers`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete customer');
+      setActionLoading(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString();
+  };
+
+  const formatAddress = (): string => {
+    if (!customer) return '—';
+    const parts = [
+      customer.address_line1,
+      customer.address_line2,
+      [customer.city, customer.state, customer.postal_code].filter(Boolean).join(', '),
+      customer.country !== 'USA' ? customer.country : null,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join('\n') : '—';
+  };
+
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (error) {
+  if (!customer) {
     return (
-      <Alert severity="error" sx={{ mb: 3 }}>
-        {error}
-      </Alert>
+      <Box>
+        <Alert severity="error">Customer not found</Alert>
+      </Box>
     );
   }
 
-  if (!initialData) {
-    return null;
-  }
+  const canDelete = customer.quotes_count === 0 && customer.jobs_count === 0;
 
   return (
     <Box>
-      <CustomerForm mode="edit" initialData={initialData} customerId={customerId} />
+      {/* Back Button and Actions */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+        }}
+      >
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => router.push(`/dashboard/${companyId}/customers`)}
+        >
+          Back to Customers
+        </Button>
+
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
+            onClick={() => router.push(`/dashboard/${companyId}/customers/${customerId}/edit`)}
+            disabled={actionLoading}
+          >
+            Edit
+          </Button>
+
+          <Tooltip title={canDelete ? 'Delete Customer' : 'Cannot delete - has related quotes or jobs'}>
+            <span>
+              <IconButton
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={actionLoading || !canDelete}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {
+                    color: 'error.main',
+                    bgcolor: 'rgba(239, 68, 68, 0.1)',
+                  },
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {/* Basic Information Card */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card elevation={2} sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Basic Information
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Customer Code
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {customer.customer_code}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Company Name
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {customer.name}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Website
+                  </Typography>
+                  {customer.website ? (
+                    <MuiLink
+                      href={customer.website.startsWith('http') ? customer.website : `https://${customer.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{ fontWeight: 500 }}
+                    >
+                      {customer.website}
+                    </MuiLink>
+                  ) : (
+                    <Typography variant="body1" color="text.secondary">
+                      —
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Primary Contact Card */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card elevation={2} sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Primary Contact
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Contact Name
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {customer.contact_name || '—'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Phone
+                  </Typography>
+                  {customer.contact_phone ? (
+                    <MuiLink href={`tel:${customer.contact_phone}`} sx={{ fontWeight: 500 }}>
+                      {customer.contact_phone}
+                    </MuiLink>
+                  ) : (
+                    <Typography variant="body1" color="text.secondary">
+                      —
+                    </Typography>
+                  )}
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Email
+                  </Typography>
+                  {customer.contact_email ? (
+                    <MuiLink href={`mailto:${customer.contact_email}`} sx={{ fontWeight: 500 }}>
+                      {customer.contact_email}
+                    </MuiLink>
+                  ) : (
+                    <Typography variant="body1" color="text.secondary">
+                      —
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Address Card */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card elevation={2} sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Address
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                {formatAddress()}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Related Entities Card */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card elevation={2} sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Related
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Quotes
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {customer.quotes_count} quote{customer.quotes_count !== 1 ? 's' : ''}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Jobs
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {customer.jobs_count} job{customer.jobs_count !== 1 ? 's' : ''}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Created
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {formatDate(customer.created_at)}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Customer?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete <strong>{customer.name}</strong>? This action cannot be
+            undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={actionLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            variant="contained"
+            disabled={actionLoading}
+            startIcon={
+              actionLoading ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />
+            }
+          >
+            {actionLoading ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

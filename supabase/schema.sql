@@ -1,6 +1,6 @@
 -- ============================================================
 -- Jigged Manufacturing ERP - Database Schema
--- Generated: 2026-01-03T23:28:12Z
+-- Generated: 2026-01-04T05:17:42Z
 -- Schemas: public, storage
 -- ============================================================
 
@@ -109,8 +109,6 @@ CREATE TABLE IF NOT EXISTS "public"."routings"
     "name" text NOT NULL,
     "description" text,
     "revision" text DEFAULT 'A'::text,
-    "estimated_total_hours" numeric(10,2),
-    "estimated_lead_time_days" integer,
     "is_default" boolean DEFAULT false,
     "created_by" uuid,
     "created_at" timestamp with time zone DEFAULT now(),
@@ -1840,12 +1838,6 @@ COMMENT ON COLUMN "public"."routings"."description"
 
 COMMENT ON COLUMN "public"."routings"."revision"
     IS 'Revision/version identifier. Default: "A". Increment for process changes.';
-
-COMMENT ON COLUMN "public"."routings"."estimated_total_hours"
-    IS 'Sum of all operation hours. Calculated from routing_operations.';
-
-COMMENT ON COLUMN "public"."routings"."estimated_lead_time_days"
-    IS 'Estimated days to complete using this routing.';
 
 COMMENT ON COLUMN "public"."routings"."is_default"
     IS 'If true, this is the default routing for the linked part. Only one routing per part should be default.';
