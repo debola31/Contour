@@ -105,8 +105,8 @@ const jiggedTheme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#1a1f4a',  // Fully opaque Deep Indigo
-          backgroundImage: 'none',
+          backgroundColor: '#111439',  // Deep Indigo (per design system spec)
+          backgroundImage: 'linear-gradient(135deg, #111439 0%, #1a1f4a 100%)',
           border: '1px solid rgba(255, 255, 255, 0.12)',
         },
       },
