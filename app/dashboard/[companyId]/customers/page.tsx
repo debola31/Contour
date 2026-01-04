@@ -26,7 +26,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 
 import { AgGridReact } from 'ag-grid-react';
-import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community';
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import type {
   ColDef,
   GridReadyEvent,
@@ -38,46 +38,7 @@ import type {
 // Register AG Grid modules (required for v35+)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-// Create custom dark theme for Jigged using new Theming API
-const jiggedDarkTheme = themeQuartz.withParams({
-  // Background colors
-  backgroundColor: 'transparent',
-  oddRowBackgroundColor: 'rgba(255, 255, 255, 0.02)',
-  headerBackgroundColor: 'rgba(255, 255, 255, 0.05)',
-
-  // Text colors
-  foregroundColor: '#ffffff',
-  textColor: '#ffffff',
-  headerTextColor: '#ffffff',
-
-  // Borders
-  borderColor: 'rgba(255, 255, 255, 0.12)',
-  rowBorder: true,
-
-  // Selection and interaction
-  rowHoverColor: 'rgba(255, 255, 255, 0.04)',
-  selectedRowBackgroundColor: 'rgba(90, 150, 201, 0.2)',
-  rangeSelectionBackgroundColor: 'rgba(90, 150, 201, 0.3)',
-
-  // Accent color (Steel Blue)
-  accentColor: '#4682B4',
-
-  // Typography
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  fontSize: 16,
-
-  // Spacing
-  spacing: 8,
-  cellHorizontalPadding: 16,
-
-  // Row and header heights
-  rowHeight: 52,
-  headerHeight: 56,
-
-  // Icons
-  iconSize: 20,
-});
-
+import { jiggedAgGridTheme } from '@/lib/agGridTheme';
 import { getAllCustomers, softDeleteCustomer, bulkSoftDeleteCustomers } from '@/utils/customerAccess';
 import ExportCsvButton from '@/components/common/ExportCsvButton';
 import type { Customer } from '@/types/customer';
@@ -456,7 +417,7 @@ export default function CustomersPage() {
               ref={gridRef}
               rowData={customers}
               columnDefs={columnDefs}
-              theme={jiggedDarkTheme}
+              theme={jiggedAgGridTheme}
               defaultColDef={{
                 sortable: true,
                 resizable: true,
