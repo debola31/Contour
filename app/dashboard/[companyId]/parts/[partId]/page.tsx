@@ -100,7 +100,7 @@ export default function PartDetailPage() {
 
   const quotesCount = part.quotes_count ?? 0;
   const jobsCount = part.jobs_count ?? 0;
-  const canDelete = quotesCount === 0 && jobsCount === 0;
+  const hasRelatedRecords = quotesCount > 0 || jobsCount > 0;
 
   return (
     <Box>
@@ -130,11 +130,11 @@ export default function PartDetailPage() {
             Edit
           </Button>
 
-          <Tooltip title={canDelete ? 'Delete Part' : 'Cannot delete - has related quotes or jobs'}>
+          <Tooltip title="Delete Part">
             <span>
               <IconButton
                 onClick={() => setDeleteDialogOpen(true)}
-                disabled={actionLoading || !canDelete}
+                disabled={actionLoading}
                 sx={{
                   color: 'text.secondary',
                   '&:hover': {
@@ -308,10 +308,11 @@ export default function PartDetailPage() {
             Are you sure you want to delete <strong>{part.part_number}</strong>? This action cannot
             be undone.
           </Typography>
-          {!canDelete && (
+          {hasRelatedRecords && (
             <Alert severity="warning" sx={{ mt: 2 }}>
               This part has {quotesCount} quote{quotesCount !== 1 ? 's' : ''} and {jobsCount} job
-              {jobsCount !== 1 ? 's' : ''}. Remove these references before deleting.
+              {jobsCount !== 1 ? 's' : ''}. These records will be kept but will no longer be linked
+              to this part.
             </Alert>
           )}
         </DialogContent>
@@ -323,7 +324,7 @@ export default function PartDetailPage() {
             onClick={handleDelete}
             color="error"
             variant="contained"
-            disabled={actionLoading || !canDelete}
+            disabled={actionLoading}
             startIcon={
               actionLoading ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />
             }

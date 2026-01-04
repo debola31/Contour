@@ -99,7 +99,7 @@ export default function CustomerDetailPage() {
     );
   }
 
-  const canDelete = customer.quotes_count === 0 && customer.jobs_count === 0;
+  const hasRelatedRecords = customer.quotes_count > 0 || customer.jobs_count > 0;
 
   return (
     <Box>
@@ -129,11 +129,11 @@ export default function CustomerDetailPage() {
             Edit
           </Button>
 
-          <Tooltip title={canDelete ? 'Delete Customer' : 'Cannot delete - has related quotes or jobs'}>
+          <Tooltip title="Delete Customer">
             <span>
               <IconButton
                 onClick={() => setDeleteDialogOpen(true)}
-                disabled={actionLoading || !canDelete}
+                disabled={actionLoading}
                 sx={{
                   color: 'text.secondary',
                   '&:hover': {
@@ -317,6 +317,13 @@ export default function CustomerDetailPage() {
             Are you sure you want to delete <strong>{customer.name}</strong>? This action cannot be
             undone.
           </Typography>
+          {hasRelatedRecords && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              This customer has {customer.quotes_count} quote{customer.quotes_count !== 1 ? 's' : ''} and{' '}
+              {customer.jobs_count} job{customer.jobs_count !== 1 ? 's' : ''}. These records will be
+              kept but will no longer be linked to this customer.
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)} disabled={actionLoading}>

@@ -1,6 +1,6 @@
 -- ============================================================
 -- Jigged Manufacturing ERP - Database Schema
--- Generated: 2026-01-04T05:17:42Z
+-- Generated: 2026-01-04T05:59:07Z
 -- Schemas: public, storage
 -- ============================================================
 
@@ -123,11 +123,11 @@ CREATE TABLE IF NOT EXISTS "public"."routing_operations"
     "sequence" integer NOT NULL,
     "operation_name" text NOT NULL,
     "operation_type_id" uuid,
-    "estimated_setup_hours" numeric(8,2) DEFAULT 0,
-    "estimated_run_hours_per_unit" numeric(8,4) DEFAULT 0,
     "instructions" text,
     "created_at" timestamp with time zone DEFAULT now(),
     "updated_at" timestamp with time zone DEFAULT now(),
+    "expected_setup_time" numeric,
+    "expected_cycle_time" numeric,
     CONSTRAINT "routing_operations_pkey" PRIMARY KEY (id),
     CONSTRAINT "routing_operations_routing_id_sequence_key" UNIQUE (routing_id, sequence)
 );
@@ -771,7 +771,7 @@ ALTER TABLE "public"."jobs"
     ADD CONSTRAINT "jobs_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id);
 
 ALTER TABLE "public"."jobs"
-    ADD CONSTRAINT "jobs_customer_id_fkey" FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT;
+    ADD CONSTRAINT "jobs_customer_id_fkey" FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL;
 
 ALTER TABLE "public"."jobs"
     ADD CONSTRAINT "jobs_part_id_fkey" FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE SET NULL;
@@ -810,7 +810,7 @@ ALTER TABLE "public"."quotes"
     ADD CONSTRAINT "quotes_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id);
 
 ALTER TABLE "public"."quotes"
-    ADD CONSTRAINT "quotes_customer_id_fkey" FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT;
+    ADD CONSTRAINT "quotes_customer_id_fkey" FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL;
 
 ALTER TABLE "public"."quotes"
     ADD CONSTRAINT "quotes_part_id_fkey" FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE SET NULL;
@@ -1806,12 +1806,6 @@ COMMENT ON COLUMN "public"."routing_operations"."operation_name"
 COMMENT ON COLUMN "public"."routing_operations"."operation_type_id"
     IS 'FK to operation_types. What type of operation is performed. SET NULL if operation type deleted.';
 
-COMMENT ON COLUMN "public"."routing_operations"."estimated_setup_hours"
-    IS 'Estimated hours for machine/station setup before production.';
-
-COMMENT ON COLUMN "public"."routing_operations"."estimated_run_hours_per_unit"
-    IS 'Estimated hours to produce one unit after setup. Precision for small parts.';
-
 COMMENT ON COLUMN "public"."routing_operations"."instructions"
     IS 'Detailed work instructions for operators. May include specifications, tolerances, tool requirements.';
 
@@ -1820,6 +1814,12 @@ COMMENT ON COLUMN "public"."routing_operations"."created_at"
 
 COMMENT ON COLUMN "public"."routing_operations"."updated_at"
     IS 'Timestamp of last update. Auto-updated via trigger.';
+
+COMMENT ON COLUMN "public"."routing_operations"."expected_setup_time"
+    IS 'Seconds for operation setup before cycle starts';
+
+COMMENT ON COLUMN "public"."routing_operations"."expected_cycle_time"
+    IS 'Expected duration of operation';
 
 COMMENT ON COLUMN "public"."routings"."id"
     IS 'Primary key. UUID auto-generated.';
