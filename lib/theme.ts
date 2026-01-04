@@ -61,6 +61,23 @@ const jiggedTheme = createTheme({
             transform: 'translateY(-1px)',
           },
         },
+        outlined: {
+          borderColor: 'rgba(255, 255, 255, 0.5)',
+          color: '#ffffff',
+          backgroundColor: 'rgba(17, 20, 57, 0.4)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          '&:hover': {
+            borderColor: '#ffffff',
+            backgroundColor: 'rgba(70, 130, 180, 0.3)',
+          },
+        },
+        text: {
+          color: '#ffffff',
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          },
+        },
         sizeLarge: {
           padding: '12px 24px',
           fontSize: '1rem',
