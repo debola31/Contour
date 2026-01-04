@@ -6,9 +6,9 @@ const jiggedTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#5a96c9',      // Brighter Steel Blue
-      light: '#6fa3d8',     // Hover state
-      dark: '#4682B4',      // Pressed state
+      main: '#4682B4',      // Steel Blue (per design system spec)
+      light: '#6FA3D8',     // Hover state
+      dark: '#3A6B94',      // Pressed state
       contrastText: '#fff',
     },
     secondary: {
