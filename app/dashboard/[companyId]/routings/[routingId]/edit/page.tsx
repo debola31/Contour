@@ -25,7 +25,6 @@ export default function EditRoutingPage() {
 
   const [routing, setRouting] = useState<RoutingWithPart | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     async function loadRouting() {
@@ -111,7 +110,7 @@ export default function EditRoutingPage() {
           </Box>
           {routing.part && (
             <Typography variant="body2" color="text.secondary">
-              {routing.part.part_number} - {routing.part.name}
+              {routing.part.part_number}{routing.part.description ? ` - ${routing.part.description}` : ''}
             </Typography>
           )}
         </Box>

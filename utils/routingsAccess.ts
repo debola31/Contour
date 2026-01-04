@@ -41,7 +41,7 @@ export async function getRoutings(
     .from('routings')
     .select(`
       *,
-      part:parts(id, part_number, name),
+      part:parts(id, part_number, description),
       nodes:routing_nodes(id, setup_time, run_time_per_unit)
     `)
     .eq('company_id', companyId);
@@ -75,7 +75,7 @@ export async function getRoutings(
     created_by: string | null;
     created_at: string;
     updated_at: string;
-    part: { id: string; part_number: string; name: string } | null;
+    part: { id: string; part_number: string; description: string | null } | null;
     nodes?: Array<{ id: string; setup_time: number | null; run_time_per_unit: number | null }>;
   }
 
@@ -110,7 +110,7 @@ export async function getRouting(routingId: string): Promise<RoutingWithPart | n
     .from('routings')
     .select(`
       *,
-      part:parts(id, part_number, name)
+      part:parts(id, part_number, description)
     `)
     .eq('id', routingId)
     .single();
@@ -135,7 +135,7 @@ export async function getRoutingWithGraph(routingId: string): Promise<RoutingWit
     .from('routings')
     .select(`
       *,
-      part:parts(id, part_number, name)
+      part:parts(id, part_number, description)
     `)
     .eq('id', routingId)
     .single();

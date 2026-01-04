@@ -219,7 +219,7 @@ export default function RoutingsPage() {
       minWidth: 180,
       valueGetter: (params) => {
         if (!params.data?.part) return '—';
-        return `${params.data.part.part_number} - ${params.data.part.name}`;
+        return `${params.data.part.part_number}${params.data.part.description ? ` - ${params.data.part.description}` : ''}`;
       },
     },
     {
