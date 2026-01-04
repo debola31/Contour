@@ -38,8 +38,8 @@ Jigged is a web-based ERP system designed for small-scale precision manufacturin
 ### Background Gradient
 
 ```css
-/* Dark theme - Industrial machine shop aesthetic */
-linear-gradient(135deg, #111439 0%, #1a1f4a 100%)
+/* Dark theme - Industrial machine shop aesthetic with Steel Blue accent */
+linear-gradient(135deg, #111439 0%, #4682B4 50%, #111439 100%)
 ```
 
 ### MUI Theme Configuration
