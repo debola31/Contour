@@ -22,7 +22,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 
 import { AgGridReact } from 'ag-grid-react';
@@ -32,7 +31,8 @@ import type {
   GridReadyEvent,
   SelectionChangedEvent,
   SortChangedEvent,
-  ICellRendererParams,
+  RowClickedEvent,
+  CellKeyDownEvent,
 } from 'ag-grid-community';
 
 // Register AG Grid modules (required for v35+)
@@ -161,19 +161,17 @@ export default function CustomersPage() {
     setSelectedIds(selectedData);
   };
 
-  const handleEditCustomer = (e: React.MouseEvent, customer: Customer) => {
-    e.stopPropagation();
-    router.push(`/dashboard/${companyId}/customers/${customer.id}`);
+  const handleRowClicked = (event: RowClickedEvent<Customer>) => {
+    if (event.data) {
+      router.push(`/dashboard/${companyId}/customers/${event.data.id}`);
+    }
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, customer: Customer) => {
-    e.stopPropagation(); // Prevent row click
-    setDeleteDialog({
-      open: true,
-      type: 'single',
-      customerId: customer.id,
-      customerName: customer.name,
-    });
+  const handleCellKeyDown = (event: CellKeyDownEvent<Customer>) => {
+    const keyboardEvent = event.event as KeyboardEvent | undefined;
+    if (keyboardEvent?.key === 'Enter' && event.data) {
+      router.push(`/dashboard/${companyId}/customers/${event.data.id}`);
+    }
   };
 
   const handleBulkDeleteClick = () => {
@@ -252,37 +250,6 @@ export default function CustomersPage() {
         if (!params.data) return '—';
         const parts = [params.data.city, params.data.state].filter(Boolean);
         return parts.length > 0 ? parts.join(', ') : '—';
-      },
-    },
-    {
-      colId: 'actions',
-      headerName: '',
-      width: 100,
-      sortable: false,
-      cellRenderer: (params: ICellRendererParams<Customer>) => {
-        if (!params.data) return null;
-        return (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={(e) => handleEditCustomer(e, params.data!)}
-                sx={{ color: 'text.secondary' }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton
-                size="small"
-                onClick={(e) => handleDeleteClick(e, params.data!)}
-                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        );
       },
     },
   ];
@@ -431,6 +398,9 @@ export default function CustomersPage() {
                 selectAll: 'all',
               }}
               onSelectionChanged={handleSelectionChanged}
+              // Row click navigation
+              onRowClicked={handleRowClicked}
+              onCellKeyDown={handleCellKeyDown}
               // Pagination
               pagination={true}
               paginationPageSize={25}
@@ -444,7 +414,7 @@ export default function CustomersPage() {
               // Loading
               loading={loading}
               // Misc
-              suppressCellFocus={true}
+              suppressCellFocus={false}
               suppressMenuHide={false}
               getRowId={(params) => params.data.id}
               // Accessibility

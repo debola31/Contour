@@ -22,7 +22,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import CategoryIcon from '@mui/icons-material/Category';
 
 import { AgGridReact } from 'ag-grid-react';
@@ -33,6 +32,8 @@ import type {
   SelectionChangedEvent,
   SortChangedEvent,
   ICellRendererParams,
+  RowClickedEvent,
+  CellKeyDownEvent,
 } from 'ag-grid-community';
 
 // Register AG Grid modules (required for v35+)
@@ -159,19 +160,17 @@ export default function PartsPage() {
     setSelectedIds(selectedData);
   };
 
-  const handleEditPart = (e: React.MouseEvent, part: Part) => {
-    e.stopPropagation();
-    router.push(`/dashboard/${companyId}/parts/${part.id}`);
+  const handleRowClicked = (event: RowClickedEvent<Part>) => {
+    if (event.data) {
+      router.push(`/dashboard/${companyId}/parts/${event.data.id}`);
+    }
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, part: Part) => {
-    e.stopPropagation();
-    setDeleteDialog({
-      open: true,
-      type: 'single',
-      partId: part.id,
-      partNumber: part.part_number,
-    });
+  const handleCellKeyDown = (event: CellKeyDownEvent<Part>) => {
+    const keyboardEvent = event.event as KeyboardEvent | undefined;
+    if (keyboardEvent?.key === 'Enter' && event.data) {
+      router.push(`/dashboard/${companyId}/parts/${event.data.id}`);
+    }
   };
 
   const handleBulkDeleteClick = () => {
@@ -272,37 +271,6 @@ export default function PartsPage() {
       headerName: 'Material Cost',
       width: 150,
       valueFormatter: (params) => (params.value != null ? `$${params.value.toFixed(2)}` : '—'),
-    },
-    {
-      colId: 'actions',
-      headerName: '',
-      width: 100,
-      sortable: false,
-      cellRenderer: (params: ICellRendererParams<Part>) => {
-        if (!params.data) return null;
-        return (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={(e) => handleEditPart(e, params.data!)}
-                sx={{ color: 'text.secondary' }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton
-                size="small"
-                onClick={(e) => handleDeleteClick(e, params.data!)}
-                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        );
-      },
     },
   ];
 
@@ -442,6 +410,9 @@ export default function PartsPage() {
                 selectAll: 'all',
               }}
               onSelectionChanged={handleSelectionChanged}
+              // Row click navigation
+              onRowClicked={handleRowClicked}
+              onCellKeyDown={handleCellKeyDown}
               pagination={true}
               paginationPageSize={25}
               paginationPageSizeSelector={[25, 50, 100]}
@@ -450,7 +421,7 @@ export default function PartsPage() {
               onSortChanged={handleSortChanged}
               onGridReady={handleGridReady}
               loading={loading}
-              suppressCellFocus={true}
+              suppressCellFocus={false}
               suppressMenuHide={false}
               getRowId={(params) => params.data.id}
               enableCellTextSelection={true}
