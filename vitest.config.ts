@@ -19,11 +19,11 @@ export default defineConfig({
         '**/types/**',
       ],
       thresholds: {
-        // Initial thresholds - increase as test coverage grows
-        statements: 30,
-        branches: 30,
-        functions: 30,
-        lines: 30,
+        // Phase 1 target achieved - increase as test coverage grows
+        statements: 45,
+        branches: 45,
+        functions: 45,
+        lines: 45,
       },
     },
   },
