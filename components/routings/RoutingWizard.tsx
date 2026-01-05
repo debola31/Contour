@@ -376,7 +376,17 @@ export default function RoutingWizard({ companyId, routingId }: RoutingWizardPro
 
         {currentStep === 1 && (
           /* Step 2: Build Workflow */
-          <Box sx={{ flex: 1, minHeight: 0 }}>
+          <Card
+            elevation={2}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              '&:hover': { transform: 'none' }  // Disable hover lift for workspace
+            }}
+          >
             <RoutingWorkflowBuilder
               routingId={routingId || ''}
               companyId={companyId}
@@ -386,7 +396,7 @@ export default function RoutingWizard({ companyId, routingId }: RoutingWizardPro
               onPendingNodesChange={handlePendingNodesChange}
               onPendingEdgesChange={handlePendingEdgesChange}
             />
-          </Box>
+          </Card>
         )}
       </Box>
     </Box>

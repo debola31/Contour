@@ -669,7 +669,7 @@ export default function RoutingWorkflowBuilder({
   }
 
   return (
-    <Box sx={{ display: 'flex', height: 'calc(100vh - 200px)', minHeight: 500 }}>
+    <Box sx={{ display: 'flex', height: '100%', minHeight: 500 }}>
       {/* Operations Sidebar */}
       <OperationsSidebar
         companyId={companyId}
