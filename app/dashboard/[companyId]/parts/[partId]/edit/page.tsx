@@ -70,7 +70,7 @@ export default function PartEditPage() {
       <Button
         startIcon={<ArrowBackIcon />}
         onClick={() => router.push(`/dashboard/${companyId}/parts/${partId}`)}
-        sx={{ mb: 2 }}
+        sx={{ color: 'text.secondary', mb: 2 }}
       >
         Back to Part
       </Button>

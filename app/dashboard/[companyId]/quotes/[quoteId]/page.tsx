@@ -180,7 +180,7 @@ export default function QuoteDetailPage() {
       <Button
         startIcon={<ArrowBackIcon />}
         onClick={() => router.push(`/dashboard/${companyId}/quotes`)}
-        sx={{ mb: 2 }}
+        sx={{ color: 'text.secondary', mb: 2 }}
       >
         Back to Quotes
       </Button>

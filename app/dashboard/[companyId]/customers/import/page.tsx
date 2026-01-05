@@ -354,9 +354,9 @@ export default function ImportCustomersPage() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Button
-          color="primary"
           startIcon={<ArrowBackIcon />}
           onClick={() => router.push(`/dashboard/${companyId}/customers`)}
+          sx={{ color: 'text.secondary' }}
         >
           Back
         </Button>

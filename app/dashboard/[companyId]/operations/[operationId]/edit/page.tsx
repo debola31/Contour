@@ -61,10 +61,9 @@ export default function EditOperationPage() {
       <Box>
         <Alert severity="error">{error || 'Operation not found'}</Alert>
         <Button
-          variant="outlined"
           startIcon={<ArrowBackIcon />}
           onClick={handleCancel}
-          sx={{ mt: 2 }}
+          sx={{ color: 'text.secondary', mt: 2 }}
         >
           Back to Operations
         </Button>

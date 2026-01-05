@@ -115,6 +115,7 @@ export default function CustomerDetailPage() {
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => router.push(`/dashboard/${companyId}/customers`)}
+          sx={{ color: 'text.secondary' }}
         >
           Back to Customers
         </Button>

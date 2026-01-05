@@ -116,6 +116,7 @@ export default function PartDetailPage() {
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => router.push(`/dashboard/${companyId}/parts`)}
+          sx={{ color: 'text.secondary' }}
         >
           Back to Parts
         </Button>

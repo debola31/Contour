@@ -1,6 +1,6 @@
 -- ============================================================
 -- Jigged Manufacturing ERP - Database Schema
--- Generated: 2026-01-04T05:59:07Z
+-- Generated: 2026-01-05T00:49:32Z
 -- Schemas: public, storage
 -- ============================================================
 
@@ -108,7 +108,6 @@ CREATE TABLE IF NOT EXISTS "public"."routings"
     "part_id" uuid,
     "name" text NOT NULL,
     "description" text,
-    "revision" text DEFAULT 'A'::text,
     "is_default" boolean DEFAULT false,
     "created_by" uuid,
     "created_at" timestamp with time zone DEFAULT now(),
@@ -116,20 +115,30 @@ CREATE TABLE IF NOT EXISTS "public"."routings"
     CONSTRAINT "routings_pkey" PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS "public"."routing_operations"
+CREATE TABLE IF NOT EXISTS "public"."routing_nodes"
 (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "routing_id" uuid NOT NULL,
-    "sequence" integer NOT NULL,
-    "operation_name" text NOT NULL,
-    "operation_type_id" uuid,
+    "operation_type_id" uuid NOT NULL,
+    "setup_time" numeric,
+    "run_time_per_unit" numeric,
     "instructions" text,
+    "metadata" jsonb DEFAULT '{}'::jsonb,
     "created_at" timestamp with time zone DEFAULT now(),
     "updated_at" timestamp with time zone DEFAULT now(),
-    "expected_setup_time" numeric,
-    "expected_cycle_time" numeric,
-    CONSTRAINT "routing_operations_pkey" PRIMARY KEY (id),
-    CONSTRAINT "routing_operations_routing_id_sequence_key" UNIQUE (routing_id, sequence)
+    CONSTRAINT "routing_nodes_pkey" PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS "public"."routing_edges"
+(
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "routing_id" uuid NOT NULL,
+    "source_node_id" uuid NOT NULL,
+    "target_node_id" uuid NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now(),
+    CONSTRAINT "routing_edges_pkey" PRIMARY KEY (id),
+    CONSTRAINT "routing_edges_unique" UNIQUE (routing_id, source_node_id, target_node_id),
+    CONSTRAINT "routing_edges_no_self_loop" CHECK ((source_node_id <> target_node_id))
 );
 
 CREATE TABLE IF NOT EXISTS "public"."user_company_access"
@@ -175,7 +184,6 @@ CREATE TABLE IF NOT EXISTS "public"."job_operations"
 (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "job_id" uuid NOT NULL,
-    "routing_operation_id" uuid,
     "sequence" integer NOT NULL,
     "operation_name" text NOT NULL,
     "operation_type_id" uuid,
@@ -206,7 +214,7 @@ CREATE TABLE IF NOT EXISTS "public"."jobs"
     "job_number" text NOT NULL,
     "quote_id" uuid,
     "routing_id" uuid,
-    "customer_id" uuid NOT NULL,
+    "customer_id" uuid,
     "part_id" uuid,
     "description" text,
     "quantity_ordered" integer NOT NULL,
@@ -248,7 +256,7 @@ CREATE TABLE IF NOT EXISTS "public"."quotes"
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "company_id" uuid NOT NULL,
     "quote_number" text NOT NULL,
-    "customer_id" uuid NOT NULL,
+    "customer_id" uuid,
     "part_id" uuid,
     "description" text,
     "routing_id" uuid,
@@ -281,7 +289,8 @@ ALTER TABLE "public"."parts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."quote_attachments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."quotes" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."resource_groups" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."routing_operations" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."routing_edges" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."routing_nodes" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."routings" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."user_company_access" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."user_preferences" ENABLE ROW LEVEL SECURITY;
@@ -597,33 +606,65 @@ CREATE POLICY "resource_groups_update"
    FROM user_company_access
   WHERE (user_company_access.user_id = auth.uid()))));
 
-DROP POLICY IF EXISTS "Users can delete routing_operations" ON "public"."routing_operations";
-CREATE POLICY "Users can delete routing_operations"
-    ON "public"."routing_operations"
+DROP POLICY IF EXISTS "Users can delete routing_edges" ON "public"."routing_edges";
+CREATE POLICY "Users can delete routing_edges"
+    ON "public"."routing_edges"
     FOR DELETE
     USING ((routing_id IN ( SELECT routings.id
    FROM routings
   WHERE (routings.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
 
-DROP POLICY IF EXISTS "Users can insert routing_operations" ON "public"."routing_operations";
-CREATE POLICY "Users can insert routing_operations"
-    ON "public"."routing_operations"
+DROP POLICY IF EXISTS "Users can insert routing_edges" ON "public"."routing_edges";
+CREATE POLICY "Users can insert routing_edges"
+    ON "public"."routing_edges"
     FOR INSERT
     WITH CHECK ((routing_id IN ( SELECT routings.id
    FROM routings
   WHERE (routings.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
 
-DROP POLICY IF EXISTS "Users can update routing_operations" ON "public"."routing_operations";
-CREATE POLICY "Users can update routing_operations"
-    ON "public"."routing_operations"
+DROP POLICY IF EXISTS "Users can update routing_edges" ON "public"."routing_edges";
+CREATE POLICY "Users can update routing_edges"
+    ON "public"."routing_edges"
     FOR UPDATE
     USING ((routing_id IN ( SELECT routings.id
    FROM routings
   WHERE (routings.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
 
-DROP POLICY IF EXISTS "Users can view routing_operations" ON "public"."routing_operations";
-CREATE POLICY "Users can view routing_operations"
-    ON "public"."routing_operations"
+DROP POLICY IF EXISTS "Users can view routing_edges" ON "public"."routing_edges";
+CREATE POLICY "Users can view routing_edges"
+    ON "public"."routing_edges"
+    FOR SELECT
+    USING ((routing_id IN ( SELECT routings.id
+   FROM routings
+  WHERE (routings.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
+
+DROP POLICY IF EXISTS "Users can delete routing_nodes" ON "public"."routing_nodes";
+CREATE POLICY "Users can delete routing_nodes"
+    ON "public"."routing_nodes"
+    FOR DELETE
+    USING ((routing_id IN ( SELECT routings.id
+   FROM routings
+  WHERE (routings.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
+
+DROP POLICY IF EXISTS "Users can insert routing_nodes" ON "public"."routing_nodes";
+CREATE POLICY "Users can insert routing_nodes"
+    ON "public"."routing_nodes"
+    FOR INSERT
+    WITH CHECK ((routing_id IN ( SELECT routings.id
+   FROM routings
+  WHERE (routings.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
+
+DROP POLICY IF EXISTS "Users can update routing_nodes" ON "public"."routing_nodes";
+CREATE POLICY "Users can update routing_nodes"
+    ON "public"."routing_nodes"
+    FOR UPDATE
+    USING ((routing_id IN ( SELECT routings.id
+   FROM routings
+  WHERE (routings.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
+
+DROP POLICY IF EXISTS "Users can view routing_nodes" ON "public"."routing_nodes";
+CREATE POLICY "Users can view routing_nodes"
+    ON "public"."routing_nodes"
     FOR SELECT
     USING ((routing_id IN ( SELECT routings.id
    FROM routings
@@ -761,9 +802,6 @@ ALTER TABLE "public"."job_operations"
 ALTER TABLE "public"."job_operations"
     ADD CONSTRAINT "job_operations_job_id_fkey" FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
 
-ALTER TABLE "public"."job_operations"
-    ADD CONSTRAINT "job_operations_routing_operation_id_fkey" FOREIGN KEY (routing_operation_id) REFERENCES routing_operations(id) ON DELETE SET NULL;
-
 ALTER TABLE "public"."jobs"
     ADD CONSTRAINT "jobs_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
 
@@ -821,8 +859,20 @@ ALTER TABLE "public"."quotes"
 ALTER TABLE "public"."resource_groups"
     ADD CONSTRAINT "resource_groups_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
 
-ALTER TABLE "public"."routing_operations"
-    ADD CONSTRAINT "routing_operations_routing_id_fkey" FOREIGN KEY (routing_id) REFERENCES routings(id) ON DELETE CASCADE;
+ALTER TABLE "public"."routing_edges"
+    ADD CONSTRAINT "routing_edges_routing_id_fkey" FOREIGN KEY (routing_id) REFERENCES routings(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."routing_edges"
+    ADD CONSTRAINT "routing_edges_source_node_id_fkey" FOREIGN KEY (source_node_id) REFERENCES routing_nodes(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."routing_edges"
+    ADD CONSTRAINT "routing_edges_target_node_id_fkey" FOREIGN KEY (target_node_id) REFERENCES routing_nodes(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."routing_nodes"
+    ADD CONSTRAINT "routing_nodes_operation_type_id_fkey" FOREIGN KEY (operation_type_id) REFERENCES operation_types(id) ON DELETE RESTRICT;
+
+ALTER TABLE "public"."routing_nodes"
+    ADD CONSTRAINT "routing_nodes_routing_id_fkey" FOREIGN KEY (routing_id) REFERENCES routings(id) ON DELETE CASCADE;
 
 ALTER TABLE "public"."routings"
     ADD CONSTRAINT "routings_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
@@ -859,7 +909,6 @@ CREATE INDEX IF NOT EXISTS idx_job_attachments_source ON public.job_attachments 
 CREATE INDEX IF NOT EXISTS idx_job_ops_assigned ON public.job_operations USING btree (assigned_to) WHERE (assigned_to IS NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_job_ops_job ON public.job_operations USING btree (job_id);
 CREATE INDEX IF NOT EXISTS idx_job_ops_operation_type ON public.job_operations USING btree (operation_type_id);
-CREATE INDEX IF NOT EXISTS idx_job_ops_routing_op ON public.job_operations USING btree (routing_operation_id);
 CREATE INDEX IF NOT EXISTS idx_job_ops_status ON public.job_operations USING btree (status);
 CREATE INDEX IF NOT EXISTS idx_jobs_company ON public.jobs USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_customer ON public.jobs USING btree (customer_id);
@@ -884,8 +933,11 @@ CREATE INDEX IF NOT EXISTS idx_quotes_part ON public.quotes USING btree (part_id
 CREATE INDEX IF NOT EXISTS idx_quotes_routing ON public.quotes USING btree (routing_id);
 CREATE INDEX IF NOT EXISTS idx_quotes_status ON public.quotes USING btree (company_id, status);
 CREATE INDEX IF NOT EXISTS idx_resource_groups_company ON public.resource_groups USING btree (company_id);
-CREATE INDEX IF NOT EXISTS idx_routing_ops_operation_type ON public.routing_operations USING btree (operation_type_id);
-CREATE INDEX IF NOT EXISTS idx_routing_ops_routing ON public.routing_operations USING btree (routing_id);
+CREATE INDEX IF NOT EXISTS idx_routing_edges_routing ON public.routing_edges USING btree (routing_id);
+CREATE INDEX IF NOT EXISTS idx_routing_edges_source ON public.routing_edges USING btree (source_node_id);
+CREATE INDEX IF NOT EXISTS idx_routing_edges_target ON public.routing_edges USING btree (target_node_id);
+CREATE INDEX IF NOT EXISTS idx_routing_nodes_operation_type ON public.routing_nodes USING btree (operation_type_id);
+CREATE INDEX IF NOT EXISTS idx_routing_nodes_routing ON public.routing_nodes USING btree (routing_id);
 CREATE INDEX IF NOT EXISTS idx_routings_company ON public.routings USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_routings_default ON public.routings USING btree (part_id, is_default) WHERE (is_default = true);
 CREATE INDEX IF NOT EXISTS idx_routings_part ON public.routings USING btree (part_id);
@@ -1051,44 +1103,51 @@ CREATE OR REPLACE FUNCTION public.create_job_operations_from_routing(p_job_id uu
  RETURNS integer
  LANGUAGE plpgsql
 AS $function$
-DECLARE
-    v_count INTEGER;
-BEGIN
-    INSERT INTO job_operations (
-        job_id,
-        routing_operation_id,
-        sequence,
-        operation_name,
-        operation_type_id,
-        estimated_setup_hours,
-        estimated_run_hours_per_unit,
-        instructions
-    )
-    SELECT
-        p_job_id,
-        ro.id,
-        ro.sequence,
-        ro.operation_name,
-        ro.operation_type_id,
-        ro.estimated_setup_hours,
-        ro.estimated_run_hours_per_unit,
-        ro.instructions
-    FROM routing_operations ro
-    WHERE ro.routing_id = p_routing_id
-    ORDER BY ro.sequence;
+ DECLARE
+     v_count integer := 0;
+     v_node record;
+     v_sequence integer := 10;
+ BEGIN
+     -- Get nodes ordered by creation time (topological sort can be added later)
+     FOR v_node IN
+         SELECT rn.*, ot.name as operation_name
+         FROM routing_nodes rn
+         JOIN operation_types ot ON rn.operation_type_id = ot.id
+         WHERE rn.routing_id = p_routing_id
+         ORDER BY rn.created_at
+     LOOP
+         INSERT INTO job_operations (
+             job_id,
+             sequence,
+             operation_name,
+             operation_type_id,
+             instructions,
+             expected_setup_time,
+             expected_cycle_time,
+             status
+         ) VALUES (
+             p_job_id,
+             v_sequence,
+             v_node.operation_name,
+             v_node.operation_type_id,
+             v_node.instructions,
+             v_node.setup_time,
+             v_node.run_time_per_unit,
+             'pending'
+         );
+         v_sequence := v_sequence + 10;
+         v_count := v_count + 1;
+     END LOOP;
 
-    GET DIAGNOSTICS v_count = ROW_COUNT;
+     -- Update job's current operation sequence
+     IF v_count > 0 THEN
+         UPDATE jobs SET current_operation_sequence = 10 WHERE id =
+ p_job_id;
+     END IF;
 
-    -- Set the job's current operation to the first one
-    UPDATE jobs
-    SET current_operation_sequence = (
-        SELECT MIN(sequence) FROM job_operations WHERE job_id = p_job_id
-    )
-    WHERE id = p_job_id;
-
-    RETURN v_count;
-END;
-$function$
+     RETURN v_count;
+ END;
+ $function$
 
 ;
 
@@ -1334,8 +1393,8 @@ CREATE TRIGGER update_quotes_updated_at BEFORE UPDATE ON public.quotes FOR EACH 
 DROP TRIGGER IF EXISTS "update_resource_groups_updated_at" ON "public"."resource_groups";
 CREATE TRIGGER update_resource_groups_updated_at BEFORE UPDATE ON public.resource_groups FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS "routing_operations_updated_at" ON "public"."routing_operations";
-CREATE TRIGGER routing_operations_updated_at BEFORE UPDATE ON public.routing_operations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS "routing_nodes_updated_at" ON "public"."routing_nodes";
+CREATE TRIGGER routing_nodes_updated_at BEFORE UPDATE ON public.routing_nodes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS "routings_updated_at" ON "public"."routings";
 CREATE TRIGGER routings_updated_at BEFORE UPDATE ON public.routings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1380,8 +1439,17 @@ COMMENT ON TABLE "public"."quotes"
 COMMENT ON TABLE "public"."resource_groups"
     IS 'Categories for organizing operation types (e.g., CNC, LATHE&MILL, Hone, EDM). Matches terminology from legacy system.';
 
-COMMENT ON TABLE "public"."routing_operations"
-    IS 'Individual operation steps within a routing template. Defines the sequence, station/work center, and time estimates. Copied to job_operations when a job is created from a routing.';
+COMMENT ON TABLE "public"."routing_edges"
+    IS 'Connections between 
+ routing nodes defining execution dependencies. An edge from node A 
+ to node B means A must complete before B can start. Multiple edges 
+ from one node enable parallel execution branches.';
+
+COMMENT ON TABLE "public"."routing_nodes"
+    IS 'Workflow nodes 
+ representing operations in a routing diagram. Each node is an 
+ operation that can be connected to other nodes via edges to define 
+ execution flow. Supports parallel and series execution patterns.';
 
 COMMENT ON TABLE "public"."routings"
     IS 'Manufacturing process templates defining the sequence of operations to produce a part. Can be linked to a specific part or be standalone. Contains routing_operations as child records. Used as templates when creating jobs.';
@@ -1517,9 +1585,6 @@ COMMENT ON COLUMN "public"."job_operations"."id"
 
 COMMENT ON COLUMN "public"."job_operations"."job_id"
     IS 'FK to jobs. Cascades on delete - operations deleted with job.';
-
-COMMENT ON COLUMN "public"."job_operations"."routing_operation_id"
-    IS 'FK to routing_operations. Source template this was copied from. SET NULL if template deleted.';
 
 COMMENT ON COLUMN "public"."job_operations"."sequence"
     IS 'Order of operation within job. Unique per job.';
@@ -1791,35 +1856,56 @@ COMMENT ON COLUMN "public"."resource_groups"."created_at"
 COMMENT ON COLUMN "public"."resource_groups"."updated_at"
     IS 'Timestamp when record was last updated';
 
-COMMENT ON COLUMN "public"."routing_operations"."id"
-    IS 'Primary key. UUID auto-generated.';
+COMMENT ON COLUMN "public"."routing_edges"."id"
+    IS 'Unique 
+ identifier for the edge';
 
-COMMENT ON COLUMN "public"."routing_operations"."routing_id"
-    IS 'FK to routings. Cascades on delete - operations deleted with routing.';
+COMMENT ON COLUMN "public"."routing_edges"."routing_id"
+    IS 'Foreign 
+ key to the parent routing (denormalized for query performance)';
 
-COMMENT ON COLUMN "public"."routing_operations"."sequence"
-    IS 'Order of operation within routing. Unique per routing. Example: 10, 20, 30 (allows inserting steps).';
+COMMENT ON COLUMN "public"."routing_edges"."source_node_id"
+    IS 'The 
+ node where this edge originates (must complete first)';
 
-COMMENT ON COLUMN "public"."routing_operations"."operation_name"
-    IS 'Name/description of the operation. Example: "CNC Rough Cut", "Deburr", "Final Inspection"';
+COMMENT ON COLUMN "public"."routing_edges"."target_node_id"
+    IS 'The 
+ node where this edge points to (starts after source completes)';
 
-COMMENT ON COLUMN "public"."routing_operations"."operation_type_id"
-    IS 'FK to operation_types. What type of operation is performed. SET NULL if operation type deleted.';
+COMMENT ON COLUMN "public"."routing_edges"."created_at"
+    IS 'Timestamp when the edge was created';
 
-COMMENT ON COLUMN "public"."routing_operations"."instructions"
-    IS 'Detailed work instructions for operators. May include specifications, tolerances, tool requirements.';
+COMMENT ON COLUMN "public"."routing_nodes"."id"
+    IS 'Unique 
+ identifier for the routing node';
 
-COMMENT ON COLUMN "public"."routing_operations"."created_at"
-    IS 'Timestamp when operation was created.';
+COMMENT ON COLUMN "public"."routing_nodes"."routing_id"
+    IS 'Foreign 
+ key to the parent routing this node belongs to';
 
-COMMENT ON COLUMN "public"."routing_operations"."updated_at"
-    IS 'Timestamp of last update. Auto-updated via trigger.';
+COMMENT ON COLUMN "public"."routing_nodes"."operation_type_id"
+    IS 'Foreign key to the operation type (e.g., CNC Mill, Lathe, 
+ Inspect)';
 
-COMMENT ON COLUMN "public"."routing_operations"."expected_setup_time"
-    IS 'Seconds for operation setup before cycle starts';
+COMMENT ON COLUMN "public"."routing_nodes"."setup_time"
+    IS 'Estimated setup time in minutes for this operation';
 
-COMMENT ON COLUMN "public"."routing_operations"."expected_cycle_time"
-    IS 'Expected duration of operation';
+COMMENT ON COLUMN "public"."routing_nodes"."run_time_per_unit"
+    IS 'Estimated run time per unit in minutes for this operation';
+
+COMMENT ON COLUMN "public"."routing_nodes"."instructions"
+    IS 'Work 
+ instructions or notes for the operator performing this operation';
+
+COMMENT ON COLUMN "public"."routing_nodes"."metadata"
+    IS 'Optional 
+ JSON metadata (can store UI position hints for custom layouts)';
+
+COMMENT ON COLUMN "public"."routing_nodes"."created_at"
+    IS 'Timestamp when the node was created';
+
+COMMENT ON COLUMN "public"."routing_nodes"."updated_at"
+    IS 'Timestamp when the node was last updated';
 
 COMMENT ON COLUMN "public"."routings"."id"
     IS 'Primary key. UUID auto-generated.';
@@ -1835,9 +1921,6 @@ COMMENT ON COLUMN "public"."routings"."name"
 
 COMMENT ON COLUMN "public"."routings"."description"
     IS 'Detailed description of the manufacturing process.';
-
-COMMENT ON COLUMN "public"."routings"."revision"
-    IS 'Revision/version identifier. Default: "A". Increment for process changes.';
 
 COMMENT ON COLUMN "public"."routings"."is_default"
     IS 'If true, this is the default routing for the linked part. Only one routing per part should be default.';
