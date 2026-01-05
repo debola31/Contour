@@ -68,7 +68,7 @@ export default function CustomerEditPage() {
       <Button
         startIcon={<ArrowBackIcon />}
         onClick={() => router.push(`/dashboard/${companyId}/customers/${customerId}`)}
-        sx={{ mb: 2 }}
+        sx={{ color: 'text.secondary', mb: 2 }}
       >
         Back to Customer
       </Button>

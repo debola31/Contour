@@ -9,8 +9,6 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  IconButton,
-  Tooltip,
   Card,
   CardContent,
   FormControlLabel,
@@ -187,10 +185,6 @@ export default function RoutingWizard({ companyId, routingId }: RoutingWizardPro
     setCurrentStep((prev) => Math.min(prev + 1, WIZARD_STEPS.length - 1));
   };
 
-  const handleBack = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
-  };
-
   // Handle cancel
   const handleCancel = () => {
     router.back();
@@ -262,16 +256,43 @@ export default function RoutingWizard({ companyId, routingId }: RoutingWizardPro
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
-      {/* Header with Back button */}
+      {/* Header with Back button and action buttons */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <Tooltip title="Back to routings">
-          <IconButton onClick={handleCancel} sx={{ color: 'text.secondary' }}>
-            <ArrowBackIcon />
-          </IconButton>
-        </Tooltip>
-        <Typography variant="body2" color="text.secondary">
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={handleCancel}
+          sx={{ color: 'text.secondary' }}
+        >
           Back
-        </Typography>
+        </Button>
+
+        {/* Spacer */}
+        <Box sx={{ flex: 1 }} />
+
+        {/* Action buttons */}
+        <Button variant="outlined" onClick={handleCancel} disabled={saving}>
+          Cancel
+        </Button>
+
+        {currentStep < WIZARD_STEPS.length - 1 ? (
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            disabled={saving}
+            endIcon={<ArrowForwardIcon />}
+          >
+            Next
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={saving}
+            startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
+          >
+            {saving ? 'Saving...' : 'Save Routing'}
+          </Button>
+        )}
       </Box>
 
       {/* Step Indicator */}
@@ -366,52 +387,6 @@ export default function RoutingWizard({ companyId, routingId }: RoutingWizardPro
               onPendingEdgesChange={handlePendingEdgesChange}
             />
           </Box>
-        )}
-      </Box>
-
-      {/* Footer with navigation buttons */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: 2,
-          pt: 3,
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        <Button variant="outlined" onClick={handleCancel} disabled={saving}>
-          Cancel
-        </Button>
-
-        {currentStep > 0 && (
-          <Button
-            variant="outlined"
-            onClick={handleBack}
-            disabled={saving}
-            startIcon={<ArrowBackIcon />}
-          >
-            Back
-          </Button>
-        )}
-
-        {currentStep < WIZARD_STEPS.length - 1 ? (
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            disabled={saving}
-            endIcon={<ArrowForwardIcon />}
-          >
-            Next
-          </Button>
-        ) : (
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={saving}
-            startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
-          >
-            {saving ? 'Saving...' : 'Save Routing'}
-          </Button>
         )}
       </Box>
     </Box>

@@ -454,9 +454,9 @@ export default function ImportOperationsPage() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Button
-          color="primary"
           startIcon={<ArrowBackIcon />}
           onClick={() => router.push(`/dashboard/${companyId}/operations`)}
+          sx={{ color: 'text.secondary' }}
         >
           Back
         </Button>
