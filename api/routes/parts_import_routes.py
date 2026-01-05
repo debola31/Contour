@@ -574,8 +574,12 @@ async def execute_import(
     If skip_conflicts is True, only imports rows without conflicts.
     Otherwise, fails if any conflicts exist.
     """
+    logger.info(f"Parts import execute started: {len(request.rows)} rows, company_id={request.company_id}")
+    logger.info(f"Customer match mode: {request.customer_match_mode}, skip_conflicts: {request.skip_conflicts}")
+
     try:
         # First validate to get conflict info
+        logger.info("Running validation...")
         validate_response = await validate_import(
             PartValidateRequest(
                 company_id=request.company_id,
@@ -587,6 +591,7 @@ async def execute_import(
             ),
             supabase=supabase,
         )
+        logger.info(f"Validation complete: {len(validate_response.conflicts)} conflicts, {len(validate_response.validation_errors)} validation errors")
 
         # If conflicts exist and we're not skipping them, fail
         if validate_response.has_conflicts and not request.skip_conflicts:
@@ -651,7 +656,7 @@ async def execute_import(
             }
 
             # Map standard fields
-            for db_field in ["part_number", "description", "notes"]:
+            for db_field in ["part_number", "description"]:
                 csv_column = reverse_mappings.get(db_field)
                 if csv_column and csv_column in row:
                     value = row[csv_column].strip()
@@ -675,14 +680,29 @@ async def execute_import(
 
             rows_to_insert.append(part_data)
 
-        # Bulk insert
+        # Bulk insert in batches to avoid payload size limits
+        BATCH_SIZE = 500
         imported_count = 0
+        total_rows = len(rows_to_insert)
+        logger.info(f"Starting parts import: {total_rows} rows to insert in batches of {BATCH_SIZE}")
+
         if rows_to_insert:
             try:
-                response = supabase.table("parts").insert(rows_to_insert).execute()
-                imported_count = len(response.data) if response.data else 0
+                total_batches = (total_rows + BATCH_SIZE - 1) // BATCH_SIZE
+                for batch_num, i in enumerate(range(0, total_rows, BATCH_SIZE), 1):
+                    batch = rows_to_insert[i:i + BATCH_SIZE]
+                    logger.info(f"Inserting batch {batch_num}/{total_batches} ({len(batch)} rows)")
+                    response = supabase.table("parts").insert(batch).execute()
+                    batch_count = len(response.data) if response.data else 0
+                    imported_count += batch_count
+                    logger.info(f"Batch {batch_num} complete: {batch_count} rows inserted")
             except Exception as e:
                 error_str = str(e)
+                logger.error(f"Parts import database error: {error_str}", exc_info=True)
+                logger.error(f"Failed at batch starting index {i}, rows imported so far: {imported_count}")
+                # Log sample of failed batch for debugging
+                if batch:
+                    logger.error(f"Sample row from failed batch: {batch[0]}")
                 # Check for unique constraint violation
                 if "23505" in error_str or "duplicate key" in error_str.lower():
                     raise HTTPException(
@@ -691,8 +711,10 @@ async def execute_import(
                     )
                 raise HTTPException(
                     status_code=500,
-                    detail="Database error occurred during import. Please try again.",
+                    detail=f"Database error occurred during import: {error_str}",
                 )
+
+        logger.info(f"Parts import complete: {imported_count} rows imported, {skipped} skipped")
 
         return PartExecuteResponse(
             success=True,

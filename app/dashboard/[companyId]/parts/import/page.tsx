@@ -17,6 +17,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import Dialog from '@mui/material/Dialog';
@@ -572,20 +574,21 @@ export default function ImportPartsPage() {
                   </RadioGroup>
 
                   {customerMatchMode === 'all_to_one' && (
-                    <FormControl fullWidth sx={{ mt: 2 }} disabled={customersLoading}>
-                      <InputLabel>Select Customer</InputLabel>
-                      <Select
-                        value={selectedCustomerId}
-                        onChange={(e) => setSelectedCustomerId(e.target.value)}
-                        label="Select Customer"
-                      >
-                        {customers.map((customer) => (
-                          <MenuItem key={customer.id} value={customer.id}>
-                            {customer.customer_code} - {customer.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <Autocomplete
+                      fullWidth
+                      sx={{ mt: 2 }}
+                      disabled={customersLoading}
+                      options={customers}
+                      getOptionLabel={(option) => `${option.customer_code} - ${option.name}`}
+                      value={customers.find(c => c.id === selectedCustomerId) || null}
+                      onChange={(_, newValue) => setSelectedCustomerId(newValue?.id || '')}
+                      renderInput={(params) => (
+                        <TextField {...params} label="Select Customer" />
+                      )}
+                      ListboxProps={{
+                        sx: { maxHeight: 300 }
+                      }}
+                    />
                   )}
                 </Box>
 

@@ -606,14 +606,17 @@ class GenericImportService:
 
                 rows_to_insert.append(record)
 
-            # Bulk insert
+            # Bulk insert in batches to avoid payload size limits
+            BATCH_SIZE = 500
             imported_count = 0
             errors: list[dict] = []
 
             if rows_to_insert:
                 try:
-                    response = supabase.table(self.config.table_name).insert(rows_to_insert).execute()
-                    imported_count = len(response.data) if response.data else 0
+                    for i in range(0, len(rows_to_insert), BATCH_SIZE):
+                        batch = rows_to_insert[i:i + BATCH_SIZE]
+                        response = supabase.table(self.config.table_name).insert(batch).execute()
+                        imported_count += len(response.data) if response.data else 0
                 except Exception as e:
                     error_str = str(e)
                     # Check for unique constraint violation
