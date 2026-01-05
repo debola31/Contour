@@ -236,14 +236,14 @@ export default function RoutingWorkflowBuilder({
       const operationName = event.dataTransfer.getData('operationName');
       const laborRateStr = event.dataTransfer.getData('laborRate');
       const laborRate = laborRateStr ? parseFloat(laborRateStr) : null;
+      const resourceGroupName = event.dataTransfer.getData('resourceGroupName') || null;
 
       if (!operationTypeId || !reactFlowInstance || !reactFlowWrapper.current) return;
 
-      // Calculate drop position
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      // Calculate drop position - screenToFlowPosition expects raw screen coordinates
       const position = reactFlowInstance.screenToFlowPosition({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
+        x: event.clientX,
+        y: event.clientY,
       });
 
       try {
@@ -264,7 +264,7 @@ export default function RoutingWorkflowBuilder({
             nodeId: newNode.id,
             operationTypeId,
             operationName,
-            resourceGroupName: null,
+            resourceGroupName,
             setupTime: null,
             runTimePerUnit: null,
             instructions: null,

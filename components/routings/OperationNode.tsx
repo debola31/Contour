@@ -33,11 +33,6 @@ function OperationNodeComponent({ id, data, selected }: OperationNodeProps) {
           borderColor: 'rgba(70, 130, 180, 0.5)',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
         },
-        // Highlight handles on node hover to indicate they're draggable
-        '&:hover .react-flow__handle': {
-          transform: 'scale(1.3)',
-          boxShadow: '0 0 8px rgba(70, 130, 180, 0.8)',
-        },
       }}
     >
       {/* Input Handle (left side) */}
@@ -45,11 +40,10 @@ function OperationNodeComponent({ id, data, selected }: OperationNodeProps) {
         type="target"
         position={Position.Left}
         style={{
-          width: 14,
-          height: 14,
+          width: 12,
+          height: 12,
           background: '#4682B4',
           border: '2px solid #111439',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         }}
       />
 
@@ -131,11 +125,10 @@ function OperationNodeComponent({ id, data, selected }: OperationNodeProps) {
         type="source"
         position={Position.Right}
         style={{
-          width: 14,
-          height: 14,
+          width: 12,
+          height: 12,
           background: '#4682B4',
           border: '2px solid #111439',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         }}
       />
     </Box>

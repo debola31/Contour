@@ -108,12 +108,14 @@ export default function OperationsSidebar({
     event: React.DragEvent,
     operationTypeId: string,
     operationName: string,
-    laborRate: number | null
+    laborRate: number | null,
+    resourceGroupName: string | null
   ) => {
     event.dataTransfer.setData('application/reactflow', 'operation');
     event.dataTransfer.setData('operationTypeId', operationTypeId);
     event.dataTransfer.setData('operationName', operationName);
     event.dataTransfer.setData('laborRate', String(laborRate ?? ''));
+    event.dataTransfer.setData('resourceGroupName', resourceGroupName ?? '');
     event.dataTransfer.effectAllowed = 'move';
 
     onDragStart(event, operationTypeId, operationName, laborRate);
@@ -220,6 +222,7 @@ export default function OperationsSidebar({
                         id={operation.id}
                         name={operation.name}
                         laborRate={operation.labor_rate}
+                        resourceGroupName={group.name}
                         onDragStart={handleDragStart}
                       />
                     ))}
@@ -269,6 +272,7 @@ export default function OperationsSidebar({
                         id={operation.id}
                         name={operation.name}
                         laborRate={operation.labor_rate}
+                        resourceGroupName={null}
                         onDragStart={handleDragStart}
                       />
                     ))}
@@ -288,20 +292,22 @@ interface OperationItemProps {
   id: string;
   name: string;
   laborRate: number | null;
+  resourceGroupName: string | null;
   onDragStart: (
     event: React.DragEvent,
     operationTypeId: string,
     operationName: string,
-    laborRate: number | null
+    laborRate: number | null,
+    resourceGroupName: string | null
   ) => void;
 }
 
-function OperationItem({ id, name, laborRate, onDragStart }: OperationItemProps) {
+function OperationItem({ id, name, laborRate, resourceGroupName, onDragStart }: OperationItemProps) {
   return (
     <Tooltip title={`Drag to add "${name}" to the workflow`} placement="right">
       <ListItem
         draggable
-        onDragStart={(e) => onDragStart(e, id, name, laborRate)}
+        onDragStart={(e) => onDragStart(e, id, name, laborRate, resourceGroupName)}
         sx={{
           cursor: 'grab',
           borderRadius: 1,
