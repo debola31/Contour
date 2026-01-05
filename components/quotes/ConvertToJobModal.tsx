@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -18,6 +18,7 @@ import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import type { QuoteWithRelations, ConvertToJobData } from '@/types/quote';
 import { convertQuoteToJob } from '@/utils/quotesAccess';
+import { getRoutingsForPart } from '@/utils/jobsAccess';
 
 interface ConvertToJobModalProps {
   open: boolean;
@@ -34,8 +35,40 @@ export default function ConvertToJobModal({
 }: ConvertToJobModalProps) {
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'rush'>('normal');
+  const [routingId, setRoutingId] = useState('');
+  const [routings, setRoutings] = useState<Array<{ id: string; name: string; is_default: boolean }>>([]);
+  const [loadingRoutings, setLoadingRoutings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch routings when modal opens and quote has a part
+  useEffect(() => {
+    const fetchRoutings = async () => {
+      if (!open || !quote.part_id) {
+        setRoutings([]);
+        setRoutingId('');
+        return;
+      }
+
+      setLoadingRoutings(true);
+      try {
+        const data = await getRoutingsForPart(quote.company_id, quote.part_id);
+        setRoutings(data);
+        // Auto-select default routing
+        const defaultRouting = data.find(r => r.is_default);
+        if (defaultRouting) {
+          setRoutingId(defaultRouting.id);
+        } else if (data.length > 0) {
+          setRoutingId(data[0].id);
+        }
+      } catch (err) {
+        console.error('Error fetching routings:', err);
+      } finally {
+        setLoadingRoutings(false);
+      }
+    };
+    fetchRoutings();
+  }, [open, quote.part_id, quote.company_id]);
 
   const handleConvert = async () => {
     setLoading(true);
@@ -45,6 +78,7 @@ export default function ConvertToJobModal({
       const jobData: ConvertToJobData = {
         due_date: dueDate || '',
         priority,
+        routing_id: routingId || undefined,
       };
 
       const result = await convertQuoteToJob(quote.id, jobData);
@@ -60,6 +94,7 @@ export default function ConvertToJobModal({
     if (!loading) {
       setDueDate('');
       setPriority('normal');
+      setRoutingId('');
       setError(null);
       onClose();
     }
@@ -145,6 +180,38 @@ export default function ConvertToJobModal({
                 <MenuItem value="rush">Rush</MenuItem>
               </Select>
             </FormControl>
+
+            {/* Routing Selector - only show if part has routings */}
+            {quote.part_id && (
+              <FormControl fullWidth disabled={loading || loadingRoutings}>
+                <InputLabel>Routing</InputLabel>
+                <Select
+                  value={routingId}
+                  label="Routing"
+                  onChange={(e) => setRoutingId(e.target.value)}
+                >
+                  <MenuItem value="">
+                    <em>No routing</em>
+                  </MenuItem>
+                  {routings.map((r) => (
+                    <MenuItem key={r.id} value={r.id}>
+                      {r.name}
+                      {r.is_default && ' (Default)'}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {routings.length === 0 && !loadingRoutings && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 1.5 }}>
+                    No routings defined for this part
+                  </Typography>
+                )}
+                {routingId && (
+                  <Typography variant="caption" color="primary" sx={{ mt: 0.5, ml: 1.5 }}>
+                    Operations will be copied from routing to job
+                  </Typography>
+                )}
+              </FormControl>
+            )}
           </Box>
         </Box>
       </DialogContent>

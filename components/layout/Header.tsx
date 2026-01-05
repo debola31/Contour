@@ -56,6 +56,17 @@ function getPageTitle(pathname: string): string {
     return 'Operations';
   }
 
+  // Check for jobs routes
+  if (segments.includes('jobs')) {
+    if (segments.includes('new')) return 'New Job';
+    if (segments.includes('edit')) return 'Edit Job';
+    const jobsIndex = segments.indexOf('jobs');
+    if (jobsIndex < segments.length - 1 && !['new', 'edit'].includes(segments[jobsIndex + 1])) {
+      return 'Job Details';
+    }
+    return 'Jobs';
+  }
+
   // Check for routings routes
   if (segments.includes('routings')) {
     if (segments.includes('new')) return 'New Routing';
@@ -69,9 +80,7 @@ function getPageTitle(pathname: string): string {
   }
 
   // Map other route segments to display titles
-  const titleMap: Record<string, string> = {
-    jobs: 'Jobs',
-  };
+  const titleMap: Record<string, string> = {};
 
   // Check from the end backwards for known segments
   for (let i = segments.length - 1; i >= 0; i--) {
