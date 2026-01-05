@@ -668,3 +668,154 @@ export async function bulkDeleteRoutings(routingIds: string[]): Promise<void> {
     }
   }
 }
+
+// ============================================
+// Wizard Save Operations
+// ============================================
+
+/**
+ * Pending node data for wizard memory mode.
+ */
+interface PendingNode {
+  tempId: string;
+  operationTypeId: string;
+  operationName: string;
+  resourceGroupName: string | null;
+  laborRate: number | null;
+  setupTime: number | null;
+  runTimePerUnit: number | null;
+  instructions: string | null;
+}
+
+/**
+ * Pending edge data for wizard memory mode.
+ */
+interface PendingEdge {
+  tempId: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+}
+
+/**
+ * Save a routing with its complete graph from the wizard.
+ * Handles both create and edit modes.
+ *
+ * @param companyId - Company ID
+ * @param routingId - Existing routing ID (null for create mode)
+ * @param formData - Routing form data (name, part_id, description, is_default)
+ * @param pendingNodes - Nodes from the workflow builder
+ * @param pendingEdges - Edges from the workflow builder
+ * @param originalNodeIds - Original node IDs to track deletions (edit mode only)
+ * @param originalEdgeIds - Original edge IDs to track deletions (edit mode only)
+ */
+export async function saveRoutingWithGraph(
+  companyId: string,
+  routingId: string | null,
+  formData: RoutingFormData,
+  pendingNodes: PendingNode[],
+  pendingEdges: PendingEdge[],
+  originalNodeIds: Set<string>,
+  originalEdgeIds: Set<string>
+): Promise<Routing> {
+  const supabase = getSupabase();
+  const isEditMode = !!routingId;
+
+  // Step 1: Create or update the routing
+  let routing: Routing;
+  if (isEditMode) {
+    routing = await updateRouting(routingId, formData);
+  } else {
+    routing = await createRouting(companyId, formData);
+  }
+
+  // Step 2: Determine which nodes/edges to delete, create, or update
+  const currentNodeIds = new Set(pendingNodes.map((n) => n.tempId));
+  const currentEdgeIds = new Set(pendingEdges.map((e) => e.tempId));
+
+  // Nodes to delete: in original but not in current
+  const nodesToDelete = [...originalNodeIds].filter((id) => !currentNodeIds.has(id));
+
+  // Edges to delete: in original but not in current
+  const edgesToDelete = [...originalEdgeIds].filter((id) => !currentEdgeIds.has(id));
+
+  // Step 3: Delete removed edges first (due to FK constraints)
+  if (edgesToDelete.length > 0) {
+    const { error } = await supabase
+      .from('routing_edges')
+      .delete()
+      .in('id', edgesToDelete);
+    if (error) throw error;
+  }
+
+  // Step 4: Delete removed nodes
+  if (nodesToDelete.length > 0) {
+    const { error } = await supabase
+      .from('routing_nodes')
+      .delete()
+      .in('id', nodesToDelete);
+    if (error) throw error;
+  }
+
+  // Step 5: Create/update nodes and track ID mappings
+  const nodeIdMap = new Map<string, string>(); // tempId -> realId
+
+  for (const node of pendingNodes) {
+    const isTempId = node.tempId.startsWith('temp-');
+    const isExisting = originalNodeIds.has(node.tempId);
+
+    if (isTempId || !isExisting) {
+      // Create new node
+      const { data, error } = await supabase
+        .from('routing_nodes')
+        .insert({
+          routing_id: routing.id,
+          operation_type_id: node.operationTypeId,
+          setup_time: node.setupTime,
+          run_time_per_unit: node.runTimePerUnit,
+          instructions: node.instructions,
+          metadata: {},
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      nodeIdMap.set(node.tempId, data.id);
+    } else {
+      // Update existing node
+      const { error } = await supabase
+        .from('routing_nodes')
+        .update({
+          operation_type_id: node.operationTypeId,
+          setup_time: node.setupTime,
+          run_time_per_unit: node.runTimePerUnit,
+          instructions: node.instructions,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', node.tempId);
+
+      if (error) throw error;
+      nodeIdMap.set(node.tempId, node.tempId);
+    }
+  }
+
+  // Step 6: Create new edges with mapped node IDs
+  const newEdges = pendingEdges.filter(
+    (e) => e.tempId.startsWith('temp-') || !originalEdgeIds.has(e.tempId)
+  );
+
+  if (newEdges.length > 0) {
+    const edgesToInsert = newEdges.map((edge) => ({
+      routing_id: routing.id,
+      source_node_id: nodeIdMap.get(edge.sourceNodeId) || edge.sourceNodeId,
+      target_node_id: nodeIdMap.get(edge.targetNodeId) || edge.targetNodeId,
+    }));
+
+    const { error } = await supabase
+      .from('routing_edges')
+      .insert(edgesToInsert);
+
+    if (error) throw error;
+  }
+
+  return routing;
+}

@@ -47,6 +47,64 @@ import {
   formatTime as fmtTime,
 } from '@/types/routings';
 
+/**
+ * Pending node data for memory mode.
+ */
+export interface PendingNode {
+  tempId: string;
+  operationTypeId: string;
+  operationName: string;
+  resourceGroupName: string | null;
+  laborRate: number | null;
+  setupTime: number | null;
+  runTimePerUnit: number | null;
+  instructions: string | null;
+}
+
+/**
+ * Pending edge data for memory mode.
+ */
+export interface PendingEdge {
+  tempId: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+}
+
+/** Generate a temporary ID for memory mode */
+const generateTempId = (prefix: 'node' | 'edge') => `temp-${prefix}-${crypto.randomUUID()}`;
+
+/** Convert pending nodes to React Flow nodes */
+function pendingNodesToFlowNodes(pendingNodes: PendingNode[]): Node[] {
+  return pendingNodes.map((pn, index) => ({
+    id: pn.tempId,
+    type: 'operation',
+    position: { x: index * 250, y: 100 }, // Will be overwritten by auto-layout
+    data: {
+      nodeId: pn.tempId,
+      operationTypeId: pn.operationTypeId,
+      operationName: pn.operationName,
+      resourceGroupName: pn.resourceGroupName,
+      setupTime: pn.setupTime,
+      runTimePerUnit: pn.runTimePerUnit,
+      instructions: pn.instructions,
+      laborRate: pn.laborRate,
+    } as OperationNodeData,
+  }));
+}
+
+/** Convert pending edges to React Flow edges */
+function pendingEdgesToFlowEdges(pendingEdges: PendingEdge[]): Edge[] {
+  return pendingEdges.map((pe) => ({
+    id: pe.tempId,
+    source: pe.sourceNodeId,
+    target: pe.targetNodeId,
+    type: 'smoothstep',
+    animated: false,
+    style: { stroke: '#4682B4', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#4682B4' },
+  }));
+}
+
 // Define custom node types
 const nodeTypes: NodeTypes = {
   operation: OperationNode,
@@ -98,6 +156,16 @@ interface RoutingWorkflowBuilderProps {
   routingId: string;
   companyId: string;
   onRoutingUpdate?: () => void;
+  /** Mode: 'persisted' saves to DB immediately, 'memory' stores in parent state */
+  mode?: 'persisted' | 'memory';
+  /** Pending nodes for memory mode */
+  pendingNodes?: PendingNode[];
+  /** Pending edges for memory mode */
+  pendingEdges?: PendingEdge[];
+  /** Callback when nodes change (memory mode) */
+  onPendingNodesChange?: (nodes: PendingNode[]) => void;
+  /** Callback when edges change (memory mode) */
+  onPendingEdgesChange?: (edges: PendingEdge[]) => void;
 }
 
 /**
@@ -108,7 +176,13 @@ export default function RoutingWorkflowBuilder({
   routingId,
   companyId,
   onRoutingUpdate,
+  mode = 'persisted',
+  pendingNodes: externalPendingNodes,
+  pendingEdges: externalPendingEdges,
+  onPendingNodesChange,
+  onPendingEdgesChange,
 }: RoutingWorkflowBuilderProps) {
+  const isMemoryMode = mode === 'memory';
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
@@ -153,9 +227,31 @@ export default function RoutingWorkflowBuilder({
     };
   }, []);
 
-  // Load routing data
+  // Load routing data (persisted mode) or initialize from pending data (memory mode)
   useEffect(() => {
+    if (isMemoryMode) {
+      // Memory mode: initialize from external pending nodes/edges
+      const flowNodes = pendingNodesToFlowNodes(externalPendingNodes || []);
+      const flowEdges = pendingEdgesToFlowEdges(externalPendingEdges || []);
+
+      if (flowNodes.length > 0) {
+        const layouted = getLayoutedElements(flowNodes, flowEdges);
+        setNodes(layouted.nodes);
+        setEdges(layouted.edges);
+      } else {
+        setNodes([]);
+        setEdges([]);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Persisted mode: load from database
     async function loadRouting() {
+      if (!routingId) {
+        setLoading(false);
+        return;
+      }
       try {
         const data = await getRoutingWithGraph(routingId);
         if (data) {
@@ -177,28 +273,70 @@ export default function RoutingWorkflowBuilder({
       }
     }
     loadRouting();
-  }, [routingId, setNodes, setEdges]);
+  }, [routingId, setNodes, setEdges, isMemoryMode, externalPendingNodes, externalPendingEdges]);
 
   // Calculate time totals
   const timeTotals = useMemo(() => {
+    if (isMemoryMode) {
+      // Memory mode: calculate from pending nodes
+      if (!externalPendingNodes?.length) return null;
+      const setupTime = externalPendingNodes.reduce(
+        (sum, n) => sum + (n.setupTime || 0),
+        0
+      );
+      const runTime = externalPendingNodes.reduce(
+        (sum, n) => sum + (n.runTimePerUnit || 0),
+        0
+      );
+      return { setupTime, runTime };
+    }
+    // Persisted mode: calculate from routing data
     if (!routing) return null;
     return calcTime(routing.nodes);
-  }, [routing]);
+  }, [isMemoryMode, externalPendingNodes, routing]);
 
   // Handle new edge connection
   const onConnect = useCallback(
     async (connection: Connection) => {
       if (!connection.source || !connection.target) return;
 
+      if (isMemoryMode) {
+        // Memory mode: add to pending edges via callback
+        const newEdgeId = generateTempId('edge');
+        const newPendingEdge: PendingEdge = {
+          tempId: newEdgeId,
+          sourceNodeId: connection.source,
+          targetNodeId: connection.target,
+        };
+
+        // Update local React Flow state
+        setEdges((eds) =>
+          addEdge(
+            {
+              ...connection,
+              id: newEdgeId,
+              type: 'smoothstep',
+              animated: false,
+              style: { stroke: '#4682B4', strokeWidth: 2 },
+              markerEnd: { type: MarkerType.ArrowClosed, color: '#4682B4' },
+            },
+            eds
+          )
+        );
+
+        // Notify parent of change
+        onPendingEdgesChange?.([...(externalPendingEdges || []), newPendingEdge]);
+        return;
+      }
+
+      // Persisted mode: save to database
       try {
-        // Create edge in database
         const newEdge = await createRoutingEdge(
           routingId,
           connection.source,
           connection.target
         );
 
-        // Add to React Flow
         setEdges((eds) =>
           addEdge(
             {
@@ -216,7 +354,7 @@ export default function RoutingWorkflowBuilder({
         setError(message);
       }
     },
-    [routingId, setEdges]
+    [routingId, setEdges, isMemoryMode, externalPendingEdges, onPendingEdgesChange]
   );
 
   // Handle dropping new operation from sidebar
@@ -246,8 +384,46 @@ export default function RoutingWorkflowBuilder({
         y: event.clientY,
       });
 
+      if (isMemoryMode) {
+        // Memory mode: add to pending nodes via callback
+        const newNodeId = generateTempId('node');
+        const newPendingNode: PendingNode = {
+          tempId: newNodeId,
+          operationTypeId,
+          operationName,
+          resourceGroupName,
+          laborRate,
+          setupTime: null,
+          runTimePerUnit: null,
+          instructions: null,
+        };
+
+        // Add to React Flow
+        const flowNode: Node = {
+          id: newNodeId,
+          type: 'operation',
+          position,
+          data: {
+            nodeId: newNodeId,
+            operationTypeId,
+            operationName,
+            resourceGroupName,
+            setupTime: null,
+            runTimePerUnit: null,
+            instructions: null,
+            laborRate,
+          } as OperationNodeData,
+        };
+
+        setNodes((nds) => [...nds, flowNode]);
+
+        // Notify parent of change
+        onPendingNodesChange?.([...(externalPendingNodes || []), newPendingNode]);
+        return;
+      }
+
+      // Persisted mode: save to database
       try {
-        // Create node in database
         const newNode = await createRoutingNode(routingId, {
           operation_type_id: operationTypeId,
           setup_time: '',
@@ -297,7 +473,7 @@ export default function RoutingWorkflowBuilder({
         setError('Failed to add operation');
       }
     },
-    [reactFlowInstance, routingId, routing, setNodes]
+    [reactFlowInstance, routingId, routing, setNodes, isMemoryMode, externalPendingNodes, onPendingNodesChange]
   );
 
   // Handle node edit
@@ -316,6 +492,34 @@ export default function RoutingWorkflowBuilder({
   // Handle node delete
   const handleNodeDelete = useCallback(
     async (nodeId: string) => {
+      if (isMemoryMode) {
+        // Memory mode: remove from pending nodes via callback
+        setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+
+        // Also remove connected edges
+        const connectedEdgeIds = new Set<string>();
+        setEdges((eds) => {
+          const remaining = eds.filter((e) => {
+            if (e.source === nodeId || e.target === nodeId) {
+              connectedEdgeIds.add(e.id);
+              return false;
+            }
+            return true;
+          });
+          return remaining;
+        });
+
+        // Notify parent of changes
+        onPendingNodesChange?.(
+          (externalPendingNodes || []).filter((n) => n.tempId !== nodeId)
+        );
+        onPendingEdgesChange?.(
+          (externalPendingEdges || []).filter((e) => !connectedEdgeIds.has(e.tempId))
+        );
+        return;
+      }
+
+      // Persisted mode: delete from database
       try {
         await deleteRoutingNode(nodeId);
         setNodes((nds) => nds.filter((n) => n.id !== nodeId));
@@ -337,12 +541,22 @@ export default function RoutingWorkflowBuilder({
         setError('Failed to delete operation');
       }
     },
-    [routing, setNodes, setEdges]
+    [routing, setNodes, setEdges, isMemoryMode, externalPendingNodes, externalPendingEdges, onPendingNodesChange, onPendingEdgesChange]
   );
 
   // Handle edge delete
   const onEdgesDelete = useCallback(
     async (edgesToDelete: Edge[]) => {
+      if (isMemoryMode) {
+        // Memory mode: remove from pending edges via callback
+        const deletedIds = new Set(edgesToDelete.map((e) => e.id));
+        onPendingEdgesChange?.(
+          (externalPendingEdges || []).filter((e) => !deletedIds.has(e.tempId))
+        );
+        return;
+      }
+
+      // Persisted mode: delete from database
       for (const edge of edgesToDelete) {
         try {
           await deleteRoutingEdge(edge.id);
@@ -351,7 +565,7 @@ export default function RoutingWorkflowBuilder({
         }
       }
     },
-    []
+    [isMemoryMode, externalPendingEdges, onPendingEdgesChange]
   );
 
   // Handle node update from modal
@@ -359,29 +573,52 @@ export default function RoutingWorkflowBuilder({
     async (formData: RoutingNodeFormData) => {
       if (!editingNodeId) return;
 
-      try {
-        await updateRoutingNode(editingNodeId, formData);
+      const setupTime = formData.setup_time ? parseFloat(formData.setup_time) : null;
+      const runTimePerUnit = formData.run_time_per_unit
+        ? parseFloat(formData.run_time_per_unit)
+        : null;
+      const instructions = formData.instructions || null;
 
-        // Update React Flow node
-        setNodes((nds) =>
-          nds.map((n) => {
-            if (n.id === editingNodeId) {
-              const data = n.data as OperationNodeData;
+      // Update React Flow node (common for both modes)
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === editingNodeId) {
+            const data = n.data as OperationNodeData;
+            return {
+              ...n,
+              data: {
+                ...data,
+                setupTime,
+                runTimePerUnit,
+                instructions,
+              } as OperationNodeData,
+            };
+          }
+          return n;
+        })
+      );
+
+      if (isMemoryMode) {
+        // Memory mode: update pending nodes via callback
+        onPendingNodesChange?.(
+          (externalPendingNodes || []).map((n) => {
+            if (n.tempId === editingNodeId) {
               return {
                 ...n,
-                data: {
-                  ...data,
-                  setupTime: formData.setup_time ? parseFloat(formData.setup_time) : null,
-                  runTimePerUnit: formData.run_time_per_unit
-                    ? parseFloat(formData.run_time_per_unit)
-                    : null,
-                  instructions: formData.instructions || null,
-                } as OperationNodeData,
+                setupTime,
+                runTimePerUnit,
+                instructions,
               };
             }
             return n;
           })
         );
+        return;
+      }
+
+      // Persisted mode: save to database
+      try {
+        await updateRoutingNode(editingNodeId, formData);
 
         // Update routing data for time calculations
         if (routing) {
@@ -391,11 +628,9 @@ export default function RoutingWorkflowBuilder({
               if (n.id === editingNodeId) {
                 return {
                   ...n,
-                  setup_time: formData.setup_time ? parseFloat(formData.setup_time) : null,
-                  run_time_per_unit: formData.run_time_per_unit
-                    ? parseFloat(formData.run_time_per_unit)
-                    : null,
-                  instructions: formData.instructions || null,
+                  setup_time: setupTime,
+                  run_time_per_unit: runTimePerUnit,
+                  instructions,
                 };
               }
               return n;
@@ -409,7 +644,7 @@ export default function RoutingWorkflowBuilder({
         throw err;
       }
     },
-    [editingNodeId, routing, setNodes, onRoutingUpdate]
+    [editingNodeId, routing, setNodes, onRoutingUpdate, isMemoryMode, externalPendingNodes, onPendingNodesChange]
   );
 
   // Apply auto-layout
