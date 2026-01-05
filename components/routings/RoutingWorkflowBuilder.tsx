@@ -13,6 +13,8 @@ import {
   ReactFlowInstance,
   BackgroundVariant,
   MarkerType,
+  SelectionMode,
+  ConnectionLineType,
   type Node,
   type Edge,
   type OnNodesChange,
@@ -121,6 +123,35 @@ export default function RoutingWorkflowBuilder({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingNode, setEditingNode] = useState<OperationNodeData | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+
+  // Miro-style navigation: spacebar + drag to pan
+  const [spacebarPressed, setSpacebarPressed] = useState(false);
+
+  // Keyboard listener for spacebar pan mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat) {
+        // Only prevent default if we're focused on the canvas area
+        const target = e.target as HTMLElement;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          setSpacebarPressed(true);
+        }
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setSpacebarPressed(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   // Load routing data
   useEffect(() => {
@@ -492,6 +523,21 @@ export default function RoutingWorkflowBuilder({
                 fill: '#fff',
               },
             },
+            // Edge selection and hover styles
+            '& .react-flow__edge.selected .react-flow__edge-path': {
+              stroke: '#ef4444',
+              strokeWidth: 3,
+            },
+            '& .react-flow__edge:hover .react-flow__edge-path': {
+              stroke: '#6ba3d1',
+              strokeWidth: 3,
+              cursor: 'pointer',
+            },
+            // Selection box styling
+            '& .react-flow__selection': {
+              backgroundColor: 'rgba(70, 130, 180, 0.15)',
+              border: '1px dashed #4682B4',
+            },
           }}
         >
           <ReactFlow
@@ -508,14 +554,28 @@ export default function RoutingWorkflowBuilder({
             onNodeDoubleClick={(_, node) => handleNodeEdit(node.id)}
             fitView
             fitViewOptions={{ padding: 0.2 }}
+            // Miro-style navigation: spacebar + drag to pan, otherwise drag to select
+            panOnDrag={spacebarPressed}
+            selectionOnDrag={!spacebarPressed}
+            selectionMode={SelectionMode.Partial}
+            selectNodesOnDrag={true}
+            // Trackpad support: two-finger scroll pans, pinch zooms
+            panOnScroll={true}
+            zoomOnScroll={false}
+            zoomOnPinch={true}
+            // Connection line styling
+            connectionLineStyle={{ stroke: '#4682B4', strokeWidth: 2 }}
+            connectionLineType={ConnectionLineType.SmoothStep}
             defaultEdgeOptions={{
               type: 'smoothstep',
               animated: false,
               style: { stroke: '#4682B4', strokeWidth: 2 },
               markerEnd: { type: MarkerType.ArrowClosed, color: '#4682B4' },
+              selectable: true,
             }}
             style={{
               backgroundColor: '#0a0c1a',
+              cursor: spacebarPressed ? 'grab' : 'default',
             }}
             proOptions={{ hideAttribution: true }}
           >
