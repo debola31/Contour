@@ -50,7 +50,7 @@ export async function getAllJobs(
         *,
         customers!left(id, name, customer_code),
         parts!left(id, part_number, description),
-        quotes!left(id, quote_number, total_price)
+        quotes!jobs_quote_id_fkey(id, quote_number, total_price)
       `
       )
       .eq('company_id', companyId)
@@ -109,7 +109,7 @@ export async function getJobWithRelations(
       *,
       customers!left(id, name, customer_code),
       parts!left(id, part_number, description),
-      quotes!left(id, quote_number, total_price),
+      quotes!jobs_quote_id_fkey(id, quote_number, total_price),
       routings!left(id, name),
       job_operations(
         *,
@@ -589,7 +589,6 @@ export async function getCustomersForSelect(
     .from('customers')
     .select('id, name, customer_code')
     .eq('company_id', companyId)
-    .is('deleted_at', null)
     .order('name');
 
   if (error) {
