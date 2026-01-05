@@ -1,6 +1,6 @@
 -- ============================================================
 -- Jigged Manufacturing ERP - Database Schema
--- Generated: 2026-01-04T16:56:17Z
+-- Generated: 2026-01-05T00:49:32Z
 -- Schemas: public, storage
 -- ============================================================
 
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS "public"."jobs"
     "job_number" text NOT NULL,
     "quote_id" uuid,
     "routing_id" uuid,
-    "customer_id" uuid NOT NULL,
+    "customer_id" uuid,
     "part_id" uuid,
     "description" text,
     "quantity_ordered" integer NOT NULL,
@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS "public"."quotes"
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "company_id" uuid NOT NULL,
     "quote_number" text NOT NULL,
-    "customer_id" uuid NOT NULL,
+    "customer_id" uuid,
     "part_id" uuid,
     "description" text,
     "routing_id" uuid,
