@@ -677,7 +677,7 @@ export default function RoutingWorkflowBuilder({
       />
 
       {/* Workflow Canvas */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
         {/* Error Alert */}
         {error && (
           <Alert

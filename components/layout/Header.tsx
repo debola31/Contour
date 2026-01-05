@@ -56,10 +56,21 @@ function getPageTitle(pathname: string): string {
     return 'Operations';
   }
 
+  // Check for routings routes
+  if (segments.includes('routings')) {
+    if (segments.includes('new')) return 'New Routing';
+    if (segments.includes('edit')) return 'Edit Routing';
+    // Check if there's a routingId (detail page)
+    const routingsIndex = segments.indexOf('routings');
+    if (routingsIndex < segments.length - 1 && !['new', 'edit'].includes(segments[routingsIndex + 1])) {
+      return 'Routing Details';
+    }
+    return 'Routings';
+  }
+
   // Map other route segments to display titles
   const titleMap: Record<string, string> = {
     jobs: 'Jobs',
-    routings: 'Routings',
   };
 
   // Check from the end backwards for known segments

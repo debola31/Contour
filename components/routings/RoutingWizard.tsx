@@ -314,7 +314,7 @@ export default function RoutingWizard({ companyId, routingId }: RoutingWizardPro
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {currentStep === 0 && (
           /* Step 1: Routing Information */
-          <Card elevation={2} sx={{ flex: 1 }}>
+          <Card elevation={2}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
                 Routing Information
