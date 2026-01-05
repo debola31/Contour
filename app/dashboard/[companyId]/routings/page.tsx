@@ -223,19 +223,6 @@ export default function RoutingsPage() {
       },
     },
     {
-      field: 'revision',
-      headerName: 'Rev',
-      width: 80,
-      cellRenderer: (params: ICellRendererParams<RoutingWithStats>) => (
-        <Chip
-          label={params.value || 'A'}
-          size="small"
-          variant="outlined"
-          sx={{ fontWeight: 500 }}
-        />
-      ),
-    },
-    {
       field: 'is_default',
       headerName: 'Default',
       width: 100,

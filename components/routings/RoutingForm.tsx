@@ -93,11 +93,6 @@ export default function RoutingForm({
       }
     }
 
-    // Revision validation
-    if (!formData.revision.trim()) {
-      errors.revision = 'Revision is required';
-    }
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -178,21 +173,6 @@ export default function RoutingForm({
                 disabled={loading}
                 error={!!fieldErrors.name}
                 helperText={fieldErrors.name || 'e.g., Standard Widget Process'}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Revision"
-                value={formData.revision}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, revision: e.target.value }))
-                }
-                required
-                fullWidth
-                disabled={loading}
-                error={!!fieldErrors.revision}
-                helperText={fieldErrors.revision || 'e.g., A, B, C'}
-                sx={{ maxWidth: 150 }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>

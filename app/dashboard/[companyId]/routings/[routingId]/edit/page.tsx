@@ -99,11 +99,6 @@ export default function EditRoutingPage() {
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {routing.name}
             </Typography>
-            <Chip
-              label={`Rev ${routing.revision}`}
-              size="small"
-              variant="outlined"
-            />
             {routing.is_default && (
               <Chip label="Default" size="small" color="primary" variant="outlined" />
             )}

@@ -70,7 +70,6 @@ export async function getRoutings(
     part_id: string | null;
     name: string;
     description: string | null;
-    revision: string;
     is_default: boolean;
     created_by: string | null;
     created_at: string;
@@ -211,7 +210,6 @@ export async function createRouting(
       name: formData.name.trim(),
       part_id: formData.part_id || null,
       description: formData.description.trim() || null,
-      revision: formData.revision.trim() || 'A',
       is_default: formData.is_default,
     })
     .select()
@@ -260,7 +258,6 @@ export async function updateRouting(
       name: formData.name.trim(),
       part_id: formData.part_id || null,
       description: formData.description.trim() || null,
-      revision: formData.revision.trim() || 'A',
       is_default: formData.is_default,
       updated_at: new Date().toISOString(),
     })
@@ -311,7 +308,6 @@ export async function cloneRouting(
       name: newName.trim(),
       part_id: original.part_id,
       description: original.description,
-      revision: 'A',
       is_default: false,
     })
     .select()

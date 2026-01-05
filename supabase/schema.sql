@@ -108,7 +108,6 @@ CREATE TABLE IF NOT EXISTS "public"."routings"
     "part_id" uuid,
     "name" text NOT NULL,
     "description" text,
-    "revision" text DEFAULT 'A'::text,
     "is_default" boolean DEFAULT false,
     "created_by" uuid,
     "created_at" timestamp with time zone DEFAULT now(),
@@ -1922,9 +1921,6 @@ COMMENT ON COLUMN "public"."routings"."name"
 
 COMMENT ON COLUMN "public"."routings"."description"
     IS 'Detailed description of the manufacturing process.';
-
-COMMENT ON COLUMN "public"."routings"."revision"
-    IS 'Revision/version identifier. Default: "A". Increment for process changes.';
 
 COMMENT ON COLUMN "public"."routings"."is_default"
     IS 'If true, this is the default routing for the linked part. Only one routing per part should be default.';

@@ -21,7 +21,6 @@ export interface Routing {
   part_id: string | null;
   name: string;
   description: string | null;
-  revision: string;
   is_default: boolean;
   created_by: string | null;
   created_at: string;
@@ -149,7 +148,6 @@ export interface RoutingFormData {
   name: string;
   part_id: string;
   description: string;
-  revision: string;
   is_default: boolean;
 }
 
@@ -160,7 +158,6 @@ export const EMPTY_ROUTING_FORM: RoutingFormData = {
   name: '',
   part_id: '',
   description: '',
-  revision: 'A',
   is_default: false,
 };
 
@@ -196,7 +193,6 @@ export function routingToFormData(routing: Routing): RoutingFormData {
     name: routing.name,
     part_id: routing.part_id || '',
     description: routing.description || '',
-    revision: routing.revision,
     is_default: routing.is_default,
   };
 }
