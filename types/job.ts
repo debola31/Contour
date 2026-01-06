@@ -169,3 +169,41 @@ export const JOB_STATUS_CONFIG: Record<
   shipped: { label: 'Shipped', color: 'success' },
   cancelled: { label: 'Cancelled', color: 'error' },
 };
+
+// ============== Operation Types ==============
+
+/**
+ * Operation status values
+ */
+export type OperationStatus = 'pending' | 'in_progress' | 'completed' | 'skipped';
+
+/**
+ * Operation status display configuration
+ */
+export const OPERATION_STATUS_CONFIG: Record<
+  OperationStatus,
+  { label: string; color: 'default' | 'info' | 'success' | 'warning' }
+> = {
+  pending: { label: 'Pending', color: 'default' },
+  in_progress: { label: 'In Progress', color: 'info' },
+  completed: { label: 'Completed', color: 'success' },
+  skipped: { label: 'Skipped', color: 'warning' },
+};
+
+/**
+ * Data for completing an operation
+ */
+export interface CompleteOperationData {
+  actual_setup_hours?: number;
+  actual_run_hours?: number;
+  notes?: string;
+}
+
+/**
+ * Result of an operation update with job status change info
+ */
+export interface OperationUpdateResult {
+  operation: JobOperation;
+  jobStatusChanged: boolean;
+  newJobStatus?: JobStatus;
+}

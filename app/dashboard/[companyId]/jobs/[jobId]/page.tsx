@@ -23,13 +23,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DownloadIcon from '@mui/icons-material/Download';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import Chip from '@mui/material/Chip';
 
 import {
   getJobWithRelations,
@@ -43,7 +43,7 @@ import {
   getJobAttachmentUrl,
 } from '@/utils/jobsAccess';
 import type { JobWithRelations, JobOperation, JobAttachment } from '@/types/job';
-import { JobStatusChip } from '@/components/jobs';
+import { JobStatusChip, OperationsPanel, ViewRoutingModal } from '@/components/jobs';
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -57,6 +57,7 @@ export default function JobDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
 
   useEffect(() => {
     fetchJob();
@@ -138,15 +139,6 @@ export default function JobDetailPage() {
     }
   };
 
-  const getOperationStatusColor = (status: JobOperation['status']): 'default' | 'info' | 'success' | 'warning' => {
-    switch (status) {
-      case 'in_progress': return 'info';
-      case 'completed': return 'success';
-      case 'skipped': return 'warning';
-      default: return 'default';
-    }
-  };
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
@@ -164,8 +156,10 @@ export default function JobDetailPage() {
   }
 
   const canEdit = job.status === 'pending' || job.status === 'on_hold';
-  const canStart = job.status === 'pending';
-  const canComplete = job.status === 'in_progress';
+  const hasOperations = job.job_operations && job.job_operations.length > 0;
+  // Hide manual Start/Complete buttons when operations exist (auto-progression handles these)
+  const canStart = job.status === 'pending' && !hasOperations;
+  const canComplete = job.status === 'in_progress' && !hasOperations;
   const canShip = job.status === 'completed';
   const canPause = job.status === 'in_progress';
   const canResume = job.status === 'on_hold';
@@ -374,13 +368,28 @@ export default function JobDetailPage() {
                 <Box>
                   <Typography variant="body2" color="text.secondary">Routing</Typography>
                   {job.routings ? (
-                    <MuiLink
-                      component={Link}
-                      href={`/dashboard/${companyId}/routings/${job.routing_id}/edit`}
-                      sx={{ fontWeight: 500 }}
-                    >
-                      {job.routings.name}
-                    </MuiLink>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <MuiLink
+                        component={Link}
+                        href={`/dashboard/${companyId}/routings/${job.routing_id}/edit`}
+                        sx={{ fontWeight: 500 }}
+                      >
+                        {job.routings.name}
+                      </MuiLink>
+                      <Tooltip title="View Workflow">
+                        <IconButton
+                          size="small"
+                          onClick={() => setWorkflowModalOpen(true)}
+                          sx={{
+                            color: 'text.secondary',
+                            p: 0.5,
+                            '&:hover': { color: 'primary.main' },
+                          }}
+                        >
+                          <AccountTreeIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   ) : (
                     <Typography>—</Typography>
                   )}
@@ -435,63 +444,14 @@ export default function JobDetailPage() {
         </Grid>
 
         {/* Operations */}
-        {job.job_operations && job.job_operations.length > 0 && (
+        {hasOperations && (
           <Grid size={{ xs: 12 }}>
-            <Card elevation={2}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                  Operations ({job.job_operations.length})
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {job.job_operations.map((op) => (
-                    <Box
-                      key={op.id}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                        p: 2,
-                        bgcolor: 'rgba(255, 255, 255, 0.05)',
-                        borderRadius: 1,
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          bgcolor: 'primary.main',
-                          color: 'white',
-                          px: 1.5,
-                          py: 0.5,
-                          borderRadius: 1,
-                          fontWeight: 600,
-                          minWidth: 32,
-                          textAlign: 'center',
-                        }}
-                      >
-                        {op.sequence}
-                      </Typography>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography fontWeight={500}>{op.operation_name}</Typography>
-                        {op.instructions && (
-                          <Typography variant="body2" color="text.secondary" noWrap>
-                            {op.instructions}
-                          </Typography>
-                        )}
-                      </Box>
-                      <Chip
-                        label={op.status.replace('_', ' ')}
-                        color={getOperationStatusColor(op.status)}
-                        size="small"
-                        sx={{ textTransform: 'capitalize' }}
-                      />
-                    </Box>
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
+            <OperationsPanel
+              job={job}
+              operations={job.job_operations!}
+              onOperationUpdate={fetchJob}
+              disabled={actionLoading}
+            />
           </Grid>
         )}
 
@@ -591,6 +551,17 @@ export default function JobDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* View Routing Workflow Modal */}
+      {job.routing_id && job.routings && (
+        <ViewRoutingModal
+          open={workflowModalOpen}
+          onClose={() => setWorkflowModalOpen(false)}
+          routingId={job.routing_id}
+          routingName={job.routings.name}
+          companyId={companyId}
+        />
+      )}
     </Box>
   );
 }

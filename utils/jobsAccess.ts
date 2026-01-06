@@ -7,6 +7,8 @@ import type {
   JobStatus,
   JobOperation,
   JobAttachment,
+  CompleteOperationData,
+  OperationUpdateResult,
 } from '@/types/job';
 import {
   deleteFileFromStorage,
@@ -524,6 +526,328 @@ export async function updateJobOperation(
   }
 
   return data as JobOperation;
+}
+
+// ============== Operation Step-Through Functions ==============
+
+/**
+ * Check if all operations are done (completed or skipped)
+ * and at least one is completed (not all skipped)
+ */
+async function checkAllOperationsDone(jobId: string): Promise<{
+  allDone: boolean;
+  hasAtLeastOneCompleted: boolean;
+}> {
+  const supabase = getSupabase();
+
+  const { data: operations, error } = await supabase
+    .from('job_operations')
+    .select('status')
+    .eq('job_id', jobId);
+
+  if (error) {
+    console.error('Error checking operations status:', error);
+    throw error;
+  }
+
+  if (!operations || operations.length === 0) {
+    return { allDone: false, hasAtLeastOneCompleted: false };
+  }
+
+  const allDone = operations.every(
+    (op: { status: string }) => op.status === 'completed' || op.status === 'skipped'
+  );
+  const hasAtLeastOneCompleted = operations.some(
+    (op: { status: string }) => op.status === 'completed'
+  );
+
+  return { allDone, hasAtLeastOneCompleted };
+}
+
+/**
+ * Start a job operation (pending → in_progress)
+ * Auto-starts the job if this is the first operation and job is pending
+ * Only one operation can be in_progress at a time
+ */
+export async function startJobOperation(
+  operationId: string,
+  jobId: string
+): Promise<OperationUpdateResult> {
+  const supabase = getSupabase();
+
+  // Check if there's already an in_progress operation
+  const { data: inProgressOps, error: checkError } = await supabase
+    .from('job_operations')
+    .select('id')
+    .eq('job_id', jobId)
+    .eq('status', 'in_progress');
+
+  if (checkError) {
+    console.error('Error checking in-progress operations:', checkError);
+    throw checkError;
+  }
+
+  if (inProgressOps && inProgressOps.length > 0) {
+    throw new Error('Another operation is already in progress. Complete it first.');
+  }
+
+  // Update the operation to in_progress
+  const { data: operation, error: updateError } = await supabase
+    .from('job_operations')
+    .update({
+      status: 'in_progress',
+      started_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', operationId)
+    .eq('status', 'pending')
+    .select(`
+      *,
+      operation_types!left(id, name, labor_rate)
+    `)
+    .single();
+
+  if (updateError) {
+    console.error('Error starting operation:', updateError);
+    throw updateError;
+  }
+
+  // Check if job needs to be auto-started
+  const { data: job, error: jobError } = await supabase
+    .from('jobs')
+    .select('status')
+    .eq('id', jobId)
+    .single();
+
+  if (jobError) {
+    console.error('Error fetching job status:', jobError);
+    throw jobError;
+  }
+
+  let jobStatusChanged = false;
+  let newJobStatus: JobStatus | undefined;
+
+  if (job.status === 'pending') {
+    // Auto-start the job
+    const { error: startError } = await supabase
+      .from('jobs')
+      .update({
+        status: 'in_progress',
+        started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', jobId);
+
+    if (startError) {
+      console.error('Error auto-starting job:', startError);
+      // Don't throw, operation was already started
+    } else {
+      jobStatusChanged = true;
+      newJobStatus = 'in_progress';
+    }
+  }
+
+  return {
+    operation: operation as JobOperation,
+    jobStatusChanged,
+    newJobStatus,
+  };
+}
+
+/**
+ * Complete a job operation with optional time entry
+ * Auto-completes the job if all operations are done
+ */
+export async function completeJobOperation(
+  operationId: string,
+  jobId: string,
+  data: CompleteOperationData = {}
+): Promise<OperationUpdateResult> {
+  const supabase = getSupabase();
+
+  // Get current user for completed_by
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const updateData: Record<string, unknown> = {
+    status: 'completed',
+    completed_at: new Date().toISOString(),
+    completed_by: user?.id || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (data.actual_setup_hours !== undefined) {
+    updateData.actual_setup_hours = data.actual_setup_hours;
+  }
+  if (data.actual_run_hours !== undefined) {
+    updateData.actual_run_hours = data.actual_run_hours;
+  }
+  if (data.notes !== undefined) {
+    updateData.notes = data.notes;
+  }
+
+  const { data: operation, error: updateError } = await supabase
+    .from('job_operations')
+    .update(updateData)
+    .eq('id', operationId)
+    .eq('status', 'in_progress')
+    .select(`
+      *,
+      operation_types!left(id, name, labor_rate)
+    `)
+    .single();
+
+  if (updateError) {
+    console.error('Error completing operation:', updateError);
+    throw updateError;
+  }
+
+  // Check if job should be auto-completed
+  const { allDone, hasAtLeastOneCompleted } = await checkAllOperationsDone(jobId);
+
+  let jobStatusChanged = false;
+  let newJobStatus: JobStatus | undefined;
+
+  if (allDone && hasAtLeastOneCompleted) {
+    // Check current job status
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select('status')
+      .eq('id', jobId)
+      .single();
+
+    if (!jobError && job.status === 'in_progress') {
+      // Auto-complete the job
+      const { error: completeError } = await supabase
+        .from('jobs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', jobId);
+
+      if (!completeError) {
+        jobStatusChanged = true;
+        newJobStatus = 'completed';
+      }
+    }
+  }
+
+  return {
+    operation: operation as JobOperation,
+    jobStatusChanged,
+    newJobStatus,
+  };
+}
+
+/**
+ * Skip a job operation with optional reason
+ * Auto-completes the job if all operations are done (requires at least 1 completed)
+ */
+export async function skipJobOperation(
+  operationId: string,
+  jobId: string,
+  reason?: string
+): Promise<OperationUpdateResult> {
+  const supabase = getSupabase();
+
+  const updateData: Record<string, unknown> = {
+    status: 'skipped',
+    updated_at: new Date().toISOString(),
+  };
+
+  if (reason) {
+    updateData.notes = reason;
+  }
+
+  const { data: operation, error: updateError } = await supabase
+    .from('job_operations')
+    .update(updateData)
+    .eq('id', operationId)
+    .eq('status', 'pending')
+    .select(`
+      *,
+      operation_types!left(id, name, labor_rate)
+    `)
+    .single();
+
+  if (updateError) {
+    console.error('Error skipping operation:', updateError);
+    throw updateError;
+  }
+
+  // Check if job should be auto-completed
+  const { allDone, hasAtLeastOneCompleted } = await checkAllOperationsDone(jobId);
+
+  let jobStatusChanged = false;
+  let newJobStatus: JobStatus | undefined;
+
+  if (allDone && hasAtLeastOneCompleted) {
+    // Check current job status
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select('status')
+      .eq('id', jobId)
+      .single();
+
+    if (!jobError && job.status === 'in_progress') {
+      // Auto-complete the job
+      const { error: completeError } = await supabase
+        .from('jobs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', jobId);
+
+      if (!completeError) {
+        jobStatusChanged = true;
+        newJobStatus = 'completed';
+      }
+    }
+  }
+
+  return {
+    operation: operation as JobOperation,
+    jobStatusChanged,
+    newJobStatus,
+  };
+}
+
+/**
+ * Undo a job operation (completed/skipped → pending)
+ * Clears timestamps, hours, and completed_by
+ * Does NOT revert job status
+ */
+export async function undoJobOperation(operationId: string): Promise<JobOperation> {
+  const supabase = getSupabase();
+
+  const { data: operation, error } = await supabase
+    .from('job_operations')
+    .update({
+      status: 'pending',
+      started_at: null,
+      completed_at: null,
+      completed_by: null,
+      actual_setup_hours: null,
+      actual_run_hours: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', operationId)
+    .in('status', ['completed', 'skipped'])
+    .select(`
+      *,
+      operation_types!left(id, name, labor_rate)
+    `)
+    .single();
+
+  if (error) {
+    console.error('Error undoing operation:', error);
+    throw error;
+  }
+
+  return operation as JobOperation;
 }
 
 // ============== Attachments ==============

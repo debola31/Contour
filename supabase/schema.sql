@@ -1117,8 +1117,8 @@ AS $function$
              operation_name,
              operation_type_id,
              instructions,
-             expected_setup_time,
-             expected_cycle_time,
+             estimated_setup_hours,
+             estimated_run_hours_per_unit,
              status
          ) VALUES (
              p_job_id,
