@@ -6,7 +6,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
@@ -16,6 +15,10 @@ import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import type { QuoteWithRelations, ConvertToJobData } from '@/types/quote';
 import { convertQuoteToJob } from '@/utils/quotesAccess';
 import { getRoutingsForPart } from '@/utils/jobsAccess';
@@ -33,13 +36,22 @@ export default function ConvertToJobModal({
   quote,
   onConverted,
 }: ConvertToJobModalProps) {
-  const [dueDate, setDueDate] = useState('');
-  const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'rush'>('normal');
   const [routingId, setRoutingId] = useState('');
   const [routings, setRoutings] = useState<Array<{ id: string; name: string; is_default: boolean }>>([]);
   const [loadingRoutings, setLoadingRoutings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // URL for creating a new routing with this part pre-selected
+  const createRoutingUrl = quote.part_id
+    ? `/dashboard/${quote.company_id}/routings/new?partId=${quote.part_id}`
+    : null;
+
+  // Refresh routings handler
+  const handleRefreshRoutings = () => {
+    setRefreshKey((k) => k + 1);
+  };
 
   // Fetch routings when modal opens and quote has a part
   useEffect(() => {
@@ -60,6 +72,8 @@ export default function ConvertToJobModal({
           setRoutingId(defaultRouting.id);
         } else if (data.length > 0) {
           setRoutingId(data[0].id);
+        } else {
+          setRoutingId('');
         }
       } catch (err) {
         console.error('Error fetching routings:', err);
@@ -68,7 +82,7 @@ export default function ConvertToJobModal({
       }
     };
     fetchRoutings();
-  }, [open, quote.part_id, quote.company_id]);
+  }, [open, quote.part_id, quote.company_id, refreshKey]);
 
   const handleConvert = async () => {
     setLoading(true);
@@ -76,8 +90,6 @@ export default function ConvertToJobModal({
 
     try {
       const jobData: ConvertToJobData = {
-        due_date: dueDate || '',
-        priority,
         routing_id: routingId || undefined,
       };
 
@@ -92,8 +104,6 @@ export default function ConvertToJobModal({
 
   const handleClose = () => {
     if (!loading) {
-      setDueDate('');
-      setPriority('normal');
       setRoutingId('');
       setError(null);
       onClose();
@@ -145,74 +155,94 @@ export default function ConvertToJobModal({
             </Typography>
           </Box>
 
-          <Divider sx={{ my: 2 }} />
+          {/* Routing Selector - only show if quote has a part */}
+          {quote.part_id && (
+            <>
+              <Divider sx={{ my: 2 }} />
 
-          <Typography variant="subtitle2" gutterBottom>
-            Job Details
-          </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="subtitle2">
+                  Routing
+                </Typography>
+                <Tooltip title="Refresh routings">
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={handleRefreshRoutings}
+                      disabled={loading || loadingRoutings}
+                    >
+                      <RefreshIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
 
-          {/* Job Details Form */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-            <TextField
-              label="Due Date"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              disabled={loading}
-              fullWidth
-              slotProps={{
-                inputLabel: { shrink: true },
-              }}
-            />
-
-            <FormControl fullWidth disabled={loading}>
-              <InputLabel>Priority</InputLabel>
-              <Select
-                value={priority}
-                label="Priority"
-                onChange={(e) =>
-                  setPriority(e.target.value as 'low' | 'normal' | 'high' | 'rush')
-                }
-              >
-                <MenuItem value="low">Low</MenuItem>
-                <MenuItem value="normal">Normal</MenuItem>
-                <MenuItem value="high">High</MenuItem>
-                <MenuItem value="rush">Rush</MenuItem>
-              </Select>
-            </FormControl>
-
-            {/* Routing Selector - only show if part has routings */}
-            {quote.part_id && (
-              <FormControl fullWidth disabled={loading || loadingRoutings}>
-                <InputLabel>Routing</InputLabel>
-                <Select
-                  value={routingId}
-                  label="Routing"
-                  onChange={(e) => setRoutingId(e.target.value)}
+              {/* Show dropdown if routings exist, otherwise show empty state */}
+              {routings.length > 0 || loadingRoutings ? (
+                <Box sx={{ mt: 1 }}>
+                  <FormControl fullWidth disabled={loading || loadingRoutings}>
+                    <InputLabel>Select Routing</InputLabel>
+                    <Select
+                      value={routingId}
+                      label="Select Routing"
+                      onChange={(e) => setRoutingId(e.target.value)}
+                    >
+                      <MenuItem value="">
+                        <em>No routing</em>
+                      </MenuItem>
+                      {routings.map((r) => (
+                        <MenuItem key={r.id} value={r.id}>
+                          {r.name}
+                          {r.is_default && ' (Default)'}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {routingId && (
+                      <Typography variant="caption" color="primary" sx={{ mt: 0.5, ml: 1.5 }}>
+                        Operations will be copied from routing to job
+                      </Typography>
+                    )}
+                  </FormControl>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    textAlign: 'center',
+                    py: 3,
+                    px: 2,
+                    bgcolor: 'rgba(255, 255, 255, 0.03)',
+                    borderRadius: 1,
+                    border: '1px dashed rgba(255, 255, 255, 0.2)',
+                  }}
                 >
-                  <MenuItem value="">
-                    <em>No routing</em>
-                  </MenuItem>
-                  {routings.map((r) => (
-                    <MenuItem key={r.id} value={r.id}>
-                      {r.name}
-                      {r.is_default && ' (Default)'}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {routings.length === 0 && !loadingRoutings && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 1.5 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
                     No routings defined for this part
                   </Typography>
-                )}
-                {routingId && (
-                  <Typography variant="caption" color="primary" sx={{ mt: 0.5, ml: 1.5 }}>
-                    Operations will be copied from routing to job
+                  {createRoutingUrl && (
+                    <>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        href={createRoutingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startIcon={<OpenInNewIcon />}
+                        sx={{ mt: 1 }}
+                      >
+                        Create Routing
+                      </Button>
+                      <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1.5 }}>
+                        After creating, click the refresh button above
+                      </Typography>
+                    </>
+                  )}
+                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+                    You can also convert without a routing and add operations later
                   </Typography>
-                )}
-              </FormControl>
-            )}
-          </Box>
+                </Box>
+              )}
+            </>
+          )}
         </Box>
       </DialogContent>
       <DialogActions>

@@ -42,8 +42,8 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 import { jiggedAgGridTheme } from '@/lib/agGridTheme';
 import { getAllJobs, bulkDeleteJobs, getCustomersForSelect } from '@/utils/jobsAccess';
 import ExportCsvButton from '@/components/common/ExportCsvButton';
-import { JobStatusChip, JobPriorityChip } from '@/components/jobs';
-import type { JobWithRelations, JobStatus, JobFilters } from '@/types/job';
+import { JobStatusChip } from '@/components/jobs';
+import type { JobWithRelations, JobFilters } from '@/types/job';
 
 export default function JobsPage() {
   const router = useRouter();
@@ -240,24 +240,11 @@ export default function JobsPage() {
       },
     },
     {
-      field: 'quantity_ordered',
-      headerName: 'Qty',
-      width: 80,
-    },
-    {
-      field: 'due_date',
-      headerName: 'Due Date',
-      width: 120,
-      valueFormatter: (params) => formatDate(params.value),
-    },
-    {
-      field: 'priority',
-      headerName: 'Priority',
-      width: 100,
-      cellRenderer: (params: ICellRendererParams<JobWithRelations>) => {
-        if (!params.data?.priority) return null;
-        return <JobPriorityChip priority={params.data.priority} size="small" />;
-      },
+      field: 'description',
+      headerName: 'Description',
+      flex: 1,
+      minWidth: 200,
+      valueFormatter: (params) => params.value || '—',
     },
     {
       field: 'status',

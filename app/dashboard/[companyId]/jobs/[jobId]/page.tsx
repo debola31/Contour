@@ -30,7 +30,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Chip from '@mui/material/Chip';
-import LinearProgress from '@mui/material/LinearProgress';
 
 import {
   getJobWithRelations,
@@ -44,7 +43,7 @@ import {
   getJobAttachmentUrl,
 } from '@/utils/jobsAccess';
 import type { JobWithRelations, JobOperation, JobAttachment } from '@/types/job';
-import { JobStatusChip, JobPriorityChip } from '@/components/jobs';
+import { JobStatusChip } from '@/components/jobs';
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -164,10 +163,6 @@ export default function JobDetailPage() {
     );
   }
 
-  const completionPercentage = job.quantity_ordered > 0
-    ? Math.round((job.quantity_completed / job.quantity_ordered) * 100)
-    : 0;
-
   const canEdit = job.status === 'pending' || job.status === 'on_hold';
   const canStart = job.status === 'pending';
   const canComplete = job.status === 'in_progress';
@@ -204,7 +199,6 @@ export default function JobDetailPage() {
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <JobStatusChip status={job.status} size="medium" />
-            <JobPriorityChip priority={job.priority} size="medium" />
             <Typography variant="body2" color="text.secondary">
               Created {formatDate(job.created_at)}
             </Typography>
@@ -378,13 +372,6 @@ export default function JobDetailPage() {
                 </Box>
 
                 <Box>
-                  <Typography variant="body2" color="text.secondary">Due Date</Typography>
-                  <Typography fontWeight={500}>
-                    {formatDate(job.due_date)}
-                  </Typography>
-                </Box>
-
-                <Box>
                   <Typography variant="body2" color="text.secondary">Routing</Typography>
                   {job.routings ? (
                     <MuiLink
@@ -406,49 +393,6 @@ export default function JobDetailPage() {
                   <Typography sx={{ whiteSpace: 'pre-wrap' }}>{job.description}</Typography>
                 </Box>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Quantity Progress */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card elevation={2} sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Quantity Progress
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Completed
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {job.quantity_completed} / {job.quantity_ordered} ({completionPercentage}%)
-                  </Typography>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={completionPercentage}
-                  sx={{ height: 10, borderRadius: 5 }}
-                />
-              </Box>
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, textAlign: 'center' }}>
-                <Box>
-                  <Typography variant="h4" color="primary">{job.quantity_ordered}</Typography>
-                  <Typography variant="body2" color="text.secondary">Ordered</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="h4" color="success.main">{job.quantity_completed}</Typography>
-                  <Typography variant="body2" color="text.secondary">Completed</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="h4" color="error.main">{job.quantity_scrapped}</Typography>
-                  <Typography variant="body2" color="text.secondary">Scrapped</Typography>
-                </Box>
-              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -537,17 +481,12 @@ export default function JobDetailPage() {
                           </Typography>
                         )}
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {op.quantity_completed}/{job.quantity_ordered}
-                        </Typography>
-                        <Chip
-                          label={op.status.replace('_', ' ')}
-                          color={getOperationStatusColor(op.status)}
-                          size="small"
-                          sx={{ textTransform: 'capitalize' }}
-                        />
-                      </Box>
+                      <Chip
+                        label={op.status.replace('_', ' ')}
+                        color={getOperationStatusColor(op.status)}
+                        size="small"
+                        sx={{ textTransform: 'capitalize' }}
+                      />
                     </Box>
                   ))}
                 </Box>

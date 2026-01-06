@@ -1,6 +1,6 @@
 -- ============================================================
 -- Jigged Manufacturing ERP - Database Schema
--- Generated: 2026-01-05T00:49:32Z
+-- Generated: 2026-01-06T00:28:14Z
 -- Schemas: public, storage
 -- ============================================================
 
@@ -217,11 +217,6 @@ CREATE TABLE IF NOT EXISTS "public"."jobs"
     "customer_id" uuid,
     "part_id" uuid,
     "description" text,
-    "quantity_ordered" integer NOT NULL,
-    "quantity_completed" integer DEFAULT 0,
-    "quantity_scrapped" integer DEFAULT 0,
-    "due_date" date,
-    "priority" text DEFAULT 'normal'::text,
     "status" text NOT NULL DEFAULT 'pending'::text,
     "status_changed_at" timestamp with time zone,
     "current_operation_sequence" integer,
@@ -233,7 +228,6 @@ CREATE TABLE IF NOT EXISTS "public"."jobs"
     "updated_at" timestamp with time zone DEFAULT now(),
     CONSTRAINT "jobs_pkey" PRIMARY KEY (id),
     CONSTRAINT "jobs_company_id_job_number_key" UNIQUE (company_id, job_number),
-    CONSTRAINT "jobs_priority_check" CHECK ((priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text]))),
     CONSTRAINT "jobs_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'on_hold'::text, 'completed'::text, 'shipped'::text, 'cancelled'::text])))
 );
 
@@ -802,6 +796,9 @@ ALTER TABLE "public"."job_operations"
 ALTER TABLE "public"."job_operations"
     ADD CONSTRAINT "job_operations_job_id_fkey" FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
 
+ALTER TABLE "public"."job_operations"
+    ADD CONSTRAINT "job_operations_operation_type_id_fkey" FOREIGN KEY (operation_type_id) REFERENCES operation_types(id) ON DELETE SET NULL;
+
 ALTER TABLE "public"."jobs"
     ADD CONSTRAINT "jobs_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
 
@@ -912,9 +909,7 @@ CREATE INDEX IF NOT EXISTS idx_job_ops_operation_type ON public.job_operations U
 CREATE INDEX IF NOT EXISTS idx_job_ops_status ON public.job_operations USING btree (status);
 CREATE INDEX IF NOT EXISTS idx_jobs_company ON public.jobs USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_customer ON public.jobs USING btree (customer_id);
-CREATE INDEX IF NOT EXISTS idx_jobs_due_date ON public.jobs USING btree (company_id, due_date);
 CREATE INDEX IF NOT EXISTS idx_jobs_part ON public.jobs USING btree (part_id);
-CREATE INDEX IF NOT EXISTS idx_jobs_priority ON public.jobs USING btree (company_id, priority);
 CREATE INDEX IF NOT EXISTS idx_jobs_quote ON public.jobs USING btree (quote_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_routing ON public.jobs USING btree (routing_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON public.jobs USING btree (company_id, status);
@@ -1663,21 +1658,6 @@ COMMENT ON COLUMN "public"."jobs"."part_id"
 
 COMMENT ON COLUMN "public"."jobs"."description"
     IS 'Description of work to be performed.';
-
-COMMENT ON COLUMN "public"."jobs"."quantity_ordered"
-    IS 'Total quantity customer ordered.';
-
-COMMENT ON COLUMN "public"."jobs"."quantity_completed"
-    IS 'Quantity successfully completed and passed inspection. Updated as operations complete.';
-
-COMMENT ON COLUMN "public"."jobs"."quantity_scrapped"
-    IS 'Quantity scrapped/rejected during manufacturing.';
-
-COMMENT ON COLUMN "public"."jobs"."due_date"
-    IS 'Target completion/ship date. Used for scheduling and prioritization.';
-
-COMMENT ON COLUMN "public"."jobs"."priority"
-    IS 'Job priority level. Values: low, normal, high, urgent. Default: normal. Affects scheduling.';
 
 COMMENT ON COLUMN "public"."jobs"."status"
     IS 'Job lifecycle status. Values: pending, in_progress, on_hold, completed, shipped, cancelled. Default: pending';

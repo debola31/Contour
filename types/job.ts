@@ -4,11 +4,6 @@
 export type JobStatus = 'pending' | 'in_progress' | 'on_hold' | 'completed' | 'shipped' | 'cancelled';
 
 /**
- * Job priority values
- */
-export type JobPriority = 'low' | 'normal' | 'high' | 'urgent';
-
-/**
  * Job attachment record from database
  */
 export interface JobAttachment {
@@ -68,11 +63,6 @@ export interface Job {
   customer_id: string;
   part_id: string | null;
   description: string | null;
-  quantity_ordered: number;
-  quantity_completed: number;
-  quantity_scrapped: number;
-  due_date: string | null;
-  priority: JobPriority;
   status: JobStatus;
   status_changed_at: string | null;
   current_operation_sequence: number | null;
@@ -132,9 +122,6 @@ export interface JobFormData {
   part_id: string;
   routing_id: string;
   description: string;
-  quantity_ordered: string; // String for form input
-  due_date: string;
-  priority: JobPriority;
 }
 
 /**
@@ -154,9 +141,6 @@ export const EMPTY_JOB_FORM: JobFormData = {
   part_id: '',
   routing_id: '',
   description: '',
-  quantity_ordered: '1',
-  due_date: '',
-  priority: 'normal',
 };
 
 /**
@@ -168,9 +152,6 @@ export function jobToFormData(job: Job): JobFormData {
     part_id: job.part_id || '',
     routing_id: job.routing_id || '',
     description: job.description || '',
-    quantity_ordered: String(job.quantity_ordered),
-    due_date: job.due_date || '',
-    priority: job.priority,
   };
 }
 
@@ -187,17 +168,4 @@ export const JOB_STATUS_CONFIG: Record<
   completed: { label: 'Completed', color: 'success' },
   shipped: { label: 'Shipped', color: 'success' },
   cancelled: { label: 'Cancelled', color: 'error' },
-};
-
-/**
- * Priority display configuration
- */
-export const JOB_PRIORITY_CONFIG: Record<
-  JobPriority,
-  { label: string; color: 'default' | 'info' | 'warning' | 'error' }
-> = {
-  low: { label: 'Low', color: 'default' },
-  normal: { label: 'Normal', color: 'info' },
-  high: { label: 'High', color: 'warning' },
-  urgent: { label: 'Urgent', color: 'error' },
 };

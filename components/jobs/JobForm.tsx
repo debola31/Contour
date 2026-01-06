@@ -31,7 +31,7 @@ import {
   getPartsForCustomer,
   getRoutingsForPart,
 } from '@/utils/jobsAccess';
-import type { JobFormData, JobPriority } from '@/types/job';
+import type { JobFormData } from '@/types/job';
 import { EMPTY_JOB_FORM } from '@/types/job';
 
 interface JobFormProps {
@@ -160,13 +160,6 @@ export default function JobForm({
       errors.customer_id = 'Customer is required';
     }
 
-    const qty = parseInt(formData.quantity_ordered, 10);
-    if (isNaN(qty) || qty < 1) {
-      errors.quantity_ordered = 'Quantity must be at least 1';
-    } else if (qty > 1000000) {
-      errors.quantity_ordered = 'Quantity cannot exceed 1,000,000';
-    }
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -228,13 +221,6 @@ export default function JobForm({
       router.push(`/dashboard/${companyId}/jobs`);
     }
   };
-
-  const priorityOptions: Array<{ value: JobPriority; label: string }> = [
-    { value: 'low', label: 'Low' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'high', label: 'High' },
-    { value: 'urgent', label: 'Urgent' },
-  ];
 
   return (
     <Box>
@@ -342,49 +328,6 @@ export default function JobForm({
               disabled={loading}
               placeholder="Optional job description or special instructions"
             />
-
-            {/* Quantity */}
-            <TextField
-              label="Quantity *"
-              type="number"
-              value={formData.quantity_ordered}
-              onChange={(e) => handleChange('quantity_ordered', e.target.value)}
-              error={!!fieldErrors.quantity_ordered}
-              helperText={fieldErrors.quantity_ordered}
-              disabled={loading}
-              slotProps={{
-                htmlInput: { min: 1, max: 1000000 },
-              }}
-            />
-
-            {/* Due Date */}
-            <TextField
-              label="Due Date"
-              type="date"
-              value={formData.due_date}
-              onChange={(e) => handleChange('due_date', e.target.value)}
-              disabled={loading}
-              slotProps={{
-                inputLabel: { shrink: true },
-              }}
-            />
-
-            {/* Priority */}
-            <FormControl fullWidth>
-              <InputLabel>Priority</InputLabel>
-              <Select
-                value={formData.priority}
-                label="Priority"
-                onChange={(e) => handleChange('priority', e.target.value)}
-                disabled={loading}
-              >
-                {priorityOptions.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
 
             <Divider />
 

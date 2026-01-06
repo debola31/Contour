@@ -39,6 +39,7 @@ const WIZARD_STEPS = ['Routing Information', 'Build Workflow'];
 interface RoutingWizardProps {
   companyId: string;
   routingId?: string; // If provided, edit mode; otherwise create mode
+  initialPartId?: string; // Pre-fill part selection (e.g., from quote conversion flow)
 }
 
 /**
@@ -46,15 +47,18 @@ interface RoutingWizardProps {
  * Step 1: Routing Information (name, part, description)
  * Step 2: Build Workflow (operations and connections)
  */
-export default function RoutingWizard({ companyId, routingId }: RoutingWizardProps) {
+export default function RoutingWizard({ companyId, routingId, initialPartId }: RoutingWizardProps) {
   const router = useRouter();
   const isEditMode = !!routingId;
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(0);
 
-  // Form state (Step 1)
-  const [formData, setFormData] = useState<RoutingFormData>(EMPTY_ROUTING_FORM);
+  // Form state (Step 1) - initialize with initialPartId if provided
+  const [formData, setFormData] = useState<RoutingFormData>(() => ({
+    ...EMPTY_ROUTING_FORM,
+    part_id: initialPartId || '',
+  }));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Workflow state (Step 2)

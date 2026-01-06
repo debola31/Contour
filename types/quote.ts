@@ -82,8 +82,6 @@ export interface QuoteFilters {
  * Data for converting quote to job
  */
 export interface ConvertToJobData {
-  due_date: string;
-  priority: 'low' | 'normal' | 'high' | 'rush';
   routing_id?: string;
 }
 
