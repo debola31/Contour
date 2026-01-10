@@ -1,10 +1,12 @@
 /**
  * Operator View API utilities.
  *
- * These functions call the FastAPI backend for operator authentication
- * and job operations. Uses JWT tokens stored in localStorage.
+ * These functions handle operator authentication and job operations.
+ * - Operator auth (login/logout) and job operations use FastAPI (JWT + complex logic)
+ * - Admin CRUD operations use Supabase directly (matches pattern for customers, parts, jobs)
  */
 
+import { getSupabase } from '@/lib/supabase';
 import type {
   OperatorLoginRequest,
   OperatorLoginResponse,
@@ -267,21 +269,57 @@ export async function getActiveSession(): Promise<ActiveSession | null> {
 }
 
 // ============================================================================
-// ADMIN OPERATOR CRUD
+// ADMIN OPERATOR CRUD (uses Supabase directly)
 // ============================================================================
+
+/**
+ * Hash a PIN via the API.
+ * bcrypt hashing must be done server-side for security.
+ */
+async function hashPin(pin: string): Promise<string> {
+  const response = await fetch(`${API_BASE}/operators/hash-pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pin }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to hash PIN' }));
+    throw new Error(error.detail || 'Failed to hash PIN');
+  }
+
+  const data = await response.json();
+  return data.pin_hash;
+}
 
 /**
  * List all operators for a company (admin).
  */
 export async function listOperators(companyId: string): Promise<Operator[]> {
-  return operatorFetch<Operator[]>(`/operators?company_id=${companyId}`);
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('operators')
+    .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
+    .eq('company_id', companyId)
+    .order('name');
+
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
 /**
  * Get a single operator by ID (admin).
  */
 export async function getOperator(operatorId: string): Promise<Operator> {
-  return operatorFetch<Operator>(`/operators/${operatorId}`);
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('operators')
+    .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
+    .eq('id', operatorId)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 /**
@@ -290,10 +328,24 @@ export async function getOperator(operatorId: string): Promise<Operator> {
 export async function createOperator(
   request: OperatorCreateRequest
 ): Promise<Operator> {
-  return operatorFetch<Operator>('/operators', {
-    method: 'POST',
-    body: JSON.stringify(request),
-  });
+  // Hash the PIN via API (bcrypt must be server-side)
+  const pin_hash = await hashPin(request.pin);
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('operators')
+    .insert({
+      company_id: request.company_id,
+      name: request.name,
+      pin_hash,
+      qr_code_id: request.qr_code_id || crypto.randomUUID(),
+      is_active: true,
+    })
+    .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 /**
@@ -303,25 +355,45 @@ export async function updateOperator(
   operatorId: string,
   request: OperatorUpdateRequest
 ): Promise<Operator> {
-  return operatorFetch<Operator>(`/operators/${operatorId}`, {
-    method: 'PUT',
-    body: JSON.stringify(request),
-  });
+  const supabase = getSupabase();
+
+  const updates: Record<string, unknown> = {};
+  if (request.name !== undefined) updates.name = request.name;
+  if (request.is_active !== undefined) updates.is_active = request.is_active;
+  if (request.qr_code_id !== undefined) updates.qr_code_id = request.qr_code_id;
+
+  // If PIN is being updated, hash it via API
+  if (request.pin) {
+    updates.pin_hash = await hashPin(request.pin);
+  }
+
+  const { data, error } = await supabase
+    .from('operators')
+    .update(updates)
+    .eq('id', operatorId)
+    .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 /**
  * Delete an operator (admin).
  */
-export async function deleteOperator(
-  operatorId: string
-): Promise<{ success: boolean }> {
-  return operatorFetch<{ success: boolean }>(`/operators/${operatorId}`, {
-    method: 'DELETE',
-  });
+export async function deleteOperator(operatorId: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('operators')
+    .delete()
+    .eq('id', operatorId);
+
+  if (error) throw new Error(error.message);
 }
 
 /**
  * Get work session history for an operator (admin).
+ * Uses API since it's a complex query.
  */
 export async function getOperatorSessions(
   operatorId: string,

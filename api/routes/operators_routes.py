@@ -5,7 +5,11 @@ Provides:
 - Operator authentication (PIN/QR badge login)
 - Job listing and filtering for operators
 - Session management (start/stop/complete work)
-- Admin CRUD for operator management
+- PIN hashing utility for admin frontend
+
+Note: Admin CRUD operations (create, update, delete operators) are done
+directly via Supabase from the frontend, matching the pattern used for
+customers, parts, and jobs.
 """
 
 import logging
@@ -19,9 +23,8 @@ from supabase import Client
 from models.operators_models import (
     OperatorLoginRequest,
     OperatorLoginResponse,
-    OperatorCreate,
-    OperatorUpdate,
-    OperatorResponse,
+    PinHashRequest,
+    PinHashResponse,
     JobStartRequest,
     JobStopRequest,
     JobCompleteRequest,
@@ -582,153 +585,23 @@ async def get_active_session(operator: dict = Depends(get_current_operator)):
 
 
 # ============================================================================
-# ADMIN CRUD FOR OPERATORS
+# ADMIN - PIN HASHING UTILITY
 # ============================================================================
 
-@admin_router.get("", response_model=list[OperatorResponse])
-async def list_operators(
-    company_id: str = Query(...),
-    supabase: Client = Depends(get_supabase)
-):
-    """List all operators for a company (admin view)."""
+@admin_router.post("/hash-pin", response_model=PinHashResponse)
+async def hash_pin_endpoint(request: PinHashRequest):
+    """
+    Hash a PIN for storage.
+
+    Used by frontend when creating/updating operators via Supabase.
+    This endpoint exists because bcrypt hashing must be done server-side.
+    """
     try:
-        result = supabase.table("operators").select(
-            "id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at"
-        ).eq("company_id", company_id).order("name").execute()
-
-        return [OperatorResponse(**op) for op in result.data or []]
-
+        hashed = hash_pin(request.pin)
+        return PinHashResponse(pin_hash=hashed)
     except Exception as e:
-        logger.error(f"Error listing operators: {e}")
-        raise HTTPException(status_code=500, detail="Failed to list operators")
-
-
-@admin_router.get("/{operator_id}", response_model=OperatorResponse)
-async def get_operator(
-    operator_id: str,
-    supabase: Client = Depends(get_supabase)
-):
-    """Get a single operator by ID (admin view)."""
-    try:
-        result = supabase.table("operators").select(
-            "id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at"
-        ).eq("id", operator_id).single().execute()
-
-        if not result.data:
-            raise HTTPException(status_code=404, detail="Operator not found")
-
-        return OperatorResponse(**result.data)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching operator: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch operator")
-
-
-@admin_router.post("", response_model=OperatorResponse)
-async def create_operator(
-    request: OperatorCreate,
-    supabase: Client = Depends(get_supabase)
-):
-    """Create a new operator (admin)."""
-    try:
-        # Hash the PIN
-        pin_hash = hash_pin(request.pin)
-
-        # Generate QR code ID if not provided
-        qr_code_id = request.qr_code_id or str(uuid4())
-
-        operator_id = str(uuid4())
-        now = datetime.utcnow().isoformat()
-
-        data = {
-            "id": operator_id,
-            "company_id": request.company_id,
-            "name": request.name,
-            "pin_hash": pin_hash,
-            "qr_code_id": qr_code_id,
-            "is_active": True,
-            "created_at": now,
-            "updated_at": now
-        }
-
-        supabase.table("operators").insert(data).execute()
-
-        return OperatorResponse(
-            id=operator_id,
-            company_id=request.company_id,
-            name=request.name,
-            qr_code_id=qr_code_id,
-            is_active=True,
-            last_login_at=None,
-            created_at=now,
-            updated_at=now
-        )
-
-    except Exception as e:
-        logger.error(f"Error creating operator: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create operator")
-
-
-@admin_router.put("/{operator_id}", response_model=OperatorResponse)
-async def update_operator(
-    operator_id: str,
-    request: OperatorUpdate,
-    supabase: Client = Depends(get_supabase)
-):
-    """Update an operator (admin)."""
-    try:
-        # Build update data
-        update_data = {"updated_at": datetime.utcnow().isoformat()}
-
-        if request.name is not None:
-            update_data["name"] = request.name
-        if request.pin is not None:
-            update_data["pin_hash"] = hash_pin(request.pin)
-        if request.qr_code_id is not None:
-            update_data["qr_code_id"] = request.qr_code_id
-        if request.is_active is not None:
-            update_data["is_active"] = request.is_active
-
-        result = supabase.table("operators").update(update_data).eq(
-            "id", operator_id
-        ).execute()
-
-        if not result.data:
-            raise HTTPException(status_code=404, detail="Operator not found")
-
-        # Fetch updated operator
-        return await get_operator(operator_id, supabase)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error updating operator: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update operator")
-
-
-@admin_router.delete("/{operator_id}")
-async def delete_operator(
-    operator_id: str,
-    supabase: Client = Depends(get_supabase)
-):
-    """Delete an operator (admin)."""
-    try:
-        result = supabase.table("operators").delete().eq(
-            "id", operator_id
-        ).execute()
-
-        if not result.data:
-            raise HTTPException(status_code=404, detail="Operator not found")
-
-        return {"success": True, "message": "Operator deleted"}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting operator: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete operator")
+        logger.error(f"Error hashing PIN: {e}")
+        raise HTTPException(status_code=500, detail="Failed to hash PIN")
 
 
 @admin_router.get("/{operator_id}/sessions", response_model=list[SessionResponse])

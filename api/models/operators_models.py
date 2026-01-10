@@ -43,6 +43,23 @@ class OperatorLoginResponse(BaseModel):
 # OPERATOR CRUD (Admin)
 # ============================================================================
 
+class PinHashRequest(BaseModel):
+    """Request body for hashing a PIN (used by frontend when creating/updating operators)."""
+    pin: str
+
+    @field_validator('pin')
+    @classmethod
+    def validate_pin_format(cls, v):
+        if not re.match(r'^\d{4,6}$', v):
+            raise ValueError('PIN must be 4-6 digits')
+        return v
+
+
+class PinHashResponse(BaseModel):
+    """Response with hashed PIN."""
+    pin_hash: str
+
+
 class OperatorCreate(BaseModel):
     """Request body for creating a new operator (admin)."""
     company_id: str

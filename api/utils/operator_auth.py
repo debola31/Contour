@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # HTTP Bearer token security scheme
 security = HTTPBearer(auto_error=False)
@@ -124,7 +124,7 @@ def verify_operator_token(token: str) -> dict:
 
 
 async def get_current_operator(
-    credentials: HTTPAuthCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> dict:
     """
     FastAPI dependency to get the current authenticated operator.

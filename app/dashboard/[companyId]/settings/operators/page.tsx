@@ -3,9 +3,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import InputAdornment from '@mui/material/InputAdornment';
 import Dialog from '@mui/material/Dialog';
@@ -20,6 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import QrCodeIcon from '@mui/icons-material/QrCode';
+import GroupIcon from '@mui/icons-material/Group';
 
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
@@ -27,6 +31,9 @@ import type {
   ColDef,
   GridReadyEvent,
   ICellRendererParams,
+  SelectionChangedEvent,
+  RowClickedEvent,
+  CellKeyDownEvent,
 } from 'ag-grid-community';
 
 // Register AG Grid modules (required for v35+)
@@ -34,6 +41,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 import { jiggedAgGridTheme } from '@/lib/agGridTheme';
 import { getSupabase } from '@/lib/supabase';
+import ExportCsvButton from '@/components/common/ExportCsvButton';
 import type { Operator } from '@/types/operator';
 
 /**
@@ -52,12 +60,16 @@ export default function OperatorsPage() {
   const [searchDebounced, setSearchDebounced] = useState('');
   const gridRef = useRef<AgGridReact<Operator>>(null);
 
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
+    type: 'single' | 'bulk';
     id?: string;
     name?: string;
-  }>({ open: false });
+  }>({ open: false, type: 'single' });
   const [deleting, setDeleting] = useState(false);
 
   // Snackbar
@@ -108,37 +120,106 @@ export default function OperatorsPage() {
     loadOperators();
   }, [loadOperators]);
 
-  // Delete operator
-  const handleDelete = async () => {
-    if (!deleteDialog.id) return;
+  // Clear selection when search changes
+  useEffect(() => {
+    setSelectedIds([]);
+    if (gridRef.current?.api) {
+      gridRef.current.api.deselectAll();
+    }
+  }, [searchDebounced]);
 
+  // Calculate grid height dynamically
+  const gridHeight = useMemo(() => {
+    if (loading || operators.length === 0) return 600;
+    const headerHeight = 56;
+    const rowHeight = 52;
+    const paginationHeight = 56;
+    const displayedRows = Math.min(operators.length, 25);
+    return Math.max(headerHeight + rowHeight * displayedRows + paginationHeight, 400);
+  }, [loading, operators.length]);
+
+  // Delete operator(s)
+  const handleDelete = async () => {
     setDeleting(true);
     try {
       const supabase = getSupabase();
-      const { error } = await supabase
-        .from('operators')
-        .delete()
-        .eq('id', deleteDialog.id);
 
-      if (error) throw error;
+      if (deleteDialog.type === 'single' && deleteDialog.id) {
+        const { error } = await supabase
+          .from('operators')
+          .delete()
+          .eq('id', deleteDialog.id);
 
-      setSnackbar({
-        open: true,
-        message: 'Operator deleted',
-        severity: 'success',
-      });
-      setDeleteDialog({ open: false });
+        if (error) throw error;
+
+        setSnackbar({
+          open: true,
+          message: 'Operator deleted',
+          severity: 'success',
+        });
+      } else if (deleteDialog.type === 'bulk') {
+        const { error } = await supabase
+          .from('operators')
+          .delete()
+          .in('id', selectedIds);
+
+        if (error) throw error;
+
+        setSnackbar({
+          open: true,
+          message: `${selectedIds.length} operator${selectedIds.length > 1 ? 's' : ''} deleted`,
+          severity: 'success',
+        });
+        setSelectedIds([]);
+        if (gridRef.current?.api) {
+          gridRef.current.api.deselectAll();
+        }
+      }
+
+      setDeleteDialog({ open: false, type: 'single' });
       loadOperators();
     } catch (err) {
-      console.error('Error deleting operator:', err);
+      console.error('Error deleting operator(s):', err);
       setSnackbar({
         open: true,
-        message: 'Failed to delete operator',
+        message: 'Failed to delete operator(s)',
         severity: 'error',
       });
     } finally {
       setDeleting(false);
     }
+  };
+
+  // Selection change handler
+  const handleSelectionChanged = (event: SelectionChangedEvent<Operator>) => {
+    const selectedNodes = event.api.getSelectedNodes();
+    const selectedData = selectedNodes
+      .map((node) => node.data?.id)
+      .filter((id): id is string => id !== undefined);
+    setSelectedIds(selectedData);
+  };
+
+  // Row click navigation
+  const handleRowClicked = (event: RowClickedEvent<Operator>) => {
+    if (event.data) {
+      router.push(`/dashboard/${companyId}/settings/operators/${event.data.id}`);
+    }
+  };
+
+  // Keyboard navigation
+  const handleCellKeyDown = (event: CellKeyDownEvent<Operator>) => {
+    const keyboardEvent = event.event as KeyboardEvent | undefined;
+    if (keyboardEvent?.key === 'Enter' && event.data) {
+      router.push(`/dashboard/${companyId}/settings/operators/${event.data.id}`);
+    }
+  };
+
+  // Bulk delete click handler
+  const handleBulkDeleteClick = () => {
+    setDeleteDialog({
+      open: true,
+      type: 'bulk',
+    });
   };
 
   // Format relative time
