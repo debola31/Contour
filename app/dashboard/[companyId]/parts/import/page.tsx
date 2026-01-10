@@ -42,6 +42,7 @@ import type {
   PartExecuteResponse,
   PartConflictInfo,
   PartValidationError,
+  PartImportError,
 } from '@/types/parts-import';
 import { PART_FIELDS } from '@/types/parts-import';
 import { getAllCustomers } from '@/utils/customerAccess';
@@ -52,6 +53,9 @@ import type { Customer } from '@/types/customer';
 // Maximum file size: 10MB
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+// Maximum rows to send per API request (Vercel has 4.5MB body limit)
+const MAX_ROWS_PER_REQUEST = 500;
 
 const steps = ['Upload & Settings', 'AI Analysis', 'Review Mappings', 'Validate', 'Import'];
 
@@ -321,8 +325,8 @@ export default function ImportPartsPage() {
         (p) => p.qty_column && p.price_column
       );
 
-      // Convert rows to objects
-      const rowObjects = allRows.map((row) => {
+      // Convert rows to objects (limit for validation to avoid payload size issues)
+      const rowObjects = allRows.slice(0, MAX_ROWS_PER_REQUEST).map((row) => {
         const obj: Record<string, string> = {};
         headers.forEach((header, index) => {
           obj[header] = row[index] || '';
@@ -338,6 +342,7 @@ export default function ImportPartsPage() {
           mappings: mappingsObj,
           pricing_columns: validPricingColumns,
           rows: rowObjects,
+          total_rows: allRows.length,
           customer_match_mode: customerMatchMode,
           selected_customer_id: customerMatchMode === 'all_to_one' ? selectedCustomerId : undefined,
         }),
@@ -389,8 +394,8 @@ export default function ImportPartsPage() {
         (p) => p.qty_column && p.price_column
       );
 
-      // Convert rows to objects
-      const rowObjects = allRows.map((row) => {
+      // Convert all rows to objects
+      const allRowObjects = allRows.map((row) => {
         const obj: Record<string, string> = {};
         headers.forEach((header, index) => {
           obj[header] = row[index] || '';
@@ -398,27 +403,54 @@ export default function ImportPartsPage() {
         return obj;
       });
 
-      const response = await fetch(`${API_BASE_URL}/api/parts/import/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id: companyId,
-          mappings: mappingsObj,
-          pricing_columns: validPricingColumns,
-          rows: rowObjects,
-          customer_match_mode: customerMatchMode,
-          selected_customer_id: customerMatchMode === 'all_to_one' ? selectedCustomerId : undefined,
-          skip_conflicts: skipConflicts,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Import failed');
+      // Split into batches to avoid Vercel's 4.5MB payload limit
+      const batches: Record<string, string>[][] = [];
+      for (let i = 0; i < allRowObjects.length; i += MAX_ROWS_PER_REQUEST) {
+        batches.push(allRowObjects.slice(i, i + MAX_ROWS_PER_REQUEST));
       }
 
-      const data: PartExecuteResponse = await response.json();
-      setImportResult(data);
+      // Execute batches sequentially and aggregate results
+      let totalImported = 0;
+      let totalSkipped = 0;
+      const allErrors: PartImportError[] = [];
+
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        const response = await fetch(`${API_BASE_URL}/api/parts/import/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: companyId,
+            mappings: mappingsObj,
+            pricing_columns: validPricingColumns,
+            rows: batch,
+            customer_match_mode: customerMatchMode,
+            selected_customer_id: customerMatchMode === 'all_to_one' ? selectedCustomerId : undefined,
+            skip_conflicts: skipConflicts,
+            batch_offset: batchIndex * MAX_ROWS_PER_REQUEST,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || `Import failed on batch ${batchIndex + 1}`);
+        }
+
+        const data: PartExecuteResponse = await response.json();
+        totalImported += data.imported_count;
+        totalSkipped += data.skipped_count;
+        if (data.errors) {
+          allErrors.push(...data.errors);
+        }
+      }
+
+      // Aggregate final result
+      setImportResult({
+        success: true,
+        imported_count: totalImported,
+        skipped_count: totalSkipped,
+        errors: allErrors,
+      });
       setCurrentStep('complete');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');

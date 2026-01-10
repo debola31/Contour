@@ -26,6 +26,7 @@ import type {
   ExecuteResponse,
   ConflictInfo,
   ValidationError,
+  ImportError,
 } from '@/types/import';
 import { CUSTOMER_FIELDS } from '@/types/import';
 import { parseCSV } from '@/utils/csvParser';
@@ -39,6 +40,9 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 // Maximum file size: 10MB
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+// Maximum rows to send per API request (Vercel has 4.5MB body limit)
+const MAX_ROWS_PER_REQUEST = 500;
 
 const steps = ['Upload CSV', 'AI Analysis', 'Review Mappings', 'Validate', 'Import'];
 
@@ -236,8 +240,8 @@ export default function ImportCustomersPage() {
         }
       });
 
-      // Convert rows to objects
-      const rowObjects = allRows.map((row) => {
+      // Convert rows to objects (limit for validation to avoid payload size issues)
+      const rowObjects = allRows.slice(0, MAX_ROWS_PER_REQUEST).map((row) => {
         const obj: Record<string, string> = {};
         headers.forEach((header, index) => {
           obj[header] = row[index] || '';
@@ -252,6 +256,7 @@ export default function ImportCustomersPage() {
           company_id: companyId,
           mappings: mappingsObj,
           rows: rowObjects,
+          total_rows: allRows.length,
         }),
       });
 
@@ -296,8 +301,8 @@ export default function ImportCustomersPage() {
         }
       });
 
-      // Convert rows to objects
-      const rowObjects = allRows.map((row) => {
+      // Convert all rows to objects
+      const allRowObjects = allRows.map((row) => {
         const obj: Record<string, string> = {};
         headers.forEach((header, index) => {
           obj[header] = row[index] || '';
@@ -305,24 +310,51 @@ export default function ImportCustomersPage() {
         return obj;
       });
 
-      const response = await fetch(`${API_BASE_URL}/api/customers/import/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id: companyId,
-          mappings: mappingsObj,
-          rows: rowObjects,
-          skip_conflicts: skipConflicts,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Import failed');
+      // Split into batches to avoid Vercel's 4.5MB payload limit
+      const batches: Record<string, string>[][] = [];
+      for (let i = 0; i < allRowObjects.length; i += MAX_ROWS_PER_REQUEST) {
+        batches.push(allRowObjects.slice(i, i + MAX_ROWS_PER_REQUEST));
       }
 
-      const data: ExecuteResponse = await response.json();
-      setImportResult(data);
+      // Execute batches sequentially and aggregate results
+      let totalImported = 0;
+      let totalSkipped = 0;
+      const allErrors: ImportError[] = [];
+
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        const response = await fetch(`${API_BASE_URL}/api/customers/import/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: companyId,
+            mappings: mappingsObj,
+            rows: batch,
+            skip_conflicts: skipConflicts,
+            batch_offset: batchIndex * MAX_ROWS_PER_REQUEST,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || `Import failed on batch ${batchIndex + 1}`);
+        }
+
+        const data: ExecuteResponse = await response.json();
+        totalImported += data.imported_count;
+        totalSkipped += data.skipped_count;
+        if (data.errors) {
+          allErrors.push(...data.errors);
+        }
+      }
+
+      // Aggregate final result
+      setImportResult({
+        success: true,
+        imported_count: totalImported,
+        skipped_count: totalSkipped,
+        errors: allErrors,
+      });
       setCurrentStep('complete');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');

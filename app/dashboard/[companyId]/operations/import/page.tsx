@@ -28,6 +28,9 @@ import { API_BASE_URL } from '@/lib/api';
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
+// Maximum rows to send per API request (Vercel has 4.5MB body limit)
+const MAX_ROWS_PER_REQUEST = 500;
+
 const steps = ['Upload', 'AI Analysis', 'Review Mappings', 'Validate', 'Import'];
 
 type ImportStep = 'upload' | 'analyzing' | 'review' | 'validating' | 'importing' | 'complete';
@@ -205,8 +208,8 @@ export default function ImportOperationsPage() {
         }
       }
 
-      // Convert rows to objects
-      const rows = allRows.map((row) => {
+      // Convert rows to objects (limit for validation to avoid payload size issues)
+      const rows = allRows.slice(0, MAX_ROWS_PER_REQUEST).map((row) => {
         const obj: Record<string, string> = {};
         headers.forEach((h, i) => {
           obj[h] = row[i] || '';
@@ -221,6 +224,7 @@ export default function ImportOperationsPage() {
           company_id: companyId,
           mappings: mappingsDict,
           rows,
+          total_rows: allRows.length,
           create_groups: createGroups,
         }),
       });
@@ -241,7 +245,7 @@ export default function ImportOperationsPage() {
       }
 
       // Proceed to import
-      await executeImport(mappingsDict, rows);
+      await executeImport(mappingsDict);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Validation failed');
       setCurrentStep('review');
@@ -252,33 +256,59 @@ export default function ImportOperationsPage() {
 
   // Execute import
   const executeImport = async (
-    mappingsDict: Record<string, string>,
-    rows: Record<string, string>[]
+    mappingsDict: Record<string, string>
   ) => {
     setCurrentStep('importing');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/operations/import/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id: companyId,
-          mappings: mappingsDict,
-          rows,
-          skip_conflicts: true,
-          create_groups: createGroups,
-        }),
+      // Convert ALL rows to objects for import
+      const allRowObjects = allRows.map((row) => {
+        const obj: Record<string, string> = {};
+        headers.forEach((h, i) => {
+          obj[h] = row[i] || '';
+        });
+        return obj;
       });
 
-      if (!response.ok) {
-        throw new Error('Import failed');
+      // Split into batches to avoid Vercel's 4.5MB payload limit
+      const batches: Record<string, string>[][] = [];
+      for (let i = 0; i < allRowObjects.length; i += MAX_ROWS_PER_REQUEST) {
+        batches.push(allRowObjects.slice(i, i + MAX_ROWS_PER_REQUEST));
       }
 
-      const data = await response.json();
+      // Execute batches sequentially and aggregate results
+      let totalImported = 0;
+      let totalGroupsCreated = 0;
+      let totalSkipped = 0;
 
-      setImportedCount(data.imported_count || 0);
-      setGroupsCreatedCount(data.groups_created || 0);
-      setSkippedCount(data.skipped_count || 0);
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        const response = await fetch(`${API_BASE_URL}/api/operations/import/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: companyId,
+            mappings: mappingsDict,
+            rows: batch,
+            skip_conflicts: true,
+            create_groups: createGroups,
+            batch_offset: batchIndex * MAX_ROWS_PER_REQUEST,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Import failed on batch ${batchIndex + 1}`);
+        }
+
+        const data = await response.json();
+        totalImported += data.imported_count || 0;
+        totalGroupsCreated += data.groups_created || 0;
+        totalSkipped += data.skipped_count || 0;
+      }
+
+      setImportedCount(totalImported);
+      setGroupsCreatedCount(totalGroupsCreated);
+      setSkippedCount(totalSkipped);
       setCurrentStep('complete');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
