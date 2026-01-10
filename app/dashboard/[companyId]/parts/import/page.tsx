@@ -46,10 +46,8 @@ import type {
 import { PART_FIELDS } from '@/types/parts-import';
 import { getAllCustomers } from '@/utils/customerAccess';
 import { parseCSV } from '@/utils/csvParser';
+import { API_BASE_URL } from '@/lib/api';
 import type { Customer } from '@/types/customer';
-
-// API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE_MB = 10;
