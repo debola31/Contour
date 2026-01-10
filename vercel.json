@@ -3,5 +3,8 @@
     "api/**": {
       "excludeFiles": "{.next,.git,node_modules}/**"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" }
+  ]
 }
