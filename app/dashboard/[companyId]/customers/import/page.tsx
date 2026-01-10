@@ -29,14 +29,12 @@ import type {
 } from '@/types/import';
 import { CUSTOMER_FIELDS } from '@/types/import';
 import { parseCSV } from '@/utils/csvParser';
+import { API_BASE_URL } from '@/lib/api';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-
-// API base URL - adjust for production
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE_MB = 10;

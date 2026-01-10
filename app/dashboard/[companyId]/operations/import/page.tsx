@@ -22,9 +22,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { MappingReviewTable } from '@/components/import';
 import type { ColumnMapping, FieldDefinition } from '@/components/import';
 import { parseCSV } from '@/utils/csvParser';
-
-// API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { API_BASE_URL } from '@/lib/api';
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE_MB = 10;
