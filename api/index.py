@@ -1,5 +1,10 @@
 import os
+import sys
 import logging
+
+# Add api directory to path for Vercel serverless functions
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
