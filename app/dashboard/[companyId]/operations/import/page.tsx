@@ -29,7 +29,7 @@ const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 // Maximum rows to send per API request (Vercel has 4.5MB body limit)
-const MAX_ROWS_PER_REQUEST = 500;
+const MAX_ROWS_PER_REQUEST = 1500;
 
 const steps = ['Upload', 'AI Analysis', 'Review Mappings', 'Validate', 'Import'];
 
@@ -208,8 +208,8 @@ export default function ImportOperationsPage() {
         }
       }
 
-      // Convert rows to objects (limit for validation to avoid payload size issues)
-      const rows = allRows.slice(0, MAX_ROWS_PER_REQUEST).map((row) => {
+      // Convert ALL rows to objects
+      const allRowObjects = allRows.map((row) => {
         const obj: Record<string, string> = {};
         headers.forEach((h, i) => {
           obj[h] = row[i] || '';
@@ -217,30 +217,58 @@ export default function ImportOperationsPage() {
         return obj;
       });
 
-      const response = await fetch(`${API_BASE_URL}/api/operations/import/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id: companyId,
-          mappings: mappingsDict,
-          rows,
-          total_rows: allRows.length,
-          create_groups: createGroups,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Validation failed');
+      // Split into batches to avoid Vercel's 4.5MB payload limit
+      const batches: Record<string, string>[][] = [];
+      for (let i = 0; i < allRowObjects.length; i += MAX_ROWS_PER_REQUEST) {
+        batches.push(allRowObjects.slice(i, i + MAX_ROWS_PER_REQUEST));
       }
 
-      const data = await response.json();
+      // Validate each batch and aggregate results
+      let totalValidRows = 0;
+      let totalConflictRows = 0;
+      let totalErrorRows = 0;
+      const allGroupsToCreate: string[] = [];
 
-      setValidRowsCount(data.valid_rows_count || 0);
-      setGroupsToCreate(data.groups_to_create || []);
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
 
-      if (data.has_conflicts || data.validation_errors?.length > 0) {
+        const response = await fetch(`${API_BASE_URL}/api/operations/import/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: companyId,
+            mappings: mappingsDict,
+            rows: batch,
+            total_rows: allRows.length,
+            create_groups: createGroups,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Validation failed on batch ${batchIndex + 1}`);
+        }
+
+        const data = await response.json();
+        totalValidRows += data.valid_rows_count || 0;
+        totalConflictRows += data.conflict_rows_count || 0;
+        totalErrorRows += data.error_rows_count || 0;
+
+        // Aggregate unique groups to create
+        if (data.groups_to_create) {
+          for (const group of data.groups_to_create) {
+            if (!allGroupsToCreate.includes(group)) {
+              allGroupsToCreate.push(group);
+            }
+          }
+        }
+      }
+
+      setValidRowsCount(totalValidRows);
+      setGroupsToCreate(allGroupsToCreate);
+
+      if (totalConflictRows > 0 || totalErrorRows > 0) {
         setError(
-          `Found ${data.conflict_rows_count || 0} conflicts and ${data.error_rows_count || 0} validation errors. These rows will be skipped.`
+          `Found ${totalConflictRows} conflicts and ${totalErrorRows} validation errors. These rows will be skipped.`
         );
       }
 
