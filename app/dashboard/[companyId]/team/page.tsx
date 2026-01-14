@@ -7,7 +7,6 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -17,14 +16,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
-import Chip from '@mui/material/Chip';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import QrCodeIcon from '@mui/icons-material/QrCode';
 import GroupIcon from '@mui/icons-material/Group';
 import BadgeIcon from '@mui/icons-material/Badge';
 
@@ -33,7 +29,6 @@ import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import type {
   ColDef,
   GridReadyEvent,
-  ICellRendererParams,
   SelectionChangedEvent,
   RowClickedEvent,
   CellKeyDownEvent,
@@ -117,7 +112,7 @@ export default function TeamPage() {
       const supabase = getSupabase();
       let query = supabase
         .from('operators')
-        .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
+        .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
         .eq('company_id', companyId)
         .order('name');
 
@@ -272,72 +267,13 @@ export default function TeamPage() {
         minWidth: 150,
       },
       {
-        field: 'is_active',
-        headerName: 'Status',
-        width: 120,
-        cellRenderer: (params: ICellRendererParams<Operator>) => (
-          <Chip
-            label={params.value ? 'Active' : 'Inactive'}
-            size="small"
-            color={params.value ? 'success' : 'default'}
-          />
-        ),
-      },
-      {
         field: 'last_login_at',
         headerName: 'Last Login',
         width: 130,
         valueFormatter: (params) => formatRelativeTime(params.value),
       },
-      {
-        field: 'qr_code_id',
-        headerName: 'QR Badge',
-        width: 100,
-        cellRenderer: (params: ICellRendererParams<Operator>) => (
-          params.value ? (
-            <QrCodeIcon color="primary" fontSize="small" />
-          ) : (
-            <span style={{ color: '#666' }}>—</span>
-          )
-        ),
-      },
-      {
-        field: 'id',
-        headerName: 'Actions',
-        width: 120,
-        sortable: false,
-        cellRenderer: (params: ICellRendererParams<Operator>) => (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(
-                  `/dashboard/${companyId}/team/operators/${params.data?.id}`
-                );
-              }}
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeleteDialog({
-                  open: true,
-                  type: 'single',
-                  id: params.data?.id,
-                  name: params.data?.name,
-                });
-              }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        ),
-      },
     ],
-    [companyId, router]
+    []
   );
 
   const defaultColDef: ColDef = useMemo(

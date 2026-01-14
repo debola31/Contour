@@ -1,6 +1,6 @@
 -- ============================================================
 -- Jigged Manufacturing ERP - Database Schema
--- Generated: 2026-01-06T00:28:14Z
+-- Generated: 2026-01-14T07:24:06Z
 -- Schemas: public, storage
 -- ============================================================
 
@@ -56,6 +56,47 @@ CREATE TABLE IF NOT EXISTS "public"."customers"
     "updated_at" timestamp with time zone DEFAULT now(),
     CONSTRAINT "customers_pkey" PRIMARY KEY (id),
     CONSTRAINT "customers_company_code_unique" UNIQUE (company_id, customer_code)
+);
+
+CREATE TABLE IF NOT EXISTS "public"."inventory_items"
+(
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "company_id" uuid NOT NULL,
+    "name" text NOT NULL,
+    "description" text,
+    "sku" text,
+    "primary_unit" text NOT NULL,
+    "quantity" numeric NOT NULL DEFAULT 0,
+    "cost_per_unit" numeric(12,4),
+    "created_at" timestamp with time zone DEFAULT now(),
+    "updated_at" timestamp with time zone DEFAULT now(),
+    CONSTRAINT "inventory_items_pkey" PRIMARY KEY (id),
+    CONSTRAINT "inventory_items_quantity_non_negative" CHECK ((quantity >= (0)::numeric))
+);
+
+CREATE TABLE IF NOT EXISTS "public"."inventory_unit_conversions"
+(
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "inventory_item_id" uuid NOT NULL,
+    "from_unit" text NOT NULL,
+    "to_primary_factor" numeric NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now(),
+    CONSTRAINT "inventory_unit_conversions_pkey" PRIMARY KEY (id),
+    CONSTRAINT "inventory_unit_conversions_item_unit_unique" UNIQUE (inventory_item_id, from_unit),
+    CONSTRAINT "inventory_unit_conversions_factor_positive" CHECK ((to_primary_factor > (0)::numeric))
+);
+
+CREATE TABLE IF NOT EXISTS "public"."operators"
+(
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "company_id" uuid NOT NULL,
+    "name" text NOT NULL,
+    "last_login_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT now(),
+    "updated_at" timestamp with time zone DEFAULT now(),
+    "user_id" uuid,
+    CONSTRAINT "operators_pkey" PRIMARY KEY (id),
+    CONSTRAINT "operators_user_id_key" UNIQUE (user_id)
 );
 
 CREATE TABLE IF NOT EXISTS "public"."parts"
@@ -165,6 +206,27 @@ CREATE TABLE IF NOT EXISTS "public"."user_preferences"
     CONSTRAINT "user_preferences_user_id_key" UNIQUE (user_id)
 );
 
+CREATE TABLE IF NOT EXISTS "public"."inventory_transactions"
+(
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "company_id" uuid NOT NULL,
+    "inventory_item_id" uuid,
+    "item_name" text NOT NULL,
+    "type" text NOT NULL,
+    "quantity" numeric NOT NULL,
+    "unit" text NOT NULL,
+    "converted_quantity" numeric NOT NULL,
+    "job_id" uuid,
+    "job_operation_id" uuid,
+    "operator_id" uuid,
+    "notes" text,
+    "created_at" timestamp with time zone DEFAULT now(),
+    "created_by" uuid,
+    CONSTRAINT "inventory_transactions_pkey" PRIMARY KEY (id),
+    CONSTRAINT "inventory_transactions_quantity_positive" CHECK ((quantity >= (0)::numeric)),
+    CONSTRAINT "inventory_transactions_type_check" CHECK ((type = ANY (ARRAY['addition'::text, 'depletion'::text, 'adjustment'::text])))
+);
+
 CREATE TABLE IF NOT EXISTS "public"."job_attachments"
 (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -231,6 +293,22 @@ CREATE TABLE IF NOT EXISTS "public"."jobs"
     CONSTRAINT "jobs_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'on_hold'::text, 'completed'::text, 'shipped'::text, 'cancelled'::text])))
 );
 
+CREATE TABLE IF NOT EXISTS "public"."operator_sessions"
+(
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "company_id" uuid NOT NULL,
+    "operator_id" uuid NOT NULL,
+    "job_id" uuid NOT NULL,
+    "job_operation_id" uuid,
+    "operation_type_id" uuid NOT NULL,
+    "started_at" timestamp with time zone DEFAULT now(),
+    "ended_at" timestamp with time zone,
+    "notes" text,
+    "created_at" timestamp with time zone DEFAULT now(),
+    "updated_at" timestamp with time zone DEFAULT now(),
+    CONSTRAINT "operator_sessions_pkey" PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS "public"."quote_attachments"
 (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -275,10 +353,15 @@ CREATE TABLE IF NOT EXISTS "public"."quotes"
 ALTER TABLE "public"."ai_config" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."companies" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."customers" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."inventory_items" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."inventory_transactions" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."inventory_unit_conversions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."job_attachments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."job_operations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."jobs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."operation_types" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."operator_sessions" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."operators" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."parts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."quote_attachments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."quotes" ENABLE ROW LEVEL SECURITY;
@@ -359,6 +442,74 @@ CREATE POLICY "Users can view customers"
     ON "public"."customers"
     FOR SELECT
     USING ((company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)));
+
+DROP POLICY IF EXISTS "Users can delete inventory_items" ON "public"."inventory_items";
+CREATE POLICY "Users can delete inventory_items"
+    ON "public"."inventory_items"
+    FOR DELETE
+    USING ((company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)));
+
+DROP POLICY IF EXISTS "Users can insert inventory_items" ON "public"."inventory_items";
+CREATE POLICY "Users can insert inventory_items"
+    ON "public"."inventory_items"
+    FOR INSERT
+    WITH CHECK ((company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)));
+
+DROP POLICY IF EXISTS "Users can update inventory_items" ON "public"."inventory_items";
+CREATE POLICY "Users can update inventory_items"
+    ON "public"."inventory_items"
+    FOR UPDATE
+    USING ((company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)));
+
+DROP POLICY IF EXISTS "Users can view inventory_items" ON "public"."inventory_items";
+CREATE POLICY "Users can view inventory_items"
+    ON "public"."inventory_items"
+    FOR SELECT
+    USING ((company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)));
+
+DROP POLICY IF EXISTS "Users can insert inventory_transactions" ON "public"."inventory_transactions";
+CREATE POLICY "Users can insert inventory_transactions"
+    ON "public"."inventory_transactions"
+    FOR INSERT
+    WITH CHECK ((company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)));
+
+DROP POLICY IF EXISTS "Users can view inventory_transactions" ON "public"."inventory_transactions";
+CREATE POLICY "Users can view inventory_transactions"
+    ON "public"."inventory_transactions"
+    FOR SELECT
+    USING ((company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)));
+
+DROP POLICY IF EXISTS "Users can delete inventory_unit_conversions" ON "public"."inventory_unit_conversions";
+CREATE POLICY "Users can delete inventory_unit_conversions"
+    ON "public"."inventory_unit_conversions"
+    FOR DELETE
+    USING ((inventory_item_id IN ( SELECT inventory_items.id
+   FROM inventory_items
+  WHERE (inventory_items.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
+
+DROP POLICY IF EXISTS "Users can insert inventory_unit_conversions" ON "public"."inventory_unit_conversions";
+CREATE POLICY "Users can insert inventory_unit_conversions"
+    ON "public"."inventory_unit_conversions"
+    FOR INSERT
+    WITH CHECK ((inventory_item_id IN ( SELECT inventory_items.id
+   FROM inventory_items
+  WHERE (inventory_items.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
+
+DROP POLICY IF EXISTS "Users can update inventory_unit_conversions" ON "public"."inventory_unit_conversions";
+CREATE POLICY "Users can update inventory_unit_conversions"
+    ON "public"."inventory_unit_conversions"
+    FOR UPDATE
+    USING ((inventory_item_id IN ( SELECT inventory_items.id
+   FROM inventory_items
+  WHERE (inventory_items.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
+
+DROP POLICY IF EXISTS "Users can view inventory_unit_conversions" ON "public"."inventory_unit_conversions";
+CREATE POLICY "Users can view inventory_unit_conversions"
+    ON "public"."inventory_unit_conversions"
+    FOR SELECT
+    USING ((inventory_item_id IN ( SELECT inventory_items.id
+   FROM inventory_items
+  WHERE (inventory_items.company_id IN ( SELECT get_user_company_ids() AS get_user_company_ids)))));
 
 DROP POLICY IF EXISTS "job_attachments_delete" ON "public"."job_attachments";
 CREATE POLICY "job_attachments_delete"
@@ -479,6 +630,91 @@ CREATE POLICY "operation_types_update"
     USING ((company_id IN ( SELECT user_company_access.company_id
    FROM user_company_access
   WHERE (user_company_access.user_id = auth.uid()))));
+
+DROP POLICY IF EXISTS "Admins can delete company sessions" ON "public"."operator_sessions";
+CREATE POLICY "Admins can delete company sessions"
+    ON "public"."operator_sessions"
+    FOR DELETE
+    USING ((company_id IN ( SELECT user_company_access.company_id
+   FROM user_company_access
+  WHERE ((user_company_access.user_id = auth.uid()) AND (user_company_access.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
+DROP POLICY IF EXISTS "Admins can read company sessions" ON "public"."operator_sessions";
+CREATE POLICY "Admins can read company sessions"
+    ON "public"."operator_sessions"
+    FOR SELECT
+    USING ((company_id IN ( SELECT user_company_access.company_id
+   FROM user_company_access
+  WHERE ((user_company_access.user_id = auth.uid()) AND (user_company_access.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
+DROP POLICY IF EXISTS "Operators can insert own sessions" ON "public"."operator_sessions";
+CREATE POLICY "Operators can insert own sessions"
+    ON "public"."operator_sessions"
+    FOR INSERT
+    WITH CHECK ((operator_id IN ( SELECT operators.id
+   FROM operators
+  WHERE (operators.user_id = auth.uid()))));
+
+DROP POLICY IF EXISTS "Operators can read own sessions" ON "public"."operator_sessions";
+CREATE POLICY "Operators can read own sessions"
+    ON "public"."operator_sessions"
+    FOR SELECT
+    USING ((operator_id IN ( SELECT operators.id
+   FROM operators
+  WHERE (operators.user_id = auth.uid()))));
+
+DROP POLICY IF EXISTS "Operators can update own sessions" ON "public"."operator_sessions";
+CREATE POLICY "Operators can update own sessions"
+    ON "public"."operator_sessions"
+    FOR UPDATE
+    USING ((operator_id IN ( SELECT operators.id
+   FROM operators
+  WHERE (operators.user_id = auth.uid()))));
+
+DROP POLICY IF EXISTS "Admins can delete company operators" ON "public"."operators";
+CREATE POLICY "Admins can delete company operators"
+    ON "public"."operators"
+    FOR DELETE
+    USING ((company_id IN ( SELECT user_company_access.company_id
+   FROM user_company_access
+  WHERE ((user_company_access.user_id = auth.uid()) AND (user_company_access.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
+DROP POLICY IF EXISTS "Admins can insert operators" ON "public"."operators";
+CREATE POLICY "Admins can insert operators"
+    ON "public"."operators"
+    FOR INSERT
+    WITH CHECK ((company_id IN ( SELECT user_company_access.company_id
+   FROM user_company_access
+  WHERE ((user_company_access.user_id = auth.uid()) AND (user_company_access.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
+DROP POLICY IF EXISTS "Admins can read company operators" ON "public"."operators";
+CREATE POLICY "Admins can read company operators"
+    ON "public"."operators"
+    FOR SELECT
+    USING ((company_id IN ( SELECT user_company_access.company_id
+   FROM user_company_access
+  WHERE ((user_company_access.user_id = auth.uid()) AND (user_company_access.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
+DROP POLICY IF EXISTS "Admins can update company operators" ON "public"."operators";
+CREATE POLICY "Admins can update company operators"
+    ON "public"."operators"
+    FOR UPDATE
+    USING ((company_id IN ( SELECT user_company_access.company_id
+   FROM user_company_access
+  WHERE ((user_company_access.user_id = auth.uid()) AND (user_company_access.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
+DROP POLICY IF EXISTS "Operators can update own last_login_at" ON "public"."operators";
+CREATE POLICY "Operators can update own last_login_at"
+    ON "public"."operators"
+    FOR UPDATE
+    USING ((user_id = auth.uid()))
+    WITH CHECK ((user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Users can read own operator record" ON "public"."operators";
+CREATE POLICY "Users can read own operator record"
+    ON "public"."operators"
+    FOR SELECT
+    USING ((user_id = auth.uid()));
 
 DROP POLICY IF EXISTS "Users can delete parts for their companies" ON "public"."parts";
 CREATE POLICY "Users can delete parts for their companies"
@@ -778,6 +1014,24 @@ ALTER TABLE "public"."ai_config"
 ALTER TABLE "public"."customers"
     ADD CONSTRAINT "customers_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
 
+ALTER TABLE "public"."inventory_items"
+    ADD CONSTRAINT "inventory_items_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."inventory_transactions"
+    ADD CONSTRAINT "inventory_transactions_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."inventory_transactions"
+    ADD CONSTRAINT "inventory_transactions_item_id_fkey" FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id) ON DELETE SET NULL;
+
+ALTER TABLE "public"."inventory_transactions"
+    ADD CONSTRAINT "inventory_transactions_job_id_fkey" FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL;
+
+ALTER TABLE "public"."inventory_transactions"
+    ADD CONSTRAINT "inventory_transactions_job_operation_id_fkey" FOREIGN KEY (job_operation_id) REFERENCES job_operations(id) ON DELETE SET NULL;
+
+ALTER TABLE "public"."inventory_unit_conversions"
+    ADD CONSTRAINT "inventory_unit_conversions_item_id_fkey" FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id) ON DELETE CASCADE;
+
 ALTER TABLE "public"."job_attachments"
     ADD CONSTRAINT "job_attachments_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
 
@@ -822,6 +1076,27 @@ ALTER TABLE "public"."operation_types"
 
 ALTER TABLE "public"."operation_types"
     ADD CONSTRAINT "operation_types_resource_group_id_fkey" FOREIGN KEY (resource_group_id) REFERENCES resource_groups(id) ON DELETE SET NULL;
+
+ALTER TABLE "public"."operator_sessions"
+    ADD CONSTRAINT "operator_sessions_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."operator_sessions"
+    ADD CONSTRAINT "operator_sessions_job_id_fkey" FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."operator_sessions"
+    ADD CONSTRAINT "operator_sessions_job_operation_id_fkey" FOREIGN KEY (job_operation_id) REFERENCES job_operations(id) ON DELETE SET NULL;
+
+ALTER TABLE "public"."operator_sessions"
+    ADD CONSTRAINT "operator_sessions_operation_type_id_fkey" FOREIGN KEY (operation_type_id) REFERENCES operation_types(id) ON DELETE RESTRICT;
+
+ALTER TABLE "public"."operator_sessions"
+    ADD CONSTRAINT "operator_sessions_operator_id_fkey" FOREIGN KEY (operator_id) REFERENCES operators(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."operators"
+    ADD CONSTRAINT "operators_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+
+ALTER TABLE "public"."operators"
+    ADD CONSTRAINT "operators_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 ALTER TABLE "public"."parts"
     ADD CONSTRAINT "parts_company_id_fkey" FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
@@ -900,6 +1175,14 @@ CREATE INDEX IF NOT EXISTS idx_companies_slug ON public.companies USING btree (s
 CREATE INDEX IF NOT EXISTS idx_customers_code ON public.customers USING btree (customer_code);
 CREATE INDEX IF NOT EXISTS idx_customers_company ON public.customers USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_customers_name ON public.customers USING btree (company_id, name);
+CREATE INDEX IF NOT EXISTS inventory_items_company_id_idx ON public.inventory_items USING btree (company_id);
+CREATE INDEX IF NOT EXISTS inventory_items_company_id_name_idx ON public.inventory_items USING btree (company_id, name);
+CREATE INDEX IF NOT EXISTS inventory_items_company_id_sku_idx ON public.inventory_items USING btree (company_id, sku) WHERE (sku IS NOT NULL);
+CREATE INDEX IF NOT EXISTS inventory_transactions_company_id_created_at_idx ON public.inventory_transactions USING btree (company_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS inventory_transactions_item_id_created_at_idx ON public.inventory_transactions USING btree (inventory_item_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS inventory_transactions_job_id_idx ON public.inventory_transactions USING btree (job_id) WHERE (job_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS inventory_transactions_job_operation_id_idx ON public.inventory_transactions USING btree (job_operation_id) WHERE (job_operation_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS inventory_unit_conversions_item_id_idx ON public.inventory_unit_conversions USING btree (inventory_item_id);
 CREATE INDEX IF NOT EXISTS idx_job_attachments_company ON public.job_attachments USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_job_attachments_job ON public.job_attachments USING btree (job_id);
 CREATE INDEX IF NOT EXISTS idx_job_attachments_source ON public.job_attachments USING btree (source_quote_attachment_id);
@@ -915,6 +1198,13 @@ CREATE INDEX IF NOT EXISTS idx_jobs_routing ON public.jobs USING btree (routing_
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON public.jobs USING btree (company_id, status);
 CREATE INDEX IF NOT EXISTS idx_operation_types_company ON public.operation_types USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_operation_types_group ON public.operation_types USING btree (resource_group_id);
+CREATE INDEX IF NOT EXISTS idx_operator_sessions_active ON public.operator_sessions USING btree (operator_id) WHERE (ended_at IS NULL);
+CREATE INDEX IF NOT EXISTS idx_operator_sessions_company ON public.operator_sessions USING btree (company_id);
+CREATE INDEX IF NOT EXISTS idx_operator_sessions_job ON public.operator_sessions USING btree (job_id);
+CREATE INDEX IF NOT EXISTS idx_operator_sessions_job_op ON public.operator_sessions USING btree (job_operation_id);
+CREATE INDEX IF NOT EXISTS idx_operator_sessions_operator ON public.operator_sessions USING btree (operator_id);
+CREATE INDEX IF NOT EXISTS idx_operators_company ON public.operators USING btree (company_id);
+CREATE INDEX IF NOT EXISTS idx_operators_user_id ON public.operators USING btree (user_id);
 CREATE INDEX IF NOT EXISTS idx_parts_company_id ON public.parts USING btree (company_id);
 CREATE INDEX IF NOT EXISTS idx_parts_customer_id ON public.parts USING btree (customer_id);
 CREATE INDEX IF NOT EXISTS idx_parts_part_number ON public.parts USING btree (company_id, part_number);
@@ -1098,51 +1388,34 @@ CREATE OR REPLACE FUNCTION public.create_job_operations_from_routing(p_job_id uu
  RETURNS integer
  LANGUAGE plpgsql
 AS $function$
- DECLARE
-     v_count integer := 0;
-     v_node record;
-     v_sequence integer := 10;
- BEGIN
-     -- Get nodes ordered by creation time (topological sort can be added later)
-     FOR v_node IN
-         SELECT rn.*, ot.name as operation_name
-         FROM routing_nodes rn
-         JOIN operation_types ot ON rn.operation_type_id = ot.id
-         WHERE rn.routing_id = p_routing_id
-         ORDER BY rn.created_at
-     LOOP
-         INSERT INTO job_operations (
-             job_id,
-             sequence,
-             operation_name,
-             operation_type_id,
-             instructions,
-             estimated_setup_hours,
-             estimated_run_hours_per_unit,
-             status
-         ) VALUES (
-             p_job_id,
-             v_sequence,
-             v_node.operation_name,
-             v_node.operation_type_id,
-             v_node.instructions,
-             v_node.setup_time,
-             v_node.run_time_per_unit,
-             'pending'
-         );
-         v_sequence := v_sequence + 10;
-         v_count := v_count + 1;
-     END LOOP;
-
-     -- Update job's current operation sequence
-     IF v_count > 0 THEN
-         UPDATE jobs SET current_operation_sequence = 10 WHERE id =
- p_job_id;
-     END IF;
-
-     RETURN v_count;
- END;
- $function$
+  DECLARE
+      v_count integer := 0;
+      v_node record;
+      v_sequence integer := 10;
+  BEGIN
+      FOR v_node IN
+          SELECT rn.*, ot.name as operation_name
+          FROM routing_nodes rn
+          JOIN operation_types ot ON rn.operation_type_id = ot.id
+          WHERE rn.routing_id = p_routing_id
+          ORDER BY rn.created_at
+      LOOP
+          INSERT INTO job_operations (
+              job_id, sequence, operation_name, operation_type_id,
+              instructions, estimated_setup_hours, estimated_run_hours_per_unit, status
+          ) VALUES (
+              p_job_id, v_sequence, v_node.operation_name, v_node.operation_type_id,
+              v_node.instructions, v_node.setup_time, v_node.run_time_per_unit, 'pending'
+          );
+          v_sequence := v_sequence + 10;
+          v_count := v_count + 1;
+      END LOOP;
+      IF v_count > 0 THEN
+          UPDATE jobs SET current_operation_sequence = 10 WHERE id = p_job_id;
+      END IF;
+      RETURN v_count;
+  END;
+  $function$
 
 ;
 
@@ -1292,6 +1565,18 @@ $function$
 
 ;
 
+CREATE OR REPLACE FUNCTION public.update_inventory_items_updated_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$function$
+
+;
+
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1355,6 +1640,9 @@ CREATE TRIGGER companies_updated_at BEFORE UPDATE ON public.companies FOR EACH R
 DROP TRIGGER IF EXISTS "customers_updated_at" ON "public"."customers";
 CREATE TRIGGER customers_updated_at BEFORE UPDATE ON public.customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS "inventory_items_updated_at" ON "public"."inventory_items";
+CREATE TRIGGER inventory_items_updated_at BEFORE UPDATE ON public.inventory_items FOR EACH ROW EXECUTE FUNCTION update_inventory_items_updated_at();
+
 DROP TRIGGER IF EXISTS "job_operations_updated_at" ON "public"."job_operations";
 CREATE TRIGGER job_operations_updated_at BEFORE UPDATE ON public.job_operations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -1369,6 +1657,12 @@ CREATE TRIGGER trigger_set_job_number BEFORE INSERT ON public.jobs FOR EACH ROW 
 
 DROP TRIGGER IF EXISTS "update_operation_types_updated_at" ON "public"."operation_types";
 CREATE TRIGGER update_operation_types_updated_at BEFORE UPDATE ON public.operation_types FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS "operator_sessions_updated_at" ON "public"."operator_sessions";
+CREATE TRIGGER operator_sessions_updated_at BEFORE UPDATE ON public.operator_sessions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS "operators_updated_at" ON "public"."operators";
+CREATE TRIGGER operators_updated_at BEFORE UPDATE ON public.operators FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS "parts_updated_at" ON "public"."parts";
 CREATE TRIGGER parts_updated_at BEFORE UPDATE ON public.parts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1410,6 +1704,15 @@ COMMENT ON TABLE "public"."companies"
 COMMENT ON TABLE "public"."customers"
     IS 'Customer records for each company. Customers place orders, receive quotes, and have jobs manufactured for them. Linked to parts (customer-specific parts), quotes, and jobs. Cannot be deleted if quotes or jobs exist (RESTRICT).';
 
+COMMENT ON TABLE "public"."inventory_items"
+    IS 'Core inventory item records with primary unit tracking. Stores materials, supplies, and other trackable items.';
+
+COMMENT ON TABLE "public"."inventory_transactions"
+    IS 'Full audit trail of all inventory changes (FR-13). Transactions are immutable.';
+
+COMMENT ON TABLE "public"."inventory_unit_conversions"
+    IS 'Secondary units with conversion factors to primary unit. Enables flexible inventory tracking (FR-1).';
+
 COMMENT ON TABLE "public"."job_attachments"
     IS 'PDF attachments for jobs. Created either by copying from quote on conversion, or uploaded directly to job. Phase 0 limits to one attachment per job (enforced in UI).';
 
@@ -1421,6 +1724,12 @@ COMMENT ON TABLE "public"."jobs"
 
 COMMENT ON TABLE "public"."operation_types"
     IS 'Operation types available in the shop (e.g., HURCO Mill, Mazak Lathe). Defines what work can be done and at what hourly cost.';
+
+COMMENT ON TABLE "public"."operator_sessions"
+    IS 'Work sessions tracking when operators are working on jobs. Used for time tracking and job progress.';
+
+COMMENT ON TABLE "public"."operators"
+    IS 'Shop floor operator accounts. Authenticate via PIN (hashed) or QR badge. Separate from admin users.';
 
 COMMENT ON TABLE "public"."parts"
     IS 'Parts catalog with customer-specific or generic parts. Each part has a part number, description, and flexible volume-based pricing stored as JSONB. Parts can belong to a specific customer or be generic (customer_id = NULL). Referenced by quotes, jobs, and routings.';
@@ -1544,6 +1853,24 @@ COMMENT ON COLUMN "public"."customers"."created_at"
 
 COMMENT ON COLUMN "public"."customers"."updated_at"
     IS 'Timestamp of last update. Auto-updated via trigger.';
+
+COMMENT ON COLUMN "public"."inventory_items"."primary_unit"
+    IS 'Base unit of measure (e.g., lbs, kg, pcs)';
+
+COMMENT ON COLUMN "public"."inventory_items"."quantity"
+    IS 'Current quantity in primary unit, must be >= 0';
+
+COMMENT ON COLUMN "public"."inventory_transactions"."item_name"
+    IS 'Snapshot of item name at transaction time for audit trail (preserved if item deleted)';
+
+COMMENT ON COLUMN "public"."inventory_transactions"."type"
+    IS 'addition (stock in), depletion (stock out), adjustment (correction)';
+
+COMMENT ON COLUMN "public"."inventory_transactions"."converted_quantity"
+    IS 'Quantity converted to primary unit';
+
+COMMENT ON COLUMN "public"."inventory_unit_conversions"."to_primary_factor"
+    IS 'Multiply quantity in from_unit by this factor to get quantity in primary unit';
 
 COMMENT ON COLUMN "public"."job_attachments"."id"
     IS 'Primary key. UUID auto-generated.';
@@ -1712,6 +2039,18 @@ COMMENT ON COLUMN "public"."operation_types"."created_at"
 
 COMMENT ON COLUMN "public"."operation_types"."updated_at"
     IS 'Timestamp when record was last updated';
+
+COMMENT ON COLUMN "public"."operator_sessions"."job_operation_id"
+    IS 'The specific job operation step being worked. Inferred from job + operation_type when session starts.';
+
+COMMENT ON COLUMN "public"."operator_sessions"."operation_type_id"
+    IS 'The operation type from the station QR code. Identifies which workstation the operator is at.';
+
+COMMENT ON COLUMN "public"."operator_sessions"."ended_at"
+    IS 'NULL while session is active. Set when operator stops or completes work.';
+
+COMMENT ON COLUMN "public"."operators"."user_id"
+    IS 'FK to auth.users - email stored in auth.users, not duplicated here';
 
 COMMENT ON COLUMN "public"."parts"."id"
     IS 'Primary key. UUID auto-generated.';

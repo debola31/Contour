@@ -5,16 +5,22 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import BackspaceIcon from '@mui/icons-material/Backspace';
-import { operatorLogin, isOperatorAuthenticated } from '@/utils/operatorAccess';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import EmailIcon from '@mui/icons-material/Email';
+import LockIcon from '@mui/icons-material/Lock';
+import { getSupabase } from '@/lib/supabase';
 
 /**
  * Operator Login Page.
  *
- * Mobile-first PIN entry with large keypad.
+ * Mobile-first email/password login using Supabase Auth.
  * Reads station (operation_type_id) from URL query param.
  */
 export default function OperatorLoginPage() {
@@ -24,33 +30,51 @@ export default function OperatorLoginPage() {
   const companyId = params.companyId as string;
   const stationId = searchParams.get('station') || undefined;
 
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [attempts, setAttempts] = useState(0);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-  // Redirect if already authenticated
+  const supabase = getSupabase();
+
+  // Check for existing session on mount
   useEffect(() => {
-    if (isOperatorAuthenticated()) {
-      router.push(`/operator/${companyId}/jobs`);
-    }
-  }, [companyId, router]);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
 
-  const handleKeyPress = (key: string) => {
-    if (loading) return;
+      if (session) {
+        // User is logged in, verify they're an operator for this company
+        const { data: operator } = await supabase
+          .from('operators')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .eq('company_id', companyId)
+          .single();
 
-    if (key === 'backspace') {
-      setPin((prev) => prev.slice(0, -1));
-      setError(null);
-    } else if (pin.length < 6) {
-      setPin((prev) => prev + key);
-      setError(null);
-    }
-  };
+        if (operator) {
+          // Check if password change required
+          if (session.user.user_metadata?.needs_password_change) {
+            router.push(`/operator/${companyId}/change-password`);
+          } else {
+            router.push(`/operator/${companyId}/jobs${stationId ? `?station=${stationId}` : ''}`);
+          }
+          return;
+        }
+      }
 
-  const handleSubmit = async () => {
-    if (pin.length < 4) {
-      setError('PIN must be at least 4 digits');
+      setCheckingSession(false);
+    };
+
+    checkSession();
+  }, [companyId, router, stationId, supabase]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter both email and password');
       return;
     }
 
@@ -58,42 +82,69 @@ export default function OperatorLoginPage() {
     setError(null);
 
     try {
-      await operatorLogin({
-        company_id: companyId,
-        pin,
-        operation_type_id: stationId,
+      // 1. Sign in with Supabase Auth
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
 
-      // Success - redirect to jobs
-      router.push(`/operator/${companyId}/jobs`);
-    } catch (err) {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-
-      if (newAttempts >= 3) {
-        setError('Too many failed attempts. Please contact your supervisor.');
-      } else {
-        setError(
-          err instanceof Error ? err.message : 'Invalid PIN. Please try again.'
-        );
+      if (authError) {
+        throw new Error(authError.message);
       }
-      setPin('');
+
+      if (!data.user) {
+        throw new Error('Login failed');
+      }
+
+      // 2. Validate user is an operator for this company
+      const { data: operator, error: opError } = await supabase
+        .from('operators')
+        .select('id, name')
+        .eq('user_id', data.user.id)
+        .eq('company_id', companyId)
+        .single();
+
+      if (opError || !operator) {
+        await supabase.auth.signOut();
+        throw new Error('You are not registered as an operator for this company');
+      }
+
+      // 3. Update last_login_at
+      await supabase
+        .from('operators')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', operator.id);
+
+      // 4. Check if password change required
+      if (data.user.user_metadata?.needs_password_change) {
+        router.push(`/operator/${companyId}/change-password`);
+        return;
+      }
+
+      // 5. Redirect to jobs
+      router.push(`/operator/${companyId}/jobs${stationId ? `?station=${stationId}` : ''}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Auto-submit when PIN is 4-6 digits and user pauses
-  useEffect(() => {
-    if (pin.length >= 4 && pin.length <= 6) {
-      const timer = setTimeout(() => {
-        handleSubmit();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [pin]);
-
-  const keypadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'backspace'];
+  if (checkingSession) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #111439 0%, #4682B4 50%, #111439 100%)',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -128,122 +179,89 @@ export default function OperatorLoginPage() {
           Jigged
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Enter your PIN to log in
+          Operator Sign In
         </Typography>
 
-        {/* PIN Display */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 1,
-            mb: 3,
-            minHeight: 48,
-          }}
-        >
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <Box
-              key={i}
-              sx={{
-                width: 40,
-                height: 48,
-                borderRadius: 1,
-                bgcolor: pin[i] ? 'primary.main' : 'rgba(255,255,255,0.1)',
-                border: '2px solid',
-                borderColor: pin[i] ? 'primary.main' : 'rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {pin[i] && (
-                <Box
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: '50%',
-                    bgcolor: 'white',
-                  }}
-                />
-              )}
-            </Box>
-          ))}
+        {/* Login Form */}
+        <Box component="form" onSubmit={handleSubmit}>
+          {/* Email Field */}
+          <TextField
+            fullWidth
+            type="email"
+            label="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+            autoComplete="email"
+            autoFocus
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <EmailIcon color="action" />
+                </InputAdornment>
+              ),
+              sx: { height: 56 },
+            }}
+          />
+
+          {/* Password Field */}
+          <TextField
+            fullWidth
+            type={showPassword ? 'text' : 'password'}
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            autoComplete="current-password"
+            sx={{ mb: 3 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                    disabled={loading}
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+              sx: { height: 56 },
+            }}
+          />
+
+          {/* Error Message */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Sign In Button */}
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={loading}
+            sx={{
+              height: 56,
+              fontSize: '1.1rem',
+              fontWeight: 600,
+            }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+          </Button>
         </Box>
-
-        {/* Error Message */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Keypad */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 1.5,
-            mb: 3,
-          }}
-        >
-          {keypadKeys.map((key, index) => (
-            <Box key={index}>
-              {key === '' ? (
-                <Box sx={{ height: 64 }} /> // Empty space
-              ) : key === 'backspace' ? (
-                <Button
-                  variant="outlined"
-                  onClick={() => handleKeyPress('backspace')}
-                  disabled={loading || pin.length === 0}
-                  sx={{
-                    minHeight: 64,
-                    width: '100%',
-                    fontSize: 24,
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                      bgcolor: 'rgba(70, 130, 180, 0.1)',
-                    },
-                  }}
-                >
-                  <BackspaceIcon />
-                </Button>
-              ) : (
-                <Button
-                  variant="outlined"
-                  onClick={() => handleKeyPress(key)}
-                  disabled={loading || attempts >= 3}
-                  sx={{
-                    minHeight: 64,
-                    width: '100%',
-                    fontSize: 28,
-                    fontWeight: 600,
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                      bgcolor: 'rgba(70, 130, 180, 0.1)',
-                    },
-                  }}
-                >
-                  {key}
-                </Button>
-              )}
-            </Box>
-          ))}
-        </Box>
-
-        {/* Loading Indicator */}
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <CircularProgress size={32} />
-          </Box>
-        )}
 
         {/* Station Info */}
         {stationId && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block' }}>
             Station: {stationId.slice(0, 8)}...
           </Typography>
         )}

@@ -14,10 +14,25 @@ import InputAdornment from '@mui/material/InputAdornment';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import { createOperator } from '@/utils/operatorAccess';
+import type { OperatorCreateResponse } from '@/types/operator';
+
+// Backend API URL for Python FastAPI server
+// The path /api/operators is where the operator creation endpoint lives
+const getOperatorApiUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  // If baseUrl already ends with /api, just append /operators
+  // Otherwise, append /api/operators
+  if (baseUrl.endsWith('/api')) {
+    return `${baseUrl}/operators`;
+  }
+  return `${baseUrl}/api/operators`;
+};
 
 /**
  * Create New Operator Page.
+ *
+ * Creates an operator with Supabase Auth (email/password).
+ * Admin sets a temporary password; operator must change on first login.
  */
 export default function NewOperatorPage() {
   const router = useRouter();
@@ -25,8 +40,9 @@ export default function NewOperatorPage() {
   const companyId = params.companyId as string;
 
   const [name, setName] = useState('');
-  const [pin, setPin] = useState('');
-  const [showPin, setShowPin] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,8 +54,19 @@ export default function NewOperatorPage() {
       return;
     }
 
-    if (!pin || !/^\d{4,6}$/.test(pin)) {
-      setError('PIN must be 4-6 digits');
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    // Basic email validation
+    if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -47,11 +74,29 @@ export default function NewOperatorPage() {
     setError(null);
 
     try {
-      await createOperator({
-        company_id: companyId,
-        name: name.trim(),
-        pin,
+      // Call backend API to create operator with Supabase user
+      const url = getOperatorApiUrl();
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to create operator' }));
+        throw new Error(errorData.detail || 'Failed to create operator');
+      }
+
+      const data: OperatorCreateResponse = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to create operator');
+      }
 
       router.push(`/dashboard/${companyId}/team`);
     } catch (err) {
@@ -103,28 +148,36 @@ export default function NewOperatorPage() {
           />
 
           <TextField
-            label="PIN"
+            label="Email"
+            type="email"
             fullWidth
             required
-            type={showPin ? 'text' : 'password'}
-            value={pin}
-            onChange={(e) => {
-              // Only allow digits
-              const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-              setPin(value);
-            }}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             sx={{ mb: 3 }}
-            placeholder="4-6 digits"
-            helperText="Operator will use this PIN to log in"
+            placeholder="operator@example.com"
+            helperText="Operator will use this email to log in"
+          />
+
+          <TextField
+            label="Temporary Password"
+            fullWidth
+            required
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            sx={{ mb: 3 }}
+            placeholder="Minimum 8 characters"
+            helperText="Operator will be required to change this on first login"
             slotProps={{
               input: {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      onClick={() => setShowPin(!showPin)}
+                      onClick={() => setShowPassword(!showPassword)}
                       edge="end"
                     >
-                      {showPin ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </InputAdornment>
                 ),

@@ -1,7 +1,9 @@
 /**
  * TypeScript types for the Operator View module.
  *
- * Matches the Pydantic models in api/models/operators_models.py
+ * Authentication is handled via Supabase Auth (email/password).
+ * Operators authenticate the same way as admin users, but access
+ * a dedicated operator interface and have operator-specific records.
  */
 
 // ============================================================================
@@ -9,18 +11,26 @@
 // ============================================================================
 
 /**
- * Operator data as seen in admin views.
- * Note: PIN is never included in responses.
+ * Operator data as stored in the database.
+ * Note: Email is stored in auth.users, not duplicated here.
+ * Use OperatorWithEmail when displaying email is needed.
  */
 export interface Operator {
   id: string;
   company_id: string;
+  user_id: string;
   name: string;
-  qr_code_id: string | null;
-  is_active: boolean;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Operator with email fetched from auth.users.
+ * Used for display purposes in admin views.
+ */
+export interface OperatorWithEmail extends Operator {
+  email: string | null;
 }
 
 /**
@@ -29,8 +39,18 @@ export interface Operator {
 export interface OperatorCreateRequest {
   company_id: string;
   name: string;
-  pin: string; // 4-6 digits
-  qr_code_id?: string;
+  email: string;
+  password: string; // Temporary password, operator must change on first login
+}
+
+/**
+ * Response from creating an operator.
+ */
+export interface OperatorCreateResponse {
+  success: boolean;
+  operator_id: string;
+  user_id: string;
+  message: string;
 }
 
 /**
@@ -38,35 +58,16 @@ export interface OperatorCreateRequest {
  */
 export interface OperatorUpdateRequest {
   name?: string;
-  pin?: string; // 4-6 digits, will be re-hashed
-  qr_code_id?: string;
-  is_active?: boolean;
 }
 
 // ============================================================================
-// AUTHENTICATION TYPES
+// AUTHENTICATION - Handled by Supabase Auth
 // ============================================================================
 
-/**
- * Request body for operator login.
- */
-export interface OperatorLoginRequest {
-  company_id: string;
-  pin?: string; // 4-6 digits
-  qr_code_id?: string;
-  operation_type_id?: string; // Station from QR code
-}
-
-/**
- * Response from successful operator login.
- */
-export interface OperatorLoginResponse {
-  success: boolean;
-  operator_id: string;
-  operator_name: string;
-  token: string;
-  expires_in_hours: number;
-}
+// Note: Operator authentication uses standard Supabase Auth (email/password).
+// Use supabase.auth.signInWithPassword() for login.
+// Use supabase.auth.signOut() for logout.
+// Use supabase.auth.updateUser() for password changes.
 
 // ============================================================================
 // SESSION TYPES

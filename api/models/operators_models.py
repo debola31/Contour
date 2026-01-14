@@ -1,106 +1,61 @@
 """
 Pydantic models for Operator View module.
 
-Handles operator authentication, sessions, and admin CRUD operations.
+Handles operator creation and session tracking.
+Authentication is handled via Supabase Auth (email/password).
 """
 
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, EmailStr
 import re
-
-
-# ============================================================================
-# OPERATOR AUTHENTICATION
-# ============================================================================
-
-class OperatorLoginRequest(BaseModel):
-    """Request body for operator login via PIN or QR badge."""
-    company_id: str
-    pin: Optional[str] = None  # 4-6 digits
-    qr_code_id: Optional[str] = None
-    operation_type_id: Optional[str] = None  # Station from QR code
-
-    @field_validator('pin')
-    @classmethod
-    def validate_pin_format(cls, v):
-        if v and not re.match(r'^\d{4,6}$', v):
-            raise ValueError('PIN must be 4-6 digits')
-        return v
-
-
-class OperatorLoginResponse(BaseModel):
-    """Response after successful operator login."""
-    success: bool
-    operator_id: str
-    operator_name: str
-    token: str
-    expires_in_hours: int = 8
-    # Note: Never return PIN or pin_hash
 
 
 # ============================================================================
 # OPERATOR CRUD (Admin)
 # ============================================================================
 
-class PinHashRequest(BaseModel):
-    """Request body for hashing a PIN (used by frontend when creating/updating operators)."""
-    pin: str
-
-    @field_validator('pin')
-    @classmethod
-    def validate_pin_format(cls, v):
-        if not re.match(r'^\d{4,6}$', v):
-            raise ValueError('PIN must be 4-6 digits')
-        return v
-
-
-class PinHashResponse(BaseModel):
-    """Response with hashed PIN."""
-    pin_hash: str
-
-
-class OperatorCreate(BaseModel):
+class OperatorCreateRequest(BaseModel):
     """Request body for creating a new operator (admin)."""
     company_id: str
     name: str
-    pin: str  # Will be hashed before storage
-    qr_code_id: Optional[str] = None
+    email: str
+    password: str  # Temporary password, operator must change on first login
 
-    @field_validator('pin')
+    @field_validator('email')
     @classmethod
-    def validate_pin_format(cls, v):
-        if not re.match(r'^\d{4,6}$', v):
-            raise ValueError('PIN must be 4-6 digits')
+    def validate_email(cls, v):
+        # Basic email validation
+        if not re.match(r'^[^@]+@[^@]+\.[^@]+$', v):
+            raise ValueError('Invalid email address')
+        return v.lower()
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
         return v
 
 
-class OperatorUpdate(BaseModel):
-    """Request body for updating an operator (admin)."""
-    name: Optional[str] = None
-    pin: Optional[str] = None  # Will be hashed if provided
-    qr_code_id: Optional[str] = None
-    is_active: Optional[bool] = None
-
-    @field_validator('pin')
-    @classmethod
-    def validate_pin_format(cls, v):
-        if v and not re.match(r'^\d{4,6}$', v):
-            raise ValueError('PIN must be 4-6 digits')
-        return v
+class OperatorCreateResponse(BaseModel):
+    """Response after creating an operator."""
+    success: bool
+    operator_id: str
+    user_id: str
+    message: str
 
 
 class OperatorResponse(BaseModel):
     """Response model for operator data (admin view)."""
     id: str
     company_id: str
+    user_id: str
     name: str
-    qr_code_id: Optional[str]
-    is_active: bool
+    email: Optional[str] = None  # Fetched from auth.users
     last_login_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
-    # Note: Never include pin or pin_hash
 
 
 # ============================================================================

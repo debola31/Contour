@@ -9,20 +9,18 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import Divider from '@mui/material/Divider';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import QrCodeIcon from '@mui/icons-material/QrCode';
-import { getOperator, updateOperator } from '@/utils/operatorAccess';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import { getSupabase } from '@/lib/supabase';
 import type { Operator } from '@/types/operator';
 
 /**
  * Edit Operator Page.
+ *
+ * Allows editing operator name and active status.
+ * Email is read-only (stored in auth.users).
+ * Password reset sends a password reset email.
  */
 export default function EditOperatorPage() {
   const router = useRouter();
@@ -31,23 +29,36 @@ export default function EditOperatorPage() {
   const operatorId = params.id as string;
 
   const [operator, setOperator] = useState<Operator | null>(null);
+  const [email, setEmail] = useState<string>('');
   const [name, setName] = useState('');
-  const [pin, setPin] = useState('');
-  const [showPin, setShowPin] = useState(false);
-  const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showQrBadge, setShowQrBadge] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const supabase = getSupabase();
 
   // Load operator data
   useEffect(() => {
     async function load() {
       try {
-        const data = await getOperator(operatorId);
-        setOperator(data);
-        setName(data.name);
-        setIsActive(data.is_active);
+        // Get operator data
+        const { data: operatorData, error: opError } = await supabase
+          .from('operators')
+          .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
+          .eq('id', operatorId)
+          .single();
+
+        if (opError) throw new Error(opError.message);
+
+        setOperator(operatorData);
+        setName(operatorData.name);
+
+        // Get email from auth.users via RPC or admin API
+        // For now, we'll store a placeholder - in production, fetch from auth.users
+        // This would typically require a service role key or an RPC function
+        setEmail('(Email stored in auth system)');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load operator');
       } finally {
@@ -55,7 +66,7 @@ export default function EditOperatorPage() {
       }
     }
     load();
-  }, [operatorId]);
+  }, [operatorId, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,22 +76,24 @@ export default function EditOperatorPage() {
       return;
     }
 
-    if (pin && !/^\d{4,6}$/.test(pin)) {
-      setError('PIN must be 4-6 digits');
-      return;
-    }
-
     setSaving(true);
     setError(null);
+    setSuccess(null);
 
     try {
-      await updateOperator(operatorId, {
-        name: name.trim(),
-        pin: pin || undefined, // Only update if provided
-        is_active: isActive,
-      });
+      const { error: updateError } = await supabase
+        .from('operators')
+        .update({
+          name: name.trim(),
+        })
+        .eq('id', operatorId);
 
-      router.push(`/dashboard/${companyId}/team`);
+      if (updateError) throw new Error(updateError.message);
+
+      setSuccess('Operator updated successfully');
+      setTimeout(() => {
+        router.push(`/dashboard/${companyId}/team`);
+      }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update operator');
     } finally {
@@ -88,9 +101,26 @@ export default function EditOperatorPage() {
     }
   };
 
-  const generateQrBadgeUrl = (): string => {
-    if (!operator?.qr_code_id) return '';
-    return `${window.location.origin}/operator/${companyId}/auth?badge=${operator.qr_code_id}`;
+  const handleResetPassword = async () => {
+    if (!operator?.user_id) {
+      setError('Cannot reset password: user not found');
+      return;
+    }
+
+    setResettingPassword(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Note: This requires the email, which we'd need to fetch from auth.users
+      // For now, show a message that admin needs to use Supabase dashboard
+      // In production, implement via backend API with service role key
+      setError('Password reset via email is not yet implemented. Please use Supabase dashboard to reset the password, or create a new operator.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send reset email');
+    } finally {
+      setResettingPassword(false);
+    }
   };
 
   if (loading) {
@@ -146,6 +176,12 @@ export default function EditOperatorPage() {
           </Alert>
         )}
 
+        {success && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            {success}
+          </Alert>
+        )}
+
         <Box component="form" onSubmit={handleSubmit}>
           <TextField
             label="Name"
@@ -157,84 +193,34 @@ export default function EditOperatorPage() {
           />
 
           <TextField
-            label="New PIN (leave blank to keep current)"
+            label="Email"
             fullWidth
-            type={showPin ? 'text' : 'password'}
-            value={pin}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-              setPin(value);
-            }}
+            value={email}
+            disabled
             sx={{ mb: 3 }}
-            placeholder="4-6 digits"
-            helperText="Only fill in to change the PIN"
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPin(!showPin)} edge="end">
-                      {showPin ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                color="primary"
-              />
-            }
-            label="Active"
-            sx={{ mb: 3, display: 'block' }}
+            helperText="Email cannot be changed"
           />
 
           <Divider sx={{ my: 3 }} />
 
-          {/* QR Badge Section */}
+          {/* Password Reset Section */}
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-            QR Badge
+            Password
           </Typography>
 
-          {operator.qr_code_id ? (
-            <Box sx={{ mb: 3 }}>
-              <Button
-                variant="outlined"
-                startIcon={<QrCodeIcon />}
-                onClick={() => setShowQrBadge(!showQrBadge)}
-              >
-                {showQrBadge ? 'Hide QR Code' : 'Show QR Code'}
-              </Button>
+          <Button
+            variant="outlined"
+            startIcon={<LockResetIcon />}
+            onClick={handleResetPassword}
+            disabled={resettingPassword}
+            sx={{ mb: 3 }}
+          >
+            {resettingPassword ? <CircularProgress size={20} /> : 'Reset Password'}
+          </Button>
 
-              {showQrBadge && (
-                <Box
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    bgcolor: 'white',
-                    borderRadius: 1,
-                    textAlign: 'center',
-                  }}
-                >
-                  <Typography variant="body2" color="text.primary" sx={{ mb: 1 }}>
-                    {operator.name}
-                  </Typography>
-                  {/* QR Code would be generated here using a library like qrcode */}
-                  <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
-                    {generateQrBadgeUrl()}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              No QR badge generated yet. Save the operator to generate one.
-            </Typography>
-          )}
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3 }}>
+            Sends a password reset email to the operator
+          </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             <Button

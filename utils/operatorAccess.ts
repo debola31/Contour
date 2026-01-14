@@ -1,15 +1,17 @@
 /**
- * Operator View API utilities.
+ * Operator View utilities.
  *
- * These functions handle operator authentication and job operations.
- * - Operator auth (login/logout) and job operations use FastAPI (JWT + complex logic)
- * - Admin CRUD operations use Supabase directly (matches pattern for customers, parts, jobs)
+ * With Supabase Auth, operators authenticate using email/password via
+ * supabase.auth.signInWithPassword(). Most operations now use direct
+ * Supabase client calls with RLS policies.
+ *
+ * This file provides:
+ * - Admin CRUD operations for operators (list, get, update, delete)
+ * - Session helper utilities
  */
 
 import { getSupabase } from '@/lib/supabase';
 import type {
-  OperatorLoginRequest,
-  OperatorLoginResponse,
   OperatorJob,
   OperatorJobDetail,
   OperatorSession,
@@ -19,278 +21,12 @@ import type {
   JobCompleteRequest,
   JobCompleteResponse,
   Operator,
-  OperatorCreateRequest,
   OperatorUpdateRequest,
 } from '@/types/operator';
-
-// API base URL - uses FastAPI backend
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
-
-// Token storage key
-const TOKEN_KEY = 'operator_token';
-
-// ============================================================================
-// TOKEN MANAGEMENT
-// ============================================================================
-
-/**
- * Get the stored operator JWT token.
- */
-export function getOperatorToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-/**
- * Store the operator JWT token.
- */
-export function setOperatorToken(token: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-/**
- * Remove the operator JWT token.
- */
-export function clearOperatorToken(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-/**
- * Check if an operator is authenticated.
- */
-export function isOperatorAuthenticated(): boolean {
-  return !!getOperatorToken();
-}
-
-/**
- * Decode JWT token payload (without verification).
- * Used to extract operator info client-side.
- */
-export function decodeOperatorToken(): {
-  operator_id: string;
-  company_id: string;
-  operator_name: string;
-  operation_type_id: string | null;
-  exp: number;
-} | null {
-  const token = getOperatorToken();
-  if (!token) return null;
-
-  try {
-    const payload = token.split('.')[1];
-    const decoded = JSON.parse(atob(payload));
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Check if the operator token is expired.
- */
-export function isTokenExpired(): boolean {
-  const decoded = decodeOperatorToken();
-  if (!decoded) return true;
-
-  const now = Date.now() / 1000;
-  return decoded.exp < now;
-}
-
-// ============================================================================
-// API HELPERS
-// ============================================================================
-
-/**
- * Make an authenticated API request.
- */
-async function operatorFetch<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = getOperatorToken();
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (response.status === 401) {
-    // Token expired or invalid
-    clearOperatorToken();
-    throw new Error('Session expired. Please log in again.');
-  }
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-    throw new Error(error.detail || 'Request failed');
-  }
-
-  // Handle 204 No Content
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
-}
-
-// ============================================================================
-// OPERATOR AUTHENTICATION
-// ============================================================================
-
-/**
- * Log in an operator via PIN or QR badge.
- */
-export async function operatorLogin(
-  request: OperatorLoginRequest
-): Promise<OperatorLoginResponse> {
-  const response = await fetch(`${API_BASE}/operator/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Login failed' }));
-    throw new Error(error.detail || 'Login failed');
-  }
-
-  const data: OperatorLoginResponse = await response.json();
-
-  // Store the token
-  setOperatorToken(data.token);
-
-  return data;
-}
-
-/**
- * Log out the current operator.
- */
-export async function operatorLogout(): Promise<void> {
-  try {
-    await operatorFetch('/operator/logout', { method: 'POST' });
-  } finally {
-    clearOperatorToken();
-  }
-}
-
-// ============================================================================
-// OPERATOR JOB OPERATIONS
-// ============================================================================
-
-/**
- * Get list of jobs available for the operator.
- * Optionally filtered by operation type (station).
- */
-export async function getOperatorJobs(
-  operationTypeId?: string
-): Promise<OperatorJob[]> {
-  const params = operationTypeId
-    ? `?operation_type_id=${operationTypeId}`
-    : '';
-  return operatorFetch<OperatorJob[]>(`/operator/jobs${params}`);
-}
-
-/**
- * Get detailed job information.
- */
-export async function getOperatorJobDetail(
-  jobId: string,
-  operationTypeId?: string
-): Promise<OperatorJobDetail> {
-  const params = operationTypeId
-    ? `?operation_type_id=${operationTypeId}`
-    : '';
-  return operatorFetch<OperatorJobDetail>(`/operator/jobs/${jobId}${params}`);
-}
-
-/**
- * Start working on a job.
- */
-export async function startJob(
-  jobId: string,
-  request: JobStartRequest
-): Promise<OperatorSession> {
-  return operatorFetch<OperatorSession>(`/operator/jobs/${jobId}/start`, {
-    method: 'POST',
-    body: JSON.stringify(request),
-  });
-}
-
-/**
- * Stop (pause) work on a job.
- */
-export async function stopJob(
-  jobId: string,
-  request?: JobStopRequest
-): Promise<OperatorSession> {
-  return operatorFetch<OperatorSession>(`/operator/jobs/${jobId}/stop`, {
-    method: 'POST',
-    body: JSON.stringify(request || {}),
-  });
-}
-
-/**
- * Mark a job operation as complete.
- */
-export async function completeJob(
-  jobId: string,
-  request: JobCompleteRequest
-): Promise<JobCompleteResponse> {
-  return operatorFetch<JobCompleteResponse>(`/operator/jobs/${jobId}/complete`, {
-    method: 'POST',
-    body: JSON.stringify(request),
-  });
-}
-
-/**
- * Get the operator's current active session, if any.
- */
-export async function getActiveSession(): Promise<ActiveSession | null> {
-  try {
-    return await operatorFetch<ActiveSession>('/operator/active');
-  } catch (error) {
-    // 404 means no active session
-    if (error instanceof Error && error.message.includes('404')) {
-      return null;
-    }
-    throw error;
-  }
-}
 
 // ============================================================================
 // ADMIN OPERATOR CRUD (uses Supabase directly)
 // ============================================================================
-
-/**
- * Hash a PIN via the API.
- * bcrypt hashing must be done server-side for security.
- */
-async function hashPin(pin: string): Promise<string> {
-  const response = await fetch(`${API_BASE}/operators/hash-pin`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Failed to hash PIN' }));
-    throw new Error(error.detail || 'Failed to hash PIN');
-  }
-
-  const data = await response.json();
-  return data.pin_hash;
-}
 
 /**
  * List all operators for a company (admin).
@@ -299,7 +35,7 @@ export async function listOperators(companyId: string): Promise<Operator[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('operators')
-    .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
+    .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
     .eq('company_id', companyId)
     .order('name');
 
@@ -314,7 +50,7 @@ export async function getOperator(operatorId: string): Promise<Operator> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('operators')
-    .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
+    .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
     .eq('id', operatorId)
     .single();
 
@@ -323,33 +59,8 @@ export async function getOperator(operatorId: string): Promise<Operator> {
 }
 
 /**
- * Create a new operator (admin).
- */
-export async function createOperator(
-  request: OperatorCreateRequest
-): Promise<Operator> {
-  // Hash the PIN via API (bcrypt must be server-side)
-  const pin_hash = await hashPin(request.pin);
-
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from('operators')
-    .insert({
-      company_id: request.company_id,
-      name: request.name,
-      pin_hash,
-      qr_code_id: request.qr_code_id || crypto.randomUUID(),
-      is_active: true,
-    })
-    .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-/**
  * Update an operator (admin).
+ * Note: Email changes require updating auth.users via service role key.
  */
 export async function updateOperator(
   operatorId: string,
@@ -359,19 +70,12 @@ export async function updateOperator(
 
   const updates: Record<string, unknown> = {};
   if (request.name !== undefined) updates.name = request.name;
-  if (request.is_active !== undefined) updates.is_active = request.is_active;
-  if (request.qr_code_id !== undefined) updates.qr_code_id = request.qr_code_id;
-
-  // If PIN is being updated, hash it via API
-  if (request.pin) {
-    updates.pin_hash = await hashPin(request.pin);
-  }
 
   const { data, error } = await supabase
     .from('operators')
     .update(updates)
     .eq('id', operatorId)
-    .select('id, company_id, name, qr_code_id, is_active, last_login_at, created_at, updated_at')
+    .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
     .single();
 
   if (error) throw new Error(error.message);
@@ -380,6 +84,8 @@ export async function updateOperator(
 
 /**
  * Delete an operator (admin).
+ * Note: This only deletes the operator record. The Supabase auth user
+ * may still exist and can be used for other roles.
  */
 export async function deleteOperator(operatorId: string): Promise<void> {
   const supabase = getSupabase();
@@ -391,15 +97,480 @@ export async function deleteOperator(operatorId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ============================================================================
+// OPERATOR SESSION HELPERS (Direct Supabase queries)
+// ============================================================================
+
+/**
+ * Get the current operator from the authenticated Supabase session.
+ * Returns null if not authenticated or not an operator.
+ */
+export async function getCurrentOperator(companyId: string): Promise<{
+  id: string;
+  name: string;
+  user_id: string;
+} | null> {
+  const supabase = getSupabase();
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const { data: operator } = await supabase
+    .from('operators')
+    .select('id, name, user_id')
+    .eq('user_id', session.user.id)
+    .eq('company_id', companyId)
+    .single();
+
+  return operator;
+}
+
+/**
+ * Get list of jobs available for the operator.
+ * Optionally filtered by operation type (station).
+ */
+export async function getOperatorJobs(
+  companyId: string,
+  operationTypeId?: string
+): Promise<OperatorJob[]> {
+  const supabase = getSupabase();
+
+  // Get jobs for this company
+  const { data: jobs, error } = await supabase
+    .from('jobs')
+    .select(`
+      id, job_number, due_date, status, quantity_ordered, quantity_completed,
+      customers(name),
+      parts(name, part_number)
+    `)
+    .eq('company_id', companyId)
+    .in('status', ['pending', 'in_progress', 'released'])
+    .order('due_date', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  if (!jobs) return [];
+
+  const result: OperatorJob[] = [];
+
+  for (const job of jobs) {
+    // Get operations for this job
+    let opsQuery = supabase
+      .from('job_operations')
+      .select('id, operation_name, status, operation_type_id')
+      .eq('job_id', job.id);
+
+    if (operationTypeId) {
+      opsQuery = opsQuery.eq('operation_type_id', operationTypeId);
+    }
+
+    const { data: ops } = await opsQuery;
+
+    // Skip jobs with no matching operations if filtering by operation type
+    if (operationTypeId && (!ops || ops.length === 0)) continue;
+
+    // Find current operation for this station
+    const currentOp = ops?.find((op) =>
+      op.status === 'pending' || op.status === 'in_progress'
+    );
+
+    // Check if someone is working on this operation
+    let currentOperatorName: string | null = null;
+    if (currentOp) {
+      const { data: sessionData } = await supabase
+        .from('operator_sessions')
+        .select('operators(name)')
+        .eq('job_operation_id', currentOp.id)
+        .is('ended_at', null)
+        .single();
+
+      if (sessionData?.operators) {
+        currentOperatorName = (sessionData.operators as { name: string }).name;
+      }
+    }
+
+    result.push({
+      id: job.id,
+      job_number: job.job_number,
+      customer_name: (job.customers as { name: string } | null)?.name || null,
+      part_name: (job.parts as { name: string; part_number: string } | null)?.name || null,
+      part_number: (job.parts as { name: string; part_number: string } | null)?.part_number || null,
+      due_date: job.due_date,
+      status: job.status,
+      quantity_ordered: job.quantity_ordered,
+      quantity_completed: job.quantity_completed,
+      operation_id: currentOp?.id || null,
+      operation_name: currentOp?.operation_name || null,
+      operation_status: currentOp?.status || null,
+      current_operator_name: currentOperatorName,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Get detailed job information.
+ */
+export async function getOperatorJobDetail(
+  jobId: string,
+  companyId: string,
+  operationTypeId?: string
+): Promise<OperatorJobDetail | null> {
+  const supabase = getSupabase();
+
+  const { data: job, error } = await supabase
+    .from('jobs')
+    .select(`
+      id, job_number, due_date, status, quantity_ordered, quantity_completed,
+      customers(name),
+      parts(name, part_number)
+    `)
+    .eq('id', jobId)
+    .eq('company_id', companyId)
+    .single();
+
+  if (error || !job) return null;
+
+  // Get operations for this job
+  let opsQuery = supabase
+    .from('job_operations')
+    .select('id, operation_name, status, instructions, estimated_setup_hours, estimated_run_hours_per_unit, operation_type_id')
+    .eq('job_id', jobId);
+
+  if (operationTypeId) {
+    opsQuery = opsQuery.eq('operation_type_id', operationTypeId);
+  }
+
+  const { data: ops } = await opsQuery;
+
+  const currentOp = ops?.find((op) =>
+    op.status === 'pending' || op.status === 'in_progress'
+  );
+
+  // Get active session for this operation
+  let activeSessionId: string | null = null;
+  let sessionStartedAt: string | null = null;
+  let currentOperatorId: string | null = null;
+  let currentOperatorName: string | null = null;
+
+  if (currentOp) {
+    const { data: sessionData } = await supabase
+      .from('operator_sessions')
+      .select('id, started_at, operator_id, operators(name)')
+      .eq('job_operation_id', currentOp.id)
+      .is('ended_at', null)
+      .single();
+
+    if (sessionData) {
+      activeSessionId = sessionData.id;
+      sessionStartedAt = sessionData.started_at;
+      currentOperatorId = sessionData.operator_id;
+      currentOperatorName = (sessionData.operators as { name: string } | null)?.name || null;
+    }
+  }
+
+  // Calculate estimated hours
+  let estimatedHours: number | null = null;
+  if (currentOp) {
+    const setup = Number(currentOp.estimated_setup_hours) || 0;
+    const runPer = Number(currentOp.estimated_run_hours_per_unit) || 0;
+    const qty = job.quantity_ordered || 1;
+    estimatedHours = setup + (runPer * qty);
+  }
+
+  return {
+    id: job.id,
+    job_number: job.job_number,
+    customer_name: (job.customers as { name: string } | null)?.name || null,
+    part_name: (job.parts as { name: string; part_number: string } | null)?.name || null,
+    part_number: (job.parts as { name: string; part_number: string } | null)?.part_number || null,
+    due_date: job.due_date,
+    status: job.status,
+    quantity_ordered: job.quantity_ordered,
+    quantity_completed: job.quantity_completed,
+    operation_id: currentOp?.id || null,
+    operation_name: currentOp?.operation_name || null,
+    operation_status: currentOp?.status || null,
+    instructions: currentOp?.instructions || null,
+    estimated_hours: estimatedHours,
+    active_session_id: activeSessionId,
+    session_started_at: sessionStartedAt,
+    current_operator_id: currentOperatorId,
+    current_operator_name: currentOperatorName,
+  };
+}
+
+/**
+ * Start working on a job.
+ */
+export async function startJob(
+  jobId: string,
+  operatorId: string,
+  companyId: string,
+  request: JobStartRequest
+): Promise<OperatorSession> {
+  const supabase = getSupabase();
+
+  // 1. Find the matching job_operation
+  const { data: jobOp, error: opError } = await supabase
+    .from('job_operations')
+    .select('*')
+    .eq('job_id', jobId)
+    .eq('operation_type_id', request.operation_type_id)
+    .in('status', ['pending', 'in_progress'])
+    .single();
+
+  if (opError || !jobOp) {
+    throw new Error('No pending operation found for this job and station');
+  }
+
+  // 2. Auto-stop any existing active session for this operator
+  const { data: existing } = await supabase
+    .from('operator_sessions')
+    .select('id')
+    .eq('operator_id', operatorId)
+    .is('ended_at', null);
+
+  if (existing && existing.length > 0) {
+    await supabase
+      .from('operator_sessions')
+      .update({ ended_at: new Date().toISOString() })
+      .eq('id', existing[0].id);
+  }
+
+  // 3. Create new session
+  const now = new Date().toISOString();
+  const { data: session, error: sessionError } = await supabase
+    .from('operator_sessions')
+    .insert({
+      company_id: companyId,
+      operator_id: operatorId,
+      job_id: jobId,
+      job_operation_id: jobOp.id,
+      operation_type_id: request.operation_type_id,
+      started_at: now,
+    })
+    .select()
+    .single();
+
+  if (sessionError) throw new Error(sessionError.message);
+
+  // 4. Update job_operation to in_progress
+  await supabase
+    .from('job_operations')
+    .update({ status: 'in_progress', started_at: now })
+    .eq('id', jobOp.id);
+
+  return {
+    id: session.id,
+    operator_id: operatorId,
+    job_id: jobId,
+    job_operation_id: jobOp.id,
+    operation_type_id: request.operation_type_id,
+    started_at: now,
+    ended_at: null,
+    notes: null,
+  };
+}
+
+/**
+ * Stop (pause) work on a job.
+ */
+export async function stopJob(
+  jobId: string,
+  operatorId: string,
+  request?: JobStopRequest
+): Promise<OperatorSession> {
+  const supabase = getSupabase();
+
+  // Find active session for this job
+  const { data: session, error } = await supabase
+    .from('operator_sessions')
+    .select('*')
+    .eq('operator_id', operatorId)
+    .eq('job_id', jobId)
+    .is('ended_at', null)
+    .single();
+
+  if (error || !session) {
+    throw new Error('No active session found');
+  }
+
+  const now = new Date().toISOString();
+
+  // End the session
+  await supabase
+    .from('operator_sessions')
+    .update({
+      ended_at: now,
+      notes: request?.notes || null,
+    })
+    .eq('id', session.id);
+
+  // Calculate duration
+  const started = new Date(session.started_at);
+  const ended = new Date(now);
+  const durationSeconds = Math.floor((ended.getTime() - started.getTime()) / 1000);
+
+  return {
+    id: session.id,
+    operator_id: operatorId,
+    job_id: jobId,
+    job_operation_id: session.job_operation_id,
+    operation_type_id: session.operation_type_id,
+    started_at: session.started_at,
+    ended_at: now,
+    notes: request?.notes || null,
+    duration_seconds: durationSeconds,
+  };
+}
+
+/**
+ * Mark a job operation as complete.
+ */
+export async function completeJob(
+  jobId: string,
+  operatorId: string,
+  request: JobCompleteRequest
+): Promise<JobCompleteResponse> {
+  const supabase = getSupabase();
+
+  // Find active session for this job
+  const { data: session, error } = await supabase
+    .from('operator_sessions')
+    .select('*')
+    .eq('operator_id', operatorId)
+    .eq('job_id', jobId)
+    .is('ended_at', null)
+    .single();
+
+  if (error || !session) {
+    throw new Error('No active session found');
+  }
+
+  const now = new Date().toISOString();
+
+  // 1. End the session
+  await supabase
+    .from('operator_sessions')
+    .update({
+      ended_at: now,
+      notes: request.notes || null,
+    })
+    .eq('id', session.id);
+
+  // 2. Mark job_operation as completed
+  if (session.job_operation_id) {
+    await supabase
+      .from('job_operations')
+      .update({
+        status: 'completed',
+        completed_at: now,
+        quantity_completed: request.quantity_completed || 1,
+        quantity_scrapped: request.quantity_scrapped || 0,
+      })
+      .eq('id', session.job_operation_id);
+  }
+
+  // 3. Check if all operations are complete
+  const { data: remaining } = await supabase
+    .from('job_operations')
+    .select('id')
+    .eq('job_id', jobId)
+    .not('status', 'in', '("completed","skipped")');
+
+  const jobCompleted = !remaining || remaining.length === 0;
+
+  if (jobCompleted) {
+    await supabase
+      .from('jobs')
+      .update({ status: 'completed' })
+      .eq('id', jobId);
+  }
+
+  // Calculate duration
+  const started = new Date(session.started_at);
+  const ended = new Date(now);
+  const durationSeconds = Math.floor((ended.getTime() - started.getTime()) / 1000);
+
+  return {
+    success: true,
+    session_id: session.id,
+    duration_seconds: durationSeconds,
+    job_completed: jobCompleted,
+  };
+}
+
+/**
+ * Get the operator's current active session, if any.
+ */
+export async function getActiveSession(
+  operatorId: string
+): Promise<ActiveSession | null> {
+  const supabase = getSupabase();
+
+  const { data: session } = await supabase
+    .from('operator_sessions')
+    .select(`
+      id, job_id, job_operation_id, operation_type_id, started_at, notes,
+      jobs(job_number),
+      job_operations(operation_name)
+    `)
+    .eq('operator_id', operatorId)
+    .is('ended_at', null)
+    .single();
+
+  if (!session) return null;
+
+  return {
+    id: session.id,
+    operator_id: operatorId,
+    job_id: session.job_id,
+    job_number: (session.jobs as { job_number: string } | null)?.job_number || null,
+    job_operation_id: session.job_operation_id,
+    operation_name: (session.job_operations as { operation_name: string } | null)?.operation_name || null,
+    operation_type_id: session.operation_type_id,
+    started_at: session.started_at,
+    notes: session.notes,
+  };
+}
+
 /**
  * Get work session history for an operator (admin).
- * Uses API since it's a complex query.
  */
 export async function getOperatorSessions(
   operatorId: string,
   limit: number = 50
 ): Promise<OperatorSession[]> {
-  return operatorFetch<OperatorSession[]>(
-    `/operators/${operatorId}/sessions?limit=${limit}`
-  );
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('operator_sessions')
+    .select('id, operator_id, job_id, job_operation_id, operation_type_id, started_at, ended_at, notes')
+    .eq('operator_id', operatorId)
+    .order('started_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((s) => {
+    let durationSeconds: number | undefined;
+    if (s.ended_at) {
+      const started = new Date(s.started_at);
+      const ended = new Date(s.ended_at);
+      durationSeconds = Math.floor((ended.getTime() - started.getTime()) / 1000);
+    }
+
+    return {
+      id: s.id,
+      operator_id: s.operator_id,
+      job_id: s.job_id,
+      job_operation_id: s.job_operation_id,
+      operation_type_id: s.operation_type_id,
+      started_at: s.started_at,
+      ended_at: s.ended_at,
+      notes: s.notes,
+      duration_seconds: durationSeconds,
+    };
+  });
 }

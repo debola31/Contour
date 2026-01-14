@@ -10,16 +10,12 @@ import IconButton from '@mui/material/IconButton';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
 import LogoutIcon from '@mui/icons-material/Logout';
 import WorkIcon from '@mui/icons-material/Work';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PersonIcon from '@mui/icons-material/Person';
-import {
-  isOperatorAuthenticated,
-  decodeOperatorToken,
-  operatorLogout,
-  isTokenExpired,
-} from '@/utils/operatorAccess';
+import { getSupabase } from '@/lib/supabase';
 
 /**
  * Operator View layout.
@@ -28,6 +24,7 @@ import {
  * - Minimal top header with operator name and logout
  * - Bottom navigation bar (Jobs, Active, Profile)
  * - No sidebar (unlike admin dashboard)
+ * - Uses Supabase Auth for session management
  */
 export default function OperatorLayout({
   children,
@@ -41,24 +38,64 @@ export default function OperatorLayout({
 
   const [operatorName, setOperatorName] = useState<string>('');
   const [navValue, setNavValue] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const supabase = getSupabase();
 
   // Check authentication on mount
   useEffect(() => {
-    // Skip auth check on login page
-    if (pathname?.includes('/login')) {
-      return;
-    }
+    const checkAuth = async () => {
+      // Skip auth check on login and change-password pages
+      if (pathname?.includes('/login') || pathname?.includes('/change-password')) {
+        setIsLoading(false);
+        return;
+      }
 
-    if (!isOperatorAuthenticated() || isTokenExpired()) {
-      router.push(`/operator/${companyId}/login`);
-      return;
-    }
+      // 1. Get Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
 
-    const decoded = decodeOperatorToken();
-    if (decoded) {
-      setOperatorName(decoded.operator_name);
-    }
-  }, [companyId, router, pathname]);
+      if (!session) {
+        router.push(`/operator/${companyId}/login`);
+        return;
+      }
+
+      // 2. Check if password change required
+      if (session.user.user_metadata?.needs_password_change) {
+        router.push(`/operator/${companyId}/change-password`);
+        return;
+      }
+
+      // 3. Validate operator exists for this company
+      const { data: operator } = await supabase
+        .from('operators')
+        .select('id, name')
+        .eq('user_id', session.user.id)
+        .eq('company_id', companyId)
+        .single();
+
+      if (!operator) {
+        await supabase.auth.signOut();
+        router.push(`/operator/${companyId}/login`);
+        return;
+      }
+
+      setOperatorName(operator.name);
+      setIsLoading(false);
+    };
+
+    checkAuth();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        router.push(`/operator/${companyId}/login`);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [companyId, router, pathname, supabase]);
 
   // Update nav value based on current path
   useEffect(() => {
@@ -72,11 +109,8 @@ export default function OperatorLayout({
   }, [pathname]);
 
   const handleLogout = async () => {
-    try {
-      await operatorLogout();
-    } finally {
-      router.push(`/operator/${companyId}/login`);
-    }
+    await supabase.auth.signOut();
+    router.push(`/operator/${companyId}/login`);
   };
 
   const handleNavChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -96,10 +130,10 @@ export default function OperatorLayout({
     }
   };
 
-  // Don't show header/nav on login page
-  const isLoginPage = pathname?.includes('/login');
+  // Don't show header/nav on login or change-password page
+  const isAuthPage = pathname?.includes('/login') || pathname?.includes('/change-password');
 
-  if (isLoginPage) {
+  if (isAuthPage) {
     return (
       <Box
         sx={{
@@ -110,6 +144,23 @@ export default function OperatorLayout({
         }}
       >
         {children}
+      </Box>
+    );
+  }
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress />
       </Box>
     );
   }
