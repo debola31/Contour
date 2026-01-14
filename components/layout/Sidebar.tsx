@@ -12,6 +12,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import WorkIcon from '@mui/icons-material/Work';
 import PeopleIcon from '@mui/icons-material/People';
 import CategoryIcon from '@mui/icons-material/Category';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import BuildIcon from '@mui/icons-material/Build';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
@@ -21,6 +22,7 @@ const menuItems = [
   { name: 'Dashboard', path: '', icon: DashboardIcon },
   { name: 'Customers', path: '/customers', icon: PeopleIcon },
   { name: 'Parts', path: '/parts', icon: CategoryIcon },
+  { name: 'Inventory', path: '/inventory', icon: Inventory2Icon },
   { name: 'Quotes', path: '/quotes', icon: RequestQuoteIcon },
   { name: 'Jobs', path: '/jobs', icon: WorkIcon },
   { name: 'Operations', path: '/operations', icon: BuildIcon },

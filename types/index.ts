@@ -4,3 +4,4 @@ export * from './part';
 export * from './import';
 export * from './parts-import';
 export * from './routings';
+export * from './inventory';
