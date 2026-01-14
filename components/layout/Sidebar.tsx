@@ -26,7 +26,7 @@ const menuItems = [
   { name: 'Jobs', path: '/jobs', icon: WorkIcon },
   { name: 'Operations', path: '/operations', icon: BuildIcon },
   { name: 'Routings', path: '/routings', icon: AccountTreeIcon },
-  { name: 'Team', path: '/settings/operators', icon: GroupIcon },
+  { name: 'Team', path: '/team', icon: GroupIcon },
 ];
 
 export default function Sidebar() {

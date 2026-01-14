@@ -80,7 +80,7 @@ export default function EditOperatorPage() {
         is_active: isActive,
       });
 
-      router.push(`/dashboard/${companyId}/settings/operators`);
+      router.push(`/dashboard/${companyId}/team`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update operator');
     } finally {
@@ -107,10 +107,10 @@ export default function EditOperatorPage() {
         <Alert severity="error">Operator not found</Alert>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => router.push(`/dashboard/${companyId}/settings/operators`)}
+          onClick={() => router.push(`/dashboard/${companyId}/team`)}
           sx={{ mt: 2 }}
         >
-          Back to Operators
+          Back to Team
         </Button>
       </Box>
     );
@@ -121,10 +121,10 @@ export default function EditOperatorPage() {
       {/* Back Button */}
       <Button
         startIcon={<ArrowBackIcon />}
-        onClick={() => router.push(`/dashboard/${companyId}/settings/operators`)}
+        onClick={() => router.push(`/dashboard/${companyId}/team`)}
         sx={{ mb: 3 }}
       >
-        Back to Operators
+        Back to Team
       </Button>
 
       <Paper
@@ -238,7 +238,7 @@ export default function EditOperatorPage() {
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             <Button
-              onClick={() => router.push(`/dashboard/${companyId}/settings/operators`)}
+              onClick={() => router.push(`/dashboard/${companyId}/team`)}
               disabled={saving}
             >
               Cancel

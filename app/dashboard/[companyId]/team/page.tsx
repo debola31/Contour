@@ -18,12 +18,15 @@ import DialogActions from '@mui/material/DialogActions';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import Chip from '@mui/material/Chip';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import GroupIcon from '@mui/icons-material/Group';
+import BadgeIcon from '@mui/icons-material/Badge';
 
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
@@ -44,16 +47,38 @@ import { getSupabase } from '@/lib/supabase';
 import ExportCsvButton from '@/components/common/ExportCsvButton';
 import type { Operator } from '@/types/operator';
 
+// TabPanel component following Operations pattern
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel({ children, value, index, ...other }: TabPanelProps) {
+  return (
+    <div role="tabpanel" hidden={value !== index} id={`team-tabpanel-${index}`} {...other}>
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
 /**
- * Admin Operators List Page.
+ * Team Module Page with Tabbed View.
  *
- * AG Grid table for managing operator accounts.
+ * Currently includes:
+ * - Operators tab: AG Grid table for managing operator accounts
+ *
+ * Future tabs can be added for Admin Staff, Roles, etc.
  */
-export default function OperatorsPage() {
+export default function TeamPage() {
   const router = useRouter();
   const params = useParams();
   const companyId = params.companyId as string;
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Operators state
   const [operators, setOperators] = useState<Operator[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -202,7 +227,7 @@ export default function OperatorsPage() {
   // Row click navigation
   const handleRowClicked = (event: RowClickedEvent<Operator>) => {
     if (event.data) {
-      router.push(`/dashboard/${companyId}/settings/operators/${event.data.id}`);
+      router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
     }
   };
 
@@ -210,7 +235,7 @@ export default function OperatorsPage() {
   const handleCellKeyDown = (event: CellKeyDownEvent<Operator>) => {
     const keyboardEvent = event.event as KeyboardEvent | undefined;
     if (keyboardEvent?.key === 'Enter' && event.data) {
-      router.push(`/dashboard/${companyId}/settings/operators/${event.data.id}`);
+      router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
     }
   };
 
@@ -285,23 +310,26 @@ export default function OperatorsPage() {
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <IconButton
               size="small"
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation();
                 router.push(
-                  `/dashboard/${companyId}/settings/operators/${params.data?.id}`
-                )
-              }
+                  `/dashboard/${companyId}/team/operators/${params.data?.id}`
+                );
+              }}
             >
               <EditIcon fontSize="small" />
             </IconButton>
             <IconButton
               size="small"
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation();
                 setDeleteDialog({
                   open: true,
+                  type: 'single',
                   id: params.data?.id,
                   name: params.data?.name,
-                })
-              }
+                });
+              }}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>
@@ -326,92 +354,198 @@ export default function OperatorsPage() {
 
   return (
     <Box>
-      {/* Toolbar */}
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 2,
-          mb: 3,
-          flexWrap: 'wrap',
-          alignItems: 'center',
-        }}
-      >
-        <TextField
-          placeholder="Search operators..."
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ width: 300 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
-        <Box sx={{ flex: 1 }} />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() =>
-            router.push(`/dashboard/${companyId}/settings/operators/new`)
-          }
-        >
-          New Operator
-        </Button>
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 0, mt: -2 }}>
+        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+          <Tab label="Operators" icon={<BadgeIcon />} iconPosition="start" />
+          {/* Future tabs will go here */}
+        </Tabs>
       </Box>
 
-      {/* Loading State */}
-      {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
-      )}
-
-      {/* AG Grid */}
-      {!loading && (
-        <Box sx={{ height: 500 }}>
-          <AgGridReact<Operator>
-            ref={gridRef}
-            rowData={operators}
-            columnDefs={columnDefs}
-            defaultColDef={defaultColDef}
-            theme={jiggedAgGridTheme}
-            onGridReady={onGridReady}
-            rowSelection="single"
-            animateRows
-            suppressCellFocus
+      {/* Operators Tab */}
+      <TabPanel value={activeTab} index={0}>
+        {/* Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            mb: 3,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
+          <TextField
+            placeholder="Search operators..."
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ width: 300 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
           />
+
+          {/* Bulk actions - show when items selected */}
+          {selectedIds.length > 0 && (
+            <>
+              <ExportCsvButton
+                gridRef={gridRef}
+                fileName="operators-export"
+                selectedCount={selectedIds.length}
+              />
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleBulkDeleteClick}
+              >
+                Delete ({selectedIds.length})
+              </Button>
+            </>
+          )}
+
+          <Box sx={{ flex: 1 }} />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() =>
+              router.push(`/dashboard/${companyId}/team/operators/new`)
+            }
+          >
+            New Operator
+          </Button>
         </Box>
-      )}
+
+        {/* Data Grid or Empty State */}
+        {!loading && operators.length === 0 ? (
+          <Card elevation={2}>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              <GroupIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No operators yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {searchDebounced
+                  ? 'No operators match your search.'
+                  : 'Create your first operator.'}
+              </Typography>
+              {!searchDebounced && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => router.push(`/dashboard/${companyId}/team/operators/new`)}
+                >
+                  Add Operator
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card elevation={2} sx={{ position: 'relative', minHeight: 600 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: gridHeight,
+                minHeight: 500,
+                '& .ag-root-wrapper': {
+                  border: 'none',
+                },
+                '& .ag-row': {
+                  cursor: 'pointer',
+                },
+                '& .ag-cell:focus, & .ag-header-cell:focus': {
+                  outline: 'none !important',
+                  border: 'none !important',
+                },
+              }}
+            >
+              <AgGridReact<Operator>
+                ref={gridRef}
+                rowData={operators}
+                columnDefs={columnDefs}
+                theme={jiggedAgGridTheme}
+                defaultColDef={defaultColDef}
+                rowSelection={{
+                  mode: 'multiRow',
+                  checkboxes: true,
+                  headerCheckbox: true,
+                  enableClickSelection: false,
+                  selectAll: 'all',
+                }}
+                onSelectionChanged={handleSelectionChanged}
+                onRowClicked={handleRowClicked}
+                onCellKeyDown={handleCellKeyDown}
+                pagination={true}
+                paginationPageSize={25}
+                paginationPageSizeSelector={[25, 50, 100]}
+                suppressPaginationPanel={false}
+                domLayout="normal"
+                onGridReady={onGridReady}
+                loading={loading}
+                suppressCellFocus={false}
+                suppressMenuHide={false}
+                getRowId={(params) => params.data.id}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+              />
+            </Box>
+          </Card>
+        )}
+      </TabPanel>
 
       {/* Delete Dialog */}
       <Dialog
         open={deleteDialog.open}
-        onClose={() => !deleting && setDeleteDialog({ open: false })}
+        onClose={() => !deleting && setDeleteDialog({ open: false, type: 'single' })}
+        maxWidth="xs"
+        fullWidth
       >
-        <DialogTitle>Delete Operator</DialogTitle>
-        <DialogContent>
-          Are you sure you want to delete operator &quot;{deleteDialog.name}&quot;?
-          This action cannot be undone.
+        <DialogTitle sx={{ pb: 2 }}>
+          {deleteDialog.type === 'single' ? 'Delete Operator' : 'Delete Operators'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 0 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              {deleteDialog.type === 'single' ? (
+                <>
+                  Are you sure you want to delete <strong>{deleteDialog.name}</strong>?
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete <strong>{selectedIds.length}</strong> operator
+                  {selectedIds.length > 1 ? 's' : ''}?
+                </>
+              )}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              This action cannot be undone.
+            </Typography>
+          </Box>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button
-            onClick={() => setDeleteDialog({ open: false })}
+            onClick={() => setDeleteDialog({ open: false, type: 'single' })}
             disabled={deleting}
+            color="inherit"
+            size="large"
           >
             Cancel
           </Button>
           <Button
             onClick={handleDelete}
-            color="error"
             variant="contained"
+            color="error"
             disabled={deleting}
+            size="large"
+            startIcon={deleting ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
           >
-            {deleting ? <CircularProgress size={20} /> : 'Delete'}
+            {deleting ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

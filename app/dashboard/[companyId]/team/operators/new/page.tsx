@@ -53,7 +53,7 @@ export default function NewOperatorPage() {
         pin,
       });
 
-      router.push(`/dashboard/${companyId}/settings/operators`);
+      router.push(`/dashboard/${companyId}/team`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create operator');
     } finally {
@@ -66,10 +66,10 @@ export default function NewOperatorPage() {
       {/* Back Button */}
       <Button
         startIcon={<ArrowBackIcon />}
-        onClick={() => router.push(`/dashboard/${companyId}/settings/operators`)}
+        onClick={() => router.push(`/dashboard/${companyId}/team`)}
         sx={{ mb: 3 }}
       >
-        Back to Operators
+        Back to Team
       </Button>
 
       <Paper
@@ -134,7 +134,7 @@ export default function NewOperatorPage() {
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             <Button
-              onClick={() => router.push(`/dashboard/${companyId}/settings/operators`)}
+              onClick={() => router.push(`/dashboard/${companyId}/team`)}
               disabled={loading}
             >
               Cancel
