@@ -18,6 +18,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { MappingReviewTable, ConflictDialog } from '@/components/import';
+import AIAnalysisLoading from '@/components/import/AIAnalysisLoading';
 import type { FieldDefinition } from '@/components/import';
 import type {
   ColumnMapping,
@@ -446,20 +447,7 @@ export default function ImportCustomersPage() {
 
       {/* Step: Analyzing */}
       {currentStep === 'analyzing' && (
-        <Card elevation={2}>
-          <CardContent sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress size={64} sx={{ mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              Analyzing Your CSV
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <AutoAwesomeIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-              <Typography variant="body2" color="text.secondary">
-                AI is mapping your columns to customer fields...
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
+        <AIAnalysisLoading description="AI is mapping your columns to customer fields..." />
       )}
 
       {/* Step: Review Mappings */}

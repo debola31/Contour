@@ -33,6 +33,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { MappingReviewTable, PricingTierCard, ConflictDialog } from '@/components/import';
+import AIAnalysisLoading from '@/components/import/AIAnalysisLoading';
 import type { FieldDefinition, ColumnMapping } from '@/components/import';
 import type {
   CustomerMatchMode,
@@ -640,20 +641,7 @@ export default function ImportPartsPage() {
 
       {/* Step: Analyzing */}
       {currentStep === 'analyzing' && (
-        <Card elevation={2}>
-          <CardContent sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress size={64} sx={{ mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              Analyzing Your CSV
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <AutoAwesomeIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-              <Typography variant="body2" color="text.secondary">
-                AI is mapping your columns to part fields and detecting pricing tiers...
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
+        <AIAnalysisLoading description="AI is mapping your columns to part fields and detecting pricing tiers..." />
       )}
 
       {/* Step: Review Mappings */}
