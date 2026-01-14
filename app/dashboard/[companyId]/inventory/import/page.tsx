@@ -24,6 +24,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { MappingReviewTable } from '@/components/import';
+import AIAnalysisLoading from '@/components/import/AIAnalysisLoading';
 import type { FieldDefinition, ColumnMapping } from '@/components/import';
 import { parseCSV } from '@/utils/csvParser';
 import { API_BASE_URL } from '@/lib/api';
@@ -406,18 +407,7 @@ export default function ImportInventoryPage() {
 
       {/* Step 2: Analyzing */}
       {currentStep === 'analyzing' && (
-        <Card elevation={2}>
-          <CardContent sx={{ p: 4, textAlign: 'center' }}>
-            <AutoAwesomeIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-            <CircularProgress size={40} sx={{ mb: 2, display: 'block', mx: 'auto' }} />
-            <Typography variant="h5" gutterBottom>
-              AI Analysis in Progress
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Analyzing your CSV columns and suggesting mappings...
-            </Typography>
-          </CardContent>
-        </Card>
+        <AIAnalysisLoading description="AI is mapping your columns to inventory fields..." />
       )}
 
       {/* Step 3: Review Mappings */}

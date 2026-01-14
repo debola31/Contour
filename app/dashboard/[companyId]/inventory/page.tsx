@@ -207,8 +207,7 @@ export default function InventoryPage() {
       valueFormatter: (params) => {
         if (params.value == null) return '—';
         const qty = params.value as number;
-        const unit = params.data?.primary_unit || '';
-        return `${qty.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`;
+        return qty.toLocaleString(undefined, { maximumFractionDigits: 2 });
       },
     },
     {

@@ -79,6 +79,19 @@ function getPageTitle(pathname: string): string {
     return 'Routings';
   }
 
+  // Check for inventory routes
+  if (segments.includes('inventory')) {
+    if (segments.includes('new')) return 'New Inventory Item';
+    if (segments.includes('edit')) return 'Edit Inventory Item';
+    if (segments.includes('import')) return 'Import Inventory';
+    // Check if there's an itemId (detail page)
+    const inventoryIndex = segments.indexOf('inventory');
+    if (inventoryIndex < segments.length - 1 && !['new', 'edit', 'import'].includes(segments[inventoryIndex + 1])) {
+      return 'Inventory Details';
+    }
+    return 'Inventory';
+  }
+
   // Map other route segments to display titles
   const titleMap: Record<string, string> = {};
 
