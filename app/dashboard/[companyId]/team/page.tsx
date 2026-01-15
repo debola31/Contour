@@ -23,6 +23,8 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
 import BadgeIcon from '@mui/icons-material/Badge';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import PersonIcon from '@mui/icons-material/Person';
 
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
@@ -38,20 +40,20 @@ import type {
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 import { jiggedAgGridTheme } from '@/lib/agGridTheme';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, getEdgeFunctionUrl } from '@/lib/supabase';
 import ExportCsvButton from '@/components/common/ExportCsvButton';
 import type { OperatorWithEmail } from '@/types/operator';
+import type { TeamMember } from '@/types/team';
 
 /**
- * Get the API URL for operator endpoints.
+ * Get the Edge Function URL for operators.
  */
-const getOperatorApiUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-  if (baseUrl.endsWith('/api')) {
-    return `${baseUrl}/operators`;
-  }
-  return `${baseUrl}/api/operators`;
-};
+const getOperatorsUrl = () => getEdgeFunctionUrl('operators');
+
+/**
+ * Get the Edge Function URL for team members (admin/user).
+ */
+const getTeamMembersUrl = () => getEdgeFunctionUrl('team-members');
 
 // TabPanel component following Operations pattern
 interface TabPanelProps {
@@ -81,15 +83,27 @@ export default function TeamPage() {
   const params = useParams();
   const companyId = params.companyId as string;
 
-  // Tab state
+  // Tab state (0: Admins, 1: Users, 2: Operators)
   const [activeTab, setActiveTab] = useState(0);
 
   // Operators state
   const [operators, setOperators] = useState<OperatorWithEmail[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [operatorsLoading, setOperatorsLoading] = useState(false);
+  const operatorsGridRef = useRef<AgGridReact<OperatorWithEmail>>(null);
+
+  // Team members state (for Admins and Users tabs)
+  const [admins, setAdmins] = useState<TeamMember[]>([]);
+  const [users, setUsers] = useState<TeamMember[]>([]);
+  const [adminsLoading, setAdminsLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const adminsGridRef = useRef<AgGridReact<TeamMember>>(null);
+  const usersGridRef = useRef<AgGridReact<TeamMember>>(null);
+
+  // Shared state
   const [search, setSearch] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
-  const gridRef = useRef<AgGridReact<OperatorWithEmail>>(null);
+  const loading = activeTab === 0 ? adminsLoading : activeTab === 1 ? usersLoading : operatorsLoading;
+  const gridRef = activeTab === 0 ? adminsGridRef : activeTab === 1 ? usersGridRef : operatorsGridRef;
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -116,11 +130,11 @@ export default function TeamPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Load operators from API (includes email from auth.users)
+  // Load operators from Edge Function (includes email from auth.users)
   const loadOperators = useCallback(async () => {
-    setLoading(true);
+    setOperatorsLoading(true);
     try {
-      const url = `${getOperatorApiUrl()}?company_id=${companyId}`;
+      const url = `${getOperatorsUrl()}?company_id=${companyId}`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -148,41 +162,128 @@ export default function TeamPage() {
         severity: 'error',
       });
     } finally {
-      setLoading(false);
+      setOperatorsLoading(false);
     }
   }, [companyId, searchDebounced]);
 
-  useEffect(() => {
-    loadOperators();
-  }, [loadOperators]);
+  // Load admins from Edge Function
+  const loadAdmins = useCallback(async () => {
+    setAdminsLoading(true);
+    try {
+      const url = `${getTeamMembersUrl()}?company_id=${companyId}&role=admin`;
+      const response = await fetch(url);
 
-  // Clear selection when search changes
+      if (!response.ok) {
+        throw new Error('Failed to fetch admins');
+      }
+
+      let data: TeamMember[] = await response.json();
+
+      // Client-side search filter
+      if (searchDebounced) {
+        const searchLower = searchDebounced.toLowerCase();
+        data = data.filter(
+          (m) =>
+            m.name?.toLowerCase().includes(searchLower) ||
+            m.email?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      setAdmins(data);
+    } catch (err) {
+      console.error('Error loading admins:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load admins',
+        severity: 'error',
+      });
+    } finally {
+      setAdminsLoading(false);
+    }
+  }, [companyId, searchDebounced]);
+
+  // Load users from Edge Function
+  const loadUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const url = `${getTeamMembersUrl()}?company_id=${companyId}&role=user`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      let data: TeamMember[] = await response.json();
+
+      // Client-side search filter
+      if (searchDebounced) {
+        const searchLower = searchDebounced.toLowerCase();
+        data = data.filter(
+          (m) =>
+            m.name?.toLowerCase().includes(searchLower) ||
+            m.email?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      setUsers(data);
+    } catch (err) {
+      console.error('Error loading users:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load users',
+        severity: 'error',
+      });
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [companyId, searchDebounced]);
+
+  // Load data based on active tab
+  useEffect(() => {
+    if (activeTab === 0) {
+      loadAdmins();
+    } else if (activeTab === 1) {
+      loadUsers();
+    } else {
+      loadOperators();
+    }
+  }, [activeTab, loadAdmins, loadUsers, loadOperators]);
+
+  // Clear selection when search or tab changes
   useEffect(() => {
     setSelectedIds([]);
-    if (gridRef.current?.api) {
-      gridRef.current.api.deselectAll();
+    if (activeTab === 0 && adminsGridRef.current?.api) {
+      adminsGridRef.current.api.deselectAll();
+    } else if (activeTab === 1 && usersGridRef.current?.api) {
+      usersGridRef.current.api.deselectAll();
+    } else if (activeTab === 2 && operatorsGridRef.current?.api) {
+      operatorsGridRef.current.api.deselectAll();
     }
-  }, [searchDebounced]);
+  }, [searchDebounced, activeTab]);
 
-  // Calculate grid height dynamically
+  // Calculate grid height dynamically based on active tab data
+  const currentData = activeTab === 0 ? admins : activeTab === 1 ? users : operators;
   const gridHeight = useMemo(() => {
-    if (loading || operators.length === 0) return 600;
+    if (loading || currentData.length === 0) return 600;
     const headerHeight = 56;
     const rowHeight = 52;
     const paginationHeight = 56;
-    const displayedRows = Math.min(operators.length, 25);
+    const displayedRows = Math.min(currentData.length, 25);
     return Math.max(headerHeight + rowHeight * displayedRows + paginationHeight, 400);
-  }, [loading, operators.length]);
+  }, [loading, currentData.length]);
 
-  // Delete operator(s)
+  // Delete item(s) - handles operators and team members
   const handleDelete = async () => {
     setDeleting(true);
     try {
       const supabase = getSupabase();
+      const isOperator = activeTab === 2;
+      const tableName = isOperator ? 'operators' : 'user_company_access';
+      const itemName = isOperator ? 'operator' : activeTab === 0 ? 'admin' : 'user';
 
       if (deleteDialog.type === 'single' && deleteDialog.id) {
         const { error } = await supabase
-          .from('operators')
+          .from(tableName)
           .delete()
           .eq('id', deleteDialog.id);
 
@@ -190,12 +291,12 @@ export default function TeamPage() {
 
         setSnackbar({
           open: true,
-          message: 'Operator deleted',
+          message: `${itemName.charAt(0).toUpperCase() + itemName.slice(1)} deleted`,
           severity: 'success',
         });
       } else if (deleteDialog.type === 'bulk') {
         const { error } = await supabase
-          .from('operators')
+          .from(tableName)
           .delete()
           .in('id', selectedIds);
 
@@ -203,7 +304,7 @@ export default function TeamPage() {
 
         setSnackbar({
           open: true,
-          message: `${selectedIds.length} operator${selectedIds.length > 1 ? 's' : ''} deleted`,
+          message: `${selectedIds.length} ${itemName}${selectedIds.length > 1 ? 's' : ''} deleted`,
           severity: 'success',
         });
         setSelectedIds([]);
@@ -213,12 +314,15 @@ export default function TeamPage() {
       }
 
       setDeleteDialog({ open: false, type: 'single' });
-      loadOperators();
+      // Reload the appropriate data
+      if (activeTab === 0) loadAdmins();
+      else if (activeTab === 1) loadUsers();
+      else loadOperators();
     } catch (err) {
-      console.error('Error deleting operator(s):', err);
+      console.error('Error deleting:', err);
       setSnackbar({
         open: true,
-        message: 'Failed to delete operator(s)',
+        message: 'Failed to delete',
         severity: 'error',
       });
     } finally {
@@ -226,8 +330,8 @@ export default function TeamPage() {
     }
   };
 
-  // Selection change handler
-  const handleSelectionChanged = (event: SelectionChangedEvent<OperatorWithEmail>) => {
+  // Selection change handler - works with both OperatorWithEmail and TeamMember
+  const handleSelectionChanged = (event: SelectionChangedEvent<OperatorWithEmail | TeamMember>) => {
     const selectedNodes = event.api.getSelectedNodes();
     const selectedData = selectedNodes
       .map((node) => node.data?.id)
@@ -235,18 +339,25 @@ export default function TeamPage() {
     setSelectedIds(selectedData);
   };
 
-  // Row click navigation
-  const handleRowClicked = (event: RowClickedEvent<OperatorWithEmail>) => {
-    if (event.data) {
+  // Row click navigation - handles different routes based on tab
+  const handleRowClicked = (event: RowClickedEvent<OperatorWithEmail | TeamMember>) => {
+    if (!event.data) return;
+    if (activeTab === 2) {
       router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
+    } else {
+      router.push(`/dashboard/${companyId}/team/members/${event.data.id}`);
     }
   };
 
   // Keyboard navigation
-  const handleCellKeyDown = (event: CellKeyDownEvent<OperatorWithEmail>) => {
+  const handleCellKeyDown = (event: CellKeyDownEvent<OperatorWithEmail | TeamMember>) => {
     const keyboardEvent = event.event as KeyboardEvent | undefined;
     if (keyboardEvent?.key === 'Enter' && event.data) {
-      router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
+      if (activeTab === 2) {
+        router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
+      } else {
+        router.push(`/dashboard/${companyId}/team/members/${event.data.id}`);
+      }
     }
   };
 
@@ -273,8 +384,8 @@ export default function TeamPage() {
     return date.toLocaleDateString();
   };
 
-  // AG Grid column definitions
-  const columnDefs: ColDef<OperatorWithEmail>[] = useMemo(
+  // AG Grid column definitions for Operators
+  const operatorColumnDefs: ColDef<OperatorWithEmail>[] = useMemo(
     () => [
       {
         field: 'name',
@@ -299,6 +410,33 @@ export default function TeamPage() {
     []
   );
 
+  // AG Grid column definitions for Team Members (Admins/Users)
+  const teamMemberColumnDefs: ColDef<TeamMember>[] = useMemo(
+    () => [
+      {
+        field: 'name',
+        headerName: 'Name',
+        flex: 1,
+        minWidth: 150,
+        valueFormatter: (params) => params.value || '—',
+      },
+      {
+        field: 'email',
+        headerName: 'Email',
+        flex: 1,
+        minWidth: 200,
+        valueFormatter: (params) => params.value || '—',
+      },
+      {
+        field: 'created_at',
+        headerName: 'Joined',
+        width: 130,
+        valueFormatter: (params) => formatRelativeTime(params.value),
+      },
+    ],
+    []
+  );
+
   const defaultColDef: ColDef = useMemo(
     () => ({
       sortable: true,
@@ -316,13 +454,276 @@ export default function TeamPage() {
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 0, mt: -2 }}>
         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+          <Tab label="Admins" icon={<AdminPanelSettingsIcon />} iconPosition="start" />
+          <Tab label="Users" icon={<PersonIcon />} iconPosition="start" />
           <Tab label="Operators" icon={<BadgeIcon />} iconPosition="start" />
-          {/* Future tabs will go here */}
         </Tabs>
       </Box>
 
-      {/* Operators Tab */}
+      {/* Admins Tab */}
       <TabPanel value={activeTab} index={0}>
+        {/* Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            mb: 3,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
+          <TextField
+            placeholder="Search admins..."
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ width: 300 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {/* Bulk actions - show when items selected */}
+          {selectedIds.length > 0 && (
+            <>
+              <ExportCsvButton
+                gridRef={adminsGridRef}
+                fileName="admins-export"
+                selectedCount={selectedIds.length}
+              />
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleBulkDeleteClick}
+              >
+                Delete ({selectedIds.length})
+              </Button>
+            </>
+          )}
+
+          <Box sx={{ flex: 1 }} />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => router.push(`/dashboard/${companyId}/team/members/new?role=admin`)}
+          >
+            New Admin
+          </Button>
+        </Box>
+
+        {/* Data Grid or Empty State */}
+        {!adminsLoading && admins.length === 0 ? (
+          <Card elevation={2}>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              <AdminPanelSettingsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No admins yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {searchDebounced
+                  ? 'No admins match your search.'
+                  : 'Add your first admin.'}
+              </Typography>
+              {!searchDebounced && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => router.push(`/dashboard/${companyId}/team/members/new?role=admin`)}
+                >
+                  Add Admin
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card elevation={2} sx={{ position: 'relative', minHeight: 600 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: gridHeight,
+                minHeight: 500,
+                '& .ag-root-wrapper': { border: 'none' },
+                '& .ag-row': { cursor: 'pointer' },
+                '& .ag-cell:focus, & .ag-header-cell:focus': {
+                  outline: 'none !important',
+                  border: 'none !important',
+                },
+              }}
+            >
+              <AgGridReact<TeamMember>
+                ref={adminsGridRef}
+                rowData={admins}
+                columnDefs={teamMemberColumnDefs}
+                theme={jiggedAgGridTheme}
+                defaultColDef={defaultColDef}
+                rowSelection={{
+                  mode: 'multiRow',
+                  checkboxes: true,
+                  headerCheckbox: true,
+                  enableClickSelection: false,
+                  selectAll: 'all',
+                }}
+                onSelectionChanged={handleSelectionChanged as (event: SelectionChangedEvent<TeamMember>) => void}
+                onRowClicked={handleRowClicked as (event: RowClickedEvent<TeamMember>) => void}
+                onCellKeyDown={handleCellKeyDown as (event: CellKeyDownEvent<TeamMember>) => void}
+                pagination={true}
+                paginationPageSize={25}
+                paginationPageSizeSelector={[25, 50, 100]}
+                suppressPaginationPanel={false}
+                domLayout="normal"
+                onGridReady={onGridReady}
+                loading={adminsLoading}
+                suppressCellFocus={false}
+                suppressMenuHide={false}
+                getRowId={(params) => params.data.id}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+              />
+            </Box>
+          </Card>
+        )}
+      </TabPanel>
+
+      {/* Users Tab */}
+      <TabPanel value={activeTab} index={1}>
+        {/* Toolbar */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            mb: 3,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
+          <TextField
+            placeholder="Search users..."
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ width: 300 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {/* Bulk actions - show when items selected */}
+          {selectedIds.length > 0 && (
+            <>
+              <ExportCsvButton
+                gridRef={usersGridRef}
+                fileName="users-export"
+                selectedCount={selectedIds.length}
+              />
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleBulkDeleteClick}
+              >
+                Delete ({selectedIds.length})
+              </Button>
+            </>
+          )}
+
+          <Box sx={{ flex: 1 }} />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => router.push(`/dashboard/${companyId}/team/members/new?role=user`)}
+          >
+            New User
+          </Button>
+        </Box>
+
+        {/* Data Grid or Empty State */}
+        {!usersLoading && users.length === 0 ? (
+          <Card elevation={2}>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              <PersonIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No users yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {searchDebounced
+                  ? 'No users match your search.'
+                  : 'Add your first user.'}
+              </Typography>
+              {!searchDebounced && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => router.push(`/dashboard/${companyId}/team/members/new?role=user`)}
+                >
+                  Add User
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card elevation={2} sx={{ position: 'relative', minHeight: 600 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: gridHeight,
+                minHeight: 500,
+                '& .ag-root-wrapper': { border: 'none' },
+                '& .ag-row': { cursor: 'pointer' },
+                '& .ag-cell:focus, & .ag-header-cell:focus': {
+                  outline: 'none !important',
+                  border: 'none !important',
+                },
+              }}
+            >
+              <AgGridReact<TeamMember>
+                ref={usersGridRef}
+                rowData={users}
+                columnDefs={teamMemberColumnDefs}
+                theme={jiggedAgGridTheme}
+                defaultColDef={defaultColDef}
+                rowSelection={{
+                  mode: 'multiRow',
+                  checkboxes: true,
+                  headerCheckbox: true,
+                  enableClickSelection: false,
+                  selectAll: 'all',
+                }}
+                onSelectionChanged={handleSelectionChanged as (event: SelectionChangedEvent<TeamMember>) => void}
+                onRowClicked={handleRowClicked as (event: RowClickedEvent<TeamMember>) => void}
+                onCellKeyDown={handleCellKeyDown as (event: CellKeyDownEvent<TeamMember>) => void}
+                pagination={true}
+                paginationPageSize={25}
+                paginationPageSizeSelector={[25, 50, 100]}
+                suppressPaginationPanel={false}
+                domLayout="normal"
+                onGridReady={onGridReady}
+                loading={usersLoading}
+                suppressCellFocus={false}
+                suppressMenuHide={false}
+                getRowId={(params) => params.data.id}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+              />
+            </Box>
+          </Card>
+        )}
+      </TabPanel>
+
+      {/* Operators Tab */}
+      <TabPanel value={activeTab} index={2}>
         {/* Toolbar */}
         <Box
           sx={{
@@ -354,7 +755,7 @@ export default function TeamPage() {
           {selectedIds.length > 0 && (
             <>
               <ExportCsvButton
-                gridRef={gridRef}
+                gridRef={operatorsGridRef}
                 fileName="operators-export"
                 selectedCount={selectedIds.length}
               />
@@ -382,7 +783,7 @@ export default function TeamPage() {
         </Box>
 
         {/* Data Grid or Empty State */}
-        {!loading && operators.length === 0 ? (
+        {!operatorsLoading && operators.length === 0 ? (
           <Card elevation={2}>
             <CardContent sx={{ p: 6, textAlign: 'center' }}>
               <GroupIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
@@ -412,12 +813,8 @@ export default function TeamPage() {
                 width: '100%',
                 height: gridHeight,
                 minHeight: 500,
-                '& .ag-root-wrapper': {
-                  border: 'none',
-                },
-                '& .ag-row': {
-                  cursor: 'pointer',
-                },
+                '& .ag-root-wrapper': { border: 'none' },
+                '& .ag-row': { cursor: 'pointer' },
                 '& .ag-cell:focus, & .ag-header-cell:focus': {
                   outline: 'none !important',
                   border: 'none !important',
@@ -425,9 +822,9 @@ export default function TeamPage() {
               }}
             >
               <AgGridReact<OperatorWithEmail>
-                ref={gridRef}
+                ref={operatorsGridRef}
                 rowData={operators}
-                columnDefs={columnDefs}
+                columnDefs={operatorColumnDefs}
                 theme={jiggedAgGridTheme}
                 defaultColDef={defaultColDef}
                 rowSelection={{
@@ -437,16 +834,16 @@ export default function TeamPage() {
                   enableClickSelection: false,
                   selectAll: 'all',
                 }}
-                onSelectionChanged={handleSelectionChanged}
-                onRowClicked={handleRowClicked}
-                onCellKeyDown={handleCellKeyDown}
+                onSelectionChanged={handleSelectionChanged as unknown as (event: SelectionChangedEvent<OperatorWithEmail>) => void}
+                onRowClicked={handleRowClicked as (event: RowClickedEvent<OperatorWithEmail>) => void}
+                onCellKeyDown={handleCellKeyDown as (event: CellKeyDownEvent<OperatorWithEmail>) => void}
                 pagination={true}
                 paginationPageSize={25}
                 paginationPageSizeSelector={[25, 50, 100]}
                 suppressPaginationPanel={false}
                 domLayout="normal"
                 onGridReady={onGridReady}
-                loading={loading}
+                loading={operatorsLoading}
                 suppressCellFocus={false}
                 suppressMenuHide={false}
                 getRowId={(params) => params.data.id}
@@ -466,7 +863,9 @@ export default function TeamPage() {
         fullWidth
       >
         <DialogTitle sx={{ pb: 2 }}>
-          {deleteDialog.type === 'single' ? 'Delete Operator' : 'Delete Operators'}
+          {deleteDialog.type === 'single'
+            ? `Delete ${activeTab === 0 ? 'Admin' : activeTab === 1 ? 'User' : 'Operator'}`
+            : `Delete ${activeTab === 0 ? 'Admins' : activeTab === 1 ? 'Users' : 'Operators'}`}
         </DialogTitle>
         <DialogContent sx={{ pt: 0 }}>
           <Box sx={{ mb: 2 }}>
@@ -477,7 +876,8 @@ export default function TeamPage() {
                 </>
               ) : (
                 <>
-                  Are you sure you want to delete <strong>{selectedIds.length}</strong> operator
+                  Are you sure you want to delete <strong>{selectedIds.length}</strong>{' '}
+                  {activeTab === 0 ? 'admin' : activeTab === 1 ? 'user' : 'operator'}
                   {selectedIds.length > 1 ? 's' : ''}?
                 </>
               )}

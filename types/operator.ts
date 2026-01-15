@@ -116,7 +116,6 @@ export interface OperatorJob {
   customer_name: string | null;
   part_name: string | null;
   part_number: string | null;
-  due_date: string | null;
   status: string;
   quantity_ordered: number | null;
   quantity_completed: number | null;
@@ -137,7 +136,6 @@ export interface OperatorJobDetail {
   customer_name: string | null;
   part_name: string | null;
   part_number: string | null;
-  due_date: string | null;
   status: string;
   quantity_ordered: number | null;
   quantity_completed: number | null;
@@ -194,28 +192,6 @@ export interface JobCompleteResponse {
 // ============================================================================
 // UTILITY TYPES
 // ============================================================================
-
-/**
- * Due date status for visual indicators.
- */
-export type DueDateStatus = 'on_time' | 'at_risk' | 'overdue';
-
-/**
- * Calculate due date status based on days remaining.
- */
-export function getDueDateStatus(dueDate: string | null): DueDateStatus {
-  if (!dueDate) return 'on_time';
-
-  const now = new Date();
-  const due = new Date(dueDate);
-  const daysRemaining = Math.ceil(
-    (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (daysRemaining < 0) return 'overdue';
-  if (daysRemaining <= 3) return 'at_risk';
-  return 'on_time';
-}
 
 /**
  * Format duration in seconds to HH:MM:SS.

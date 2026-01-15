@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
@@ -11,31 +11,38 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import type { OperatorCreateResponse } from '@/types/operator';
 import { getEdgeFunctionUrl } from '@/lib/supabase';
+import type { TeamMemberCreateResponse } from '@/types/team';
 
 /**
- * Get the Edge Function URL for operators.
+ * Get the Edge Function URL for team members.
  */
-const getOperatorsUrl = () => getEdgeFunctionUrl('operators');
+const getTeamMembersUrl = () => getEdgeFunctionUrl('team-members');
 
 /**
- * Create New Operator Page.
+ * Create New Team Member Page.
  *
- * Creates an operator with Supabase Auth (email/password).
- * Admin sets a temporary password; operator must change on first login.
+ * Creates an admin or user with Supabase Auth (email/password).
+ * Admin sets a temporary password; user must change on first login.
  */
-export default function NewOperatorPage() {
+export default function NewTeamMemberPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const companyId = params.companyId as string;
+  const defaultRole = searchParams.get('role') as 'admin' | 'user' || 'user';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'admin' | 'user'>(defaultRole);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,8 +75,8 @@ export default function NewOperatorPage() {
     setError(null);
 
     try {
-      // Call Edge Function to create operator with Supabase user
-      const url = getOperatorsUrl();
+      // Call Edge Function to create team member with Supabase user
+      const url = getTeamMembersUrl();
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,23 +85,27 @@ export default function NewOperatorPage() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
+          role,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Failed to create operator' }));
-        throw new Error(errorData.detail || 'Failed to create operator');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to create team member' }));
+        throw new Error(errorData.error || 'Failed to create team member');
       }
 
-      const data: OperatorCreateResponse = await response.json();
+      const data: TeamMemberCreateResponse = await response.json();
 
       if (!data.success) {
-        throw new Error(data.message || 'Failed to create operator');
+        throw new Error(data.message || 'Failed to create team member');
       }
 
-      router.push(`/dashboard/${companyId}/team`);
+      // Navigate back to team page with appropriate tab
+      const tabIndex = role === 'admin' ? 0 : 1;
+      router.push(`/dashboard/${companyId}/team?tab=${tabIndex}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create operator');
+      console.error('Error creating team member:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create team member');
     } finally {
       setLoading(false);
     }
@@ -102,26 +113,20 @@ export default function NewOperatorPage() {
 
   return (
     <Box>
-      {/* Back Button */}
       <Button
         startIcon={<ArrowBackIcon />}
         onClick={() => router.push(`/dashboard/${companyId}/team`)}
-        sx={{ mb: 3 }}
+        sx={{ mb: 2 }}
       >
         Back to Team
       </Button>
 
-      <Paper
-        elevation={2}
-        sx={{
-          p: 4,
-          maxWidth: 500,
-          bgcolor: 'rgba(17, 20, 57, 0.6)',
-          backdropFilter: 'blur(8px)',
-        }}
-      >
-        <Typography variant="h5" component="h1" sx={{ mb: 3 }}>
-          New Operator
+      <Paper sx={{ p: 4, maxWidth: 500 }}>
+        <Typography variant="h5" gutterBottom>
+          New {role === 'admin' ? 'Admin' : 'User'}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Create a new team member with email login access.
         </Typography>
 
         {error && (
@@ -130,39 +135,48 @@ export default function NewOperatorPage() {
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <TextField
             label="Name"
-            fullWidth
-            required
             value={name}
             onChange={(e) => setName(e.target.value)}
+            fullWidth
+            required
             sx={{ mb: 3 }}
-            placeholder="John Smith"
+            autoFocus
           />
 
           <TextField
             label="Email"
             type="email"
-            fullWidth
-            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            fullWidth
+            required
             sx={{ mb: 3 }}
-            placeholder="operator@example.com"
-            helperText="Operator will use this email to log in"
           />
+
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={role}
+              label="Role"
+              onChange={(e) => setRole(e.target.value as 'admin' | 'user')}
+            >
+              <MenuItem value="admin">Admin - Full access, can manage team</MenuItem>
+              <MenuItem value="user">User - Can use all modules, cannot manage team</MenuItem>
+            </Select>
+          </FormControl>
 
           <TextField
             label="Temporary Password"
-            fullWidth
-            required
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            fullWidth
+            required
             sx={{ mb: 3 }}
-            placeholder="Minimum 8 characters"
-            helperText="Operator will be required to change this on first login"
+            helperText="User will be required to change this on first login"
             slotProps={{
               input: {
                 endAdornment: (
@@ -179,8 +193,10 @@ export default function NewOperatorPage() {
             }}
           />
 
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
+              type="button"
+              variant="outlined"
               onClick={() => router.push(`/dashboard/${companyId}/team`)}
               disabled={loading}
             >
@@ -190,11 +206,12 @@ export default function NewOperatorPage() {
               type="submit"
               variant="contained"
               disabled={loading}
+              startIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
             >
-              {loading ? <CircularProgress size={24} /> : 'Create Operator'}
+              {loading ? 'Creating...' : `Create ${role === 'admin' ? 'Admin' : 'User'}`}
             </Button>
           </Box>
-        </Box>
+        </form>
       </Paper>
     </Box>
   );

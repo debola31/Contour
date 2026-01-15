@@ -45,6 +45,7 @@
     "eslint-config-next": "16.1.0",
     "jsdom": "^27.4.0",
     "msw": "^2.12.7",
+    "supabase": "^2.72.7",
     "typescript": "^5",
     "vitest": "^4.0.16"
   }

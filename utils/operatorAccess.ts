@@ -139,13 +139,13 @@ export async function getOperatorJobs(
   const { data: jobs, error } = await supabase
     .from('jobs')
     .select(`
-      id, job_number, due_date, status, quantity_ordered, quantity_completed,
+      id, job_number, status, quantity_ordered, quantity_completed,
       customers(name),
       parts(description, part_number)
     `)
     .eq('company_id', companyId)
     .in('status', ['pending', 'in_progress', 'released'])
-    .order('due_date', { ascending: true });
+    .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
   if (!jobs) return [];
@@ -194,7 +194,6 @@ export async function getOperatorJobs(
       customer_name: (job.customers as { name: string } | null)?.name || null,
       part_name: (job.parts as { description: string; part_number: string } | null)?.description || null,
       part_number: (job.parts as { description: string; part_number: string } | null)?.part_number || null,
-      due_date: job.due_date,
       status: job.status,
       quantity_ordered: job.quantity_ordered,
       quantity_completed: job.quantity_completed,
@@ -221,7 +220,7 @@ export async function getOperatorJobDetail(
   const { data: job, error } = await supabase
     .from('jobs')
     .select(`
-      id, job_number, due_date, status, quantity_ordered, quantity_completed,
+      id, job_number, status, quantity_ordered, quantity_completed,
       customers(name),
       parts(description, part_number)
     `)
@@ -284,7 +283,6 @@ export async function getOperatorJobDetail(
     customer_name: (job.customers as { name: string } | null)?.name || null,
     part_name: (job.parts as { description: string; part_number: string } | null)?.description || null,
     part_number: (job.parts as { description: string; part_number: string } | null)?.part_number || null,
-    due_date: job.due_date,
     status: job.status,
     quantity_ordered: job.quantity_ordered,
     quantity_completed: job.quantity_completed,

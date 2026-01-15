@@ -20,19 +20,13 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, getEdgeFunctionUrl } from '@/lib/supabase';
 import type { OperatorWithEmail } from '@/types/operator';
 
 /**
- * Get the API URL for operator endpoints.
+ * Get the Edge Function URL for operators.
  */
-const getOperatorApiUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-  if (baseUrl.endsWith('/api')) {
-    return `${baseUrl}/operators`;
-  }
-  return `${baseUrl}/api/operators`;
-};
+const getOperatorsUrl = () => getEdgeFunctionUrl('operators');
 
 /**
  * Edit Operator Page.
@@ -70,7 +64,7 @@ export default function EditOperatorPage() {
   useEffect(() => {
     async function load() {
       try {
-        const url = `${getOperatorApiUrl()}/${operatorId}`;
+        const url = `${getOperatorsUrl()}/${operatorId}`;
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -161,7 +155,7 @@ export default function EditOperatorPage() {
     setSuccess(null);
 
     try {
-      const url = `${getOperatorApiUrl()}/${operatorId}/reset-password`;
+      const url = `${getOperatorsUrl()}/${operatorId}/reset-password`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

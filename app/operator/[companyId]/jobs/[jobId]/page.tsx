@@ -22,7 +22,7 @@ import {
   stopJob,
 } from '@/utils/operatorAccess';
 import type { OperatorJobDetail } from '@/types/operator';
-import { getDueDateStatus, formatDuration } from '@/types/operator';
+import { formatDuration } from '@/types/operator';
 import JobCompleteModal from '@/components/operator/JobCompleteModal';
 
 /**
@@ -164,28 +164,6 @@ export default function OperatorJobDetailPage() {
     await loadJob(); // Refresh job data
   };
 
-  const getDueDateColor = (dueDate: string | null): string => {
-    const status = getDueDateStatus(dueDate);
-    switch (status) {
-      case 'overdue':
-        return '#ef4444';
-      case 'at_risk':
-        return '#f59e0b';
-      default:
-        return '#10b981';
-    }
-  };
-
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return 'No due date';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   // Determine if current operator is working on this job
   const isWorking =
     job?.active_session_id && job?.current_operator_id === currentOperatorId;
@@ -267,22 +245,11 @@ export default function OperatorJobDetailPage() {
             {job.part_name || job.part_number || 'No part specified'}
           </Typography>
 
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Typography sx={{ color: getDueDateColor(job.due_date) }}>
-              Due: {formatDate(job.due_date)}
+          {job.quantity_ordered && (
+            <Typography color="text.secondary">
+              Qty: {job.quantity_completed || 0} / {job.quantity_ordered}
             </Typography>
-            {job.quantity_ordered && (
-              <Typography color="text.secondary">
-                Qty: {job.quantity_completed || 0} / {job.quantity_ordered}
-              </Typography>
-            )}
-          </Box>
+          )}
         </CardContent>
       </Card>
 

@@ -18,7 +18,6 @@ import {
   getActiveSession,
 } from '@/utils/operatorAccess';
 import type { OperatorJob, ActiveSession } from '@/types/operator';
-import { getDueDateStatus } from '@/types/operator';
 
 /**
  * Operator Jobs List Page.
@@ -83,18 +82,6 @@ export default function OperatorJobsPage() {
     router.push(`/operator/${companyId}/jobs/${jobId}${queryParams}`);
   };
 
-  const getDueDateColor = (dueDate: string | null): string => {
-    const status = getDueDateStatus(dueDate);
-    switch (status) {
-      case 'overdue':
-        return '#ef4444';
-      case 'at_risk':
-        return '#f59e0b';
-      default:
-        return '#10b981';
-    }
-  };
-
   const getStatusColor = (status: string): 'default' | 'primary' | 'success' | 'warning' | 'error' => {
     switch (status) {
       case 'completed':
@@ -107,16 +94,6 @@ export default function OperatorJobsPage() {
       default:
         return 'default';
     }
-  };
-
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return 'No due date';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   };
 
   if (loading) {
@@ -205,8 +182,6 @@ export default function OperatorJobsPage() {
             sx={{
               bgcolor: 'rgba(17, 20, 57, 0.6)',
               backdropFilter: 'blur(8px)',
-              borderLeft: '4px solid',
-              borderLeftColor: getDueDateColor(job.due_date),
             }}
           >
             <CardActionArea
@@ -254,26 +229,11 @@ export default function OperatorJobsPage() {
                   </Typography>
                 )}
 
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    sx={{ color: getDueDateColor(job.due_date) }}
-                  >
-                    Due: {formatDate(job.due_date)}
+                {job.current_operator_name && (
+                  <Typography variant="caption" color="text.secondary">
+                    In progress: {job.current_operator_name}
                   </Typography>
-
-                  {job.current_operator_name && (
-                    <Typography variant="caption" color="text.secondary">
-                      In progress: {job.current_operator_name}
-                    </Typography>
-                  )}
-                </Box>
+                )}
               </CardContent>
             </CardActionArea>
           </Card>
