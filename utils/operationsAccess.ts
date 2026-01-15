@@ -416,6 +416,32 @@ export async function getOperationWithRelations(
 }
 
 /**
+ * Get an operation with its resource group for detail display
+ */
+export async function getOperationWithGroup(operationId: string): Promise<OperationWithGroup | null> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('operation_types')
+    .select(`
+      *,
+      resource_group:resource_groups (
+        id,
+        name
+      )
+    `)
+    .eq('id', operationId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching operation with group:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
  * Check if an operation name already exists for a company
  */
 export async function checkOperationNameExists(
