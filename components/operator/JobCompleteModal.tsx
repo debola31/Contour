@@ -21,7 +21,6 @@ interface JobCompleteModalProps {
   jobId: string;
   operatorId: string | null;
   sessionStartedAt: string | null;
-  quantityOrdered: number | null;
 }
 
 /**
@@ -40,11 +39,8 @@ export default function JobCompleteModal({
   jobId,
   operatorId,
   sessionStartedAt,
-  quantityOrdered,
 }: JobCompleteModalProps) {
-  const [quantityCompleted, setQuantityCompleted] = useState<number>(
-    quantityOrdered || 1
-  );
+  const [quantityCompleted, setQuantityCompleted] = useState<number>(1);
   const [quantityScrapped, setQuantityScrapped] = useState<number>(0);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,12 +66,12 @@ export default function JobCompleteModal({
   // Reset form when opening
   useEffect(() => {
     if (open) {
-      setQuantityCompleted(quantityOrdered || 1);
+      setQuantityCompleted(1);
       setQuantityScrapped(0);
       setNotes('');
       setError(null);
     }
-  }, [open, quantityOrdered]);
+  }, [open]);
 
   const handleConfirm = async () => {
     if (!operatorId) {

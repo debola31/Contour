@@ -139,7 +139,7 @@ export async function getOperatorJobs(
   const { data: jobs, error } = await supabase
     .from('jobs')
     .select(`
-      id, job_number, status, quantity_ordered, quantity_completed,
+      id, job_number, status,
       customers(name),
       parts(description, part_number)
     `)
@@ -195,8 +195,6 @@ export async function getOperatorJobs(
       part_name: (job.parts as { description: string; part_number: string } | null)?.description || null,
       part_number: (job.parts as { description: string; part_number: string } | null)?.part_number || null,
       status: job.status,
-      quantity_ordered: job.quantity_ordered,
-      quantity_completed: job.quantity_completed,
       operation_id: currentOp?.id || null,
       operation_name: currentOp?.operation_name || null,
       operation_status: currentOp?.status || null,
@@ -220,7 +218,7 @@ export async function getOperatorJobDetail(
   const { data: job, error } = await supabase
     .from('jobs')
     .select(`
-      id, job_number, status, quantity_ordered, quantity_completed,
+      id, job_number, status,
       customers(name),
       parts(description, part_number)
     `)
@@ -273,8 +271,7 @@ export async function getOperatorJobDetail(
   if (currentOp) {
     const setup = Number(currentOp.estimated_setup_hours) || 0;
     const runPer = Number(currentOp.estimated_run_hours_per_unit) || 0;
-    const qty = job.quantity_ordered || 1;
-    estimatedHours = setup + (runPer * qty);
+    estimatedHours = setup + runPer;
   }
 
   return {
@@ -284,8 +281,6 @@ export async function getOperatorJobDetail(
     part_name: (job.parts as { description: string; part_number: string } | null)?.description || null,
     part_number: (job.parts as { description: string; part_number: string } | null)?.part_number || null,
     status: job.status,
-    quantity_ordered: job.quantity_ordered,
-    quantity_completed: job.quantity_completed,
     operation_id: currentOp?.id || null,
     operation_name: currentOp?.operation_name || null,
     operation_status: currentOp?.status || null,

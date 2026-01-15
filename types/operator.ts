@@ -117,8 +117,6 @@ export interface OperatorJob {
   part_name: string | null;
   part_number: string | null;
   status: string;
-  quantity_ordered: number | null;
-  quantity_completed: number | null;
   // Current operation for this station
   operation_id: string | null;
   operation_name: string | null;
@@ -137,8 +135,6 @@ export interface OperatorJobDetail {
   part_name: string | null;
   part_number: string | null;
   status: string;
-  quantity_ordered: number | null;
-  quantity_completed: number | null;
   // Operation details
   operation_id: string | null;
   operation_name: string | null;

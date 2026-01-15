@@ -244,12 +244,6 @@ export default function OperatorJobDetailPage() {
           <Typography variant="h6" sx={{ mb: 2 }}>
             {job.part_name || job.part_number || 'No part specified'}
           </Typography>
-
-          {job.quantity_ordered && (
-            <Typography color="text.secondary">
-              Qty: {job.quantity_completed || 0} / {job.quantity_ordered}
-            </Typography>
-          )}
         </CardContent>
       </Card>
 
@@ -384,7 +378,6 @@ export default function OperatorJobDetailPage() {
         jobId={jobId}
         operatorId={currentOperatorId}
         sessionStartedAt={job.session_started_at}
-        quantityOrdered={job.quantity_ordered}
       />
     </Box>
   );
