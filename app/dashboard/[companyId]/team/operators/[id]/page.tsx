@@ -13,7 +13,18 @@ import Divider from '@mui/material/Divider';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import { getSupabase } from '@/lib/supabase';
-import type { Operator } from '@/types/operator';
+import type { OperatorWithEmail } from '@/types/operator';
+
+/**
+ * Get the API URL for operator endpoints.
+ */
+const getOperatorApiUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  if (baseUrl.endsWith('/api')) {
+    return `${baseUrl}/operators`;
+  }
+  return `${baseUrl}/api/operators`;
+};
 
 /**
  * Edit Operator Page.
@@ -28,7 +39,7 @@ export default function EditOperatorPage() {
   const companyId = params.companyId as string;
   const operatorId = params.id as string;
 
-  const [operator, setOperator] = useState<Operator | null>(null);
+  const [operator, setOperator] = useState<OperatorWithEmail | null>(null);
   const [email, setEmail] = useState<string>('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,26 +50,22 @@ export default function EditOperatorPage() {
 
   const supabase = getSupabase();
 
-  // Load operator data
+  // Load operator data from API (includes email)
   useEffect(() => {
     async function load() {
       try {
-        // Get operator data
-        const { data: operatorData, error: opError } = await supabase
-          .from('operators')
-          .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
-          .eq('id', operatorId)
-          .single();
+        const url = `${getOperatorApiUrl()}/${operatorId}`;
+        const response = await fetch(url);
 
-        if (opError) throw new Error(opError.message);
+        if (!response.ok) {
+          throw new Error('Failed to fetch operator');
+        }
+
+        const operatorData: OperatorWithEmail = await response.json();
 
         setOperator(operatorData);
         setName(operatorData.name);
-
-        // Get email from auth.users via RPC or admin API
-        // For now, we'll store a placeholder - in production, fetch from auth.users
-        // This would typically require a service role key or an RPC function
-        setEmail('(Email stored in auth system)');
+        setEmail(operatorData.email || '');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load operator');
       } finally {
@@ -66,7 +73,7 @@ export default function EditOperatorPage() {
       }
     }
     load();
-  }, [operatorId, supabase]);
+  }, [operatorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,8 +109,8 @@ export default function EditOperatorPage() {
   };
 
   const handleResetPassword = async () => {
-    if (!operator?.user_id) {
-      setError('Cannot reset password: user not found');
+    if (!email) {
+      setError('Cannot reset password: email not found');
       return;
     }
 
@@ -112,10 +119,13 @@ export default function EditOperatorPage() {
     setSuccess(null);
 
     try {
-      // Note: This requires the email, which we'd need to fetch from auth.users
-      // For now, show a message that admin needs to use Supabase dashboard
-      // In production, implement via backend API with service role key
-      setError('Password reset via email is not yet implemented. Please use Supabase dashboard to reset the password, or create a new operator.');
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/operator/${companyId}/change-password`,
+      });
+
+      if (resetError) throw new Error(resetError.message);
+
+      setSuccess(`Password reset email sent to ${email}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send reset email');
     } finally {

@@ -17,9 +17,9 @@ import StopIcon from '@mui/icons-material/Stop';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
   getOperatorJobDetail,
+  getCurrentOperator,
   startJob,
   stopJob,
-  decodeOperatorToken,
 } from '@/utils/operatorAccess';
 import type { OperatorJobDetail } from '@/types/operator';
 import { getDueDateStatus, formatDuration } from '@/types/operator';
@@ -72,33 +72,41 @@ export default function OperatorJobDetailPage() {
   const searchParams = useSearchParams();
   const companyId = params.companyId as string;
   const jobId = params.jobId as string;
-  const operationTypeId =
-    searchParams.get('operation_type_id') ||
-    decodeOperatorToken()?.operation_type_id ||
-    undefined;
+
+  // Get operation_type_id from URL query param (set from station QR scan)
+  const operationTypeId = searchParams.get('station') || undefined;
 
   const [job, setJob] = useState<OperatorJobDetail | null>(null);
+  const [currentOperatorId, setCurrentOperatorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
 
-  const decoded = decodeOperatorToken();
-  const currentOperatorId = decoded?.operator_id;
+  // Get current operator on mount
+  useEffect(() => {
+    async function loadOperator() {
+      const operator = await getCurrentOperator(companyId);
+      if (operator) {
+        setCurrentOperatorId(operator.id);
+      }
+    }
+    loadOperator();
+  }, [companyId]);
 
   const loadJob = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await getOperatorJobDetail(jobId, operationTypeId);
+      const data = await getOperatorJobDetail(jobId, companyId, operationTypeId);
       setJob(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load job');
     } finally {
       setLoading(false);
     }
-  }, [jobId, operationTypeId]);
+  }, [jobId, companyId, operationTypeId]);
 
   useEffect(() => {
     loadJob();
@@ -110,11 +118,16 @@ export default function OperatorJobDetailPage() {
       return;
     }
 
+    if (!currentOperatorId) {
+      setError('Operator not found. Please log in again.');
+      return;
+    }
+
     setActionLoading(true);
     setError(null);
 
     try {
-      await startJob(jobId, { operation_type_id: operationTypeId });
+      await startJob(jobId, currentOperatorId, companyId, { operation_type_id: operationTypeId });
       await loadJob(); // Refresh job data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start job');
@@ -124,11 +137,16 @@ export default function OperatorJobDetailPage() {
   };
 
   const handleStop = async () => {
+    if (!currentOperatorId) {
+      setError('Operator not found. Please log in again.');
+      return;
+    }
+
     setActionLoading(true);
     setError(null);
 
     try {
-      await stopJob(jobId);
+      await stopJob(jobId, currentOperatorId);
       await loadJob(); // Refresh job data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to stop job');
@@ -397,6 +415,7 @@ export default function OperatorJobDetailPage() {
         onClose={() => setShowCompleteModal(false)}
         onConfirm={handleCompleteConfirm}
         jobId={jobId}
+        operatorId={currentOperatorId}
         sessionStartedAt={job.session_started_at}
         quantityOrdered={job.quantity_ordered}
       />

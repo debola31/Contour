@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -14,7 +14,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import IconButton from '@mui/material/IconButton';
 import {
   getOperatorJobs,
-  decodeOperatorToken,
+  getCurrentOperator,
   getActiveSession,
 } from '@/utils/operatorAccess';
 import type { OperatorJob, ActiveSession } from '@/types/operator';
@@ -24,49 +24,63 @@ import { getDueDateStatus } from '@/types/operator';
  * Operator Jobs List Page.
  *
  * Shows jobs available for the operator to work on.
- * Filtered by their station's operation_type_id.
+ * Filtered by station operation_type_id from URL query param.
  */
 export default function OperatorJobsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const companyId = params.companyId as string;
+
+  // Get operation_type_id from URL query param (set from station QR scan)
+  const operationTypeId = searchParams.get('station') || undefined;
 
   const [jobs, setJobs] = useState<OperatorJob[]>([]);
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
+  const [operatorId, setOperatorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get operation_type_id from token
-  const decoded = decodeOperatorToken();
-  const operationTypeId = decoded?.operation_type_id || undefined;
+  // Get current operator on mount
+  useEffect(() => {
+    async function loadOperator() {
+      const operator = await getCurrentOperator(companyId);
+      if (operator) {
+        setOperatorId(operator.id);
+      }
+    }
+    loadOperator();
+  }, [companyId]);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const [jobsData, sessionData] = await Promise.all([
-        getOperatorJobs(operationTypeId),
-        getActiveSession(),
-      ]);
+      const jobsData = await getOperatorJobs(companyId, operationTypeId);
       setJobs(jobsData);
-      setActiveSession(sessionData);
+
+      // Get active session if we have operator ID
+      if (operatorId) {
+        const sessionData = await getActiveSession(operatorId);
+        setActiveSession(sessionData);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load jobs');
     } finally {
       setLoading(false);
     }
-  }, [operationTypeId]);
+  }, [companyId, operationTypeId, operatorId]);
 
   useEffect(() => {
     loadJobs();
   }, [loadJobs]);
 
   const handleJobClick = (jobId: string) => {
-    const params = operationTypeId
-      ? `?operation_type_id=${operationTypeId}`
+    const queryParams = operationTypeId
+      ? `?station=${operationTypeId}`
       : '';
-    router.push(`/operator/${companyId}/jobs/${jobId}${params}`);
+    router.push(`/operator/${companyId}/jobs/${jobId}${queryParams}`);
   };
 
   const getDueDateColor = (dueDate: string | null): string => {

@@ -19,6 +19,7 @@ interface JobCompleteModalProps {
   onClose: () => void;
   onConfirm: () => void;
   jobId: string;
+  operatorId: string | null;
   sessionStartedAt: string | null;
   quantityOrdered: number | null;
 }
@@ -37,6 +38,7 @@ export default function JobCompleteModal({
   onClose,
   onConfirm,
   jobId,
+  operatorId,
   sessionStartedAt,
   quantityOrdered,
 }: JobCompleteModalProps) {
@@ -76,11 +78,16 @@ export default function JobCompleteModal({
   }, [open, quantityOrdered]);
 
   const handleConfirm = async () => {
+    if (!operatorId) {
+      setError('Operator not found. Please log in again.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      await completeJob(jobId, {
+      await completeJob(jobId, operatorId, {
         quantity_completed: quantityCompleted,
         quantity_scrapped: quantityScrapped,
         notes: notes.trim() || undefined,

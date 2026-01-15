@@ -169,7 +169,7 @@ export async function getOperatorJobs(
     if (operationTypeId && (!ops || ops.length === 0)) continue;
 
     // Find current operation for this station
-    const currentOp = ops?.find((op) =>
+    const currentOp = ops?.find((op: { id: string; operation_name: string; status: string; operation_type_id: string }) =>
       op.status === 'pending' || op.status === 'in_progress'
     );
 
@@ -243,7 +243,7 @@ export async function getOperatorJobDetail(
 
   const { data: ops } = await opsQuery;
 
-  const currentOp = ops?.find((op) =>
+  const currentOp = ops?.find((op: { id: string; operation_name: string; status: string; instructions: string | null; estimated_setup_hours: number | null; estimated_run_hours_per_unit: number | null; operation_type_id: string }) =>
     op.status === 'pending' || op.status === 'in_progress'
   );
 
@@ -553,7 +553,18 @@ export async function getOperatorSessions(
 
   if (error) throw new Error(error.message);
 
-  return (data || []).map((s) => {
+  interface SessionRow {
+    id: string;
+    operator_id: string;
+    job_id: string;
+    job_operation_id: string | null;
+    operation_type_id: string;
+    started_at: string;
+    ended_at: string | null;
+    notes: string | null;
+  }
+
+  return (data || []).map((s: SessionRow) => {
     let durationSeconds: number | undefined;
     if (s.ended_at) {
       const started = new Date(s.started_at);

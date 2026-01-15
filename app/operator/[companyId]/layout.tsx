@@ -16,6 +16,7 @@ import WorkIcon from '@mui/icons-material/Work';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PersonIcon from '@mui/icons-material/Person';
 import { getSupabase } from '@/lib/supabase';
+import type { AuthChangeEvent } from '@supabase/supabase-js';
 
 /**
  * Operator View layout.
@@ -86,7 +87,7 @@ export default function OperatorLayout({
     checkAuth();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (event === 'SIGNED_OUT') {
         router.push(`/operator/${companyId}/login`);
       }

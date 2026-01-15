@@ -40,7 +40,18 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 import { jiggedAgGridTheme } from '@/lib/agGridTheme';
 import { getSupabase } from '@/lib/supabase';
 import ExportCsvButton from '@/components/common/ExportCsvButton';
-import type { Operator } from '@/types/operator';
+import type { OperatorWithEmail } from '@/types/operator';
+
+/**
+ * Get the API URL for operator endpoints.
+ */
+const getOperatorApiUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  if (baseUrl.endsWith('/api')) {
+    return `${baseUrl}/operators`;
+  }
+  return `${baseUrl}/api/operators`;
+};
 
 // TabPanel component following Operations pattern
 interface TabPanelProps {
@@ -74,11 +85,11 @@ export default function TeamPage() {
   const [activeTab, setActiveTab] = useState(0);
 
   // Operators state
-  const [operators, setOperators] = useState<Operator[]>([]);
+  const [operators, setOperators] = useState<OperatorWithEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
-  const gridRef = useRef<AgGridReact<Operator>>(null);
+  const gridRef = useRef<AgGridReact<OperatorWithEmail>>(null);
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -105,25 +116,30 @@ export default function TeamPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Load operators
+  // Load operators from API (includes email from auth.users)
   const loadOperators = useCallback(async () => {
     setLoading(true);
     try {
-      const supabase = getSupabase();
-      let query = supabase
-        .from('operators')
-        .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
-        .eq('company_id', companyId)
-        .order('name');
+      const url = `${getOperatorApiUrl()}?company_id=${companyId}`;
+      const response = await fetch(url);
 
-      if (searchDebounced) {
-        query = query.ilike('name', `%${searchDebounced}%`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch operators');
       }
 
-      const { data, error } = await query;
+      let data: OperatorWithEmail[] = await response.json();
 
-      if (error) throw error;
-      setOperators(data || []);
+      // Client-side search filter
+      if (searchDebounced) {
+        const searchLower = searchDebounced.toLowerCase();
+        data = data.filter(
+          (op) =>
+            op.name.toLowerCase().includes(searchLower) ||
+            op.email?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      setOperators(data);
     } catch (err) {
       console.error('Error loading operators:', err);
       setSnackbar({
@@ -211,7 +227,7 @@ export default function TeamPage() {
   };
 
   // Selection change handler
-  const handleSelectionChanged = (event: SelectionChangedEvent<Operator>) => {
+  const handleSelectionChanged = (event: SelectionChangedEvent<OperatorWithEmail>) => {
     const selectedNodes = event.api.getSelectedNodes();
     const selectedData = selectedNodes
       .map((node) => node.data?.id)
@@ -220,14 +236,14 @@ export default function TeamPage() {
   };
 
   // Row click navigation
-  const handleRowClicked = (event: RowClickedEvent<Operator>) => {
+  const handleRowClicked = (event: RowClickedEvent<OperatorWithEmail>) => {
     if (event.data) {
       router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
     }
   };
 
   // Keyboard navigation
-  const handleCellKeyDown = (event: CellKeyDownEvent<Operator>) => {
+  const handleCellKeyDown = (event: CellKeyDownEvent<OperatorWithEmail>) => {
     const keyboardEvent = event.event as KeyboardEvent | undefined;
     if (keyboardEvent?.key === 'Enter' && event.data) {
       router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
@@ -258,13 +274,20 @@ export default function TeamPage() {
   };
 
   // AG Grid column definitions
-  const columnDefs: ColDef<Operator>[] = useMemo(
+  const columnDefs: ColDef<OperatorWithEmail>[] = useMemo(
     () => [
       {
         field: 'name',
         headerName: 'Name',
         flex: 1,
         minWidth: 150,
+      },
+      {
+        field: 'email',
+        headerName: 'Email',
+        flex: 1,
+        minWidth: 200,
+        valueFormatter: (params) => params.value || '—',
       },
       {
         field: 'last_login_at',
@@ -401,7 +424,7 @@ export default function TeamPage() {
                 },
               }}
             >
-              <AgGridReact<Operator>
+              <AgGridReact<OperatorWithEmail>
                 ref={gridRef}
                 rowData={operators}
                 columnDefs={columnDefs}
