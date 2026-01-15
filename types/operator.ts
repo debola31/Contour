@@ -3,71 +3,11 @@
  *
  * Authentication is handled via Supabase Auth (email/password).
  * Operators authenticate the same way as admin users, but access
- * a dedicated operator interface and have operator-specific records.
+ * a dedicated operator interface.
+ *
+ * NOTE: Operator records are now stored in user_company_access with role='operator'.
+ * The legacy 'operators' table is deprecated.
  */
-
-// ============================================================================
-// OPERATOR TYPES
-// ============================================================================
-
-/**
- * Operator data as stored in the database.
- * Note: Email is stored in auth.users, not duplicated here.
- * Use OperatorWithEmail when displaying email is needed.
- */
-export interface Operator {
-  id: string;
-  company_id: string;
-  user_id: string;
-  name: string;
-  last_login_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/**
- * Operator with email fetched from auth.users.
- * Used for display purposes in admin views.
- */
-export interface OperatorWithEmail extends Operator {
-  email: string | null;
-}
-
-/**
- * Request body for creating a new operator.
- */
-export interface OperatorCreateRequest {
-  company_id: string;
-  name: string;
-  email: string;
-  password: string; // Temporary password, operator must change on first login
-}
-
-/**
- * Response from creating an operator.
- */
-export interface OperatorCreateResponse {
-  success: boolean;
-  operator_id: string;
-  user_id: string;
-  message: string;
-}
-
-/**
- * Request body for updating an operator.
- */
-export interface OperatorUpdateRequest {
-  name?: string;
-}
-
-// ============================================================================
-// AUTHENTICATION - Handled by Supabase Auth
-// ============================================================================
-
-// Note: Operator authentication uses standard Supabase Auth (email/password).
-// Use supabase.auth.signInWithPassword() for login.
-// Use supabase.auth.signOut() for logout.
-// Use supabase.auth.updateUser() for password changes.
 
 // ============================================================================
 // SESSION TYPES

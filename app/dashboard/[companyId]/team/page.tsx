@@ -42,18 +42,12 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 import { jiggedAgGridTheme } from '@/lib/agGridTheme';
 import { getSupabase, getEdgeFunctionUrl } from '@/lib/supabase';
 import ExportCsvButton from '@/components/common/ExportCsvButton';
-import type { OperatorWithEmail } from '@/types/operator';
 import type { TeamMember } from '@/types/team';
 
 /**
- * Get the Edge Function URL for operators.
+ * Get the Edge Function URL for unified team endpoint.
  */
-const getOperatorsUrl = () => getEdgeFunctionUrl('operators');
-
-/**
- * Get the Edge Function URL for team members (admin/user).
- */
-const getTeamMembersUrl = () => getEdgeFunctionUrl('team-members');
+const getTeamUrl = () => getEdgeFunctionUrl('team');
 
 // TabPanel component following Operations pattern
 interface TabPanelProps {
@@ -86,10 +80,10 @@ export default function TeamPage() {
   // Tab state (0: Admins, 1: Users, 2: Operators)
   const [activeTab, setActiveTab] = useState(0);
 
-  // Operators state
-  const [operators, setOperators] = useState<OperatorWithEmail[]>([]);
+  // Operators state (now uses TeamMember like other tabs)
+  const [operators, setOperators] = useState<TeamMember[]>([]);
   const [operatorsLoading, setOperatorsLoading] = useState(false);
-  const operatorsGridRef = useRef<AgGridReact<OperatorWithEmail>>(null);
+  const operatorsGridRef = useRef<AgGridReact<TeamMember>>(null);
 
   // Team members state (for Admins and Users tabs)
   const [admins, setAdmins] = useState<TeamMember[]>([]);
@@ -130,25 +124,25 @@ export default function TeamPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Load operators from Edge Function (includes email from auth.users)
+  // Load operators from unified team Edge Function
   const loadOperators = useCallback(async () => {
     setOperatorsLoading(true);
     try {
-      const url = `${getOperatorsUrl()}?company_id=${companyId}`;
+      const url = `${getTeamUrl()}?company_id=${companyId}&role=operator`;
       const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error('Failed to fetch operators');
       }
 
-      let data: OperatorWithEmail[] = await response.json();
+      let data: TeamMember[] = await response.json();
 
       // Client-side search filter
       if (searchDebounced) {
         const searchLower = searchDebounced.toLowerCase();
         data = data.filter(
           (op) =>
-            op.name.toLowerCase().includes(searchLower) ||
+            op.name?.toLowerCase().includes(searchLower) ||
             op.email?.toLowerCase().includes(searchLower)
         );
       }
@@ -166,11 +160,11 @@ export default function TeamPage() {
     }
   }, [companyId, searchDebounced]);
 
-  // Load admins from Edge Function
+  // Load admins from unified team Edge Function
   const loadAdmins = useCallback(async () => {
     setAdminsLoading(true);
     try {
-      const url = `${getTeamMembersUrl()}?company_id=${companyId}&role=admin`;
+      const url = `${getTeamUrl()}?company_id=${companyId}&role=admin`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -202,11 +196,11 @@ export default function TeamPage() {
     }
   }, [companyId, searchDebounced]);
 
-  // Load users from Edge Function
+  // Load users from unified team Edge Function
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
     try {
-      const url = `${getTeamMembersUrl()}?company_id=${companyId}&role=user`;
+      const url = `${getTeamUrl()}?company_id=${companyId}&role=user`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -272,18 +266,16 @@ export default function TeamPage() {
     return Math.max(headerHeight + rowHeight * displayedRows + paginationHeight, 400);
   }, [loading, currentData.length]);
 
-  // Delete item(s) - handles operators and team members
+  // Delete item(s) - all roles now use user_company_access
   const handleDelete = async () => {
     setDeleting(true);
     try {
       const supabase = getSupabase();
-      const isOperator = activeTab === 2;
-      const tableName = isOperator ? 'operators' : 'user_company_access';
-      const itemName = isOperator ? 'operator' : activeTab === 0 ? 'admin' : 'user';
+      const itemName = activeTab === 0 ? 'admin' : activeTab === 1 ? 'user' : 'operator';
 
       if (deleteDialog.type === 'single' && deleteDialog.id) {
         const { error } = await supabase
-          .from(tableName)
+          .from('user_company_access')
           .delete()
           .eq('id', deleteDialog.id);
 
@@ -296,7 +288,7 @@ export default function TeamPage() {
         });
       } else if (deleteDialog.type === 'bulk') {
         const { error } = await supabase
-          .from(tableName)
+          .from('user_company_access')
           .delete()
           .in('id', selectedIds);
 
@@ -330,8 +322,8 @@ export default function TeamPage() {
     }
   };
 
-  // Selection change handler - works with both OperatorWithEmail and TeamMember
-  const handleSelectionChanged = (event: SelectionChangedEvent<OperatorWithEmail | TeamMember>) => {
+  // Selection change handler - all tabs now use TeamMember
+  const handleSelectionChanged = (event: SelectionChangedEvent<TeamMember>) => {
     const selectedNodes = event.api.getSelectedNodes();
     const selectedData = selectedNodes
       .map((node) => node.data?.id)
@@ -339,25 +331,17 @@ export default function TeamPage() {
     setSelectedIds(selectedData);
   };
 
-  // Row click navigation - handles different routes based on tab
-  const handleRowClicked = (event: RowClickedEvent<OperatorWithEmail | TeamMember>) => {
+  // Row click navigation - all roles now go to same detail page
+  const handleRowClicked = (event: RowClickedEvent<TeamMember>) => {
     if (!event.data) return;
-    if (activeTab === 2) {
-      router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
-    } else {
-      router.push(`/dashboard/${companyId}/team/members/${event.data.id}`);
-    }
+    router.push(`/dashboard/${companyId}/team/members/${event.data.id}`);
   };
 
   // Keyboard navigation
-  const handleCellKeyDown = (event: CellKeyDownEvent<OperatorWithEmail | TeamMember>) => {
+  const handleCellKeyDown = (event: CellKeyDownEvent<TeamMember>) => {
     const keyboardEvent = event.event as KeyboardEvent | undefined;
     if (keyboardEvent?.key === 'Enter' && event.data) {
-      if (activeTab === 2) {
-        router.push(`/dashboard/${companyId}/team/operators/${event.data.id}`);
-      } else {
-        router.push(`/dashboard/${companyId}/team/members/${event.data.id}`);
-      }
+      router.push(`/dashboard/${companyId}/team/members/${event.data.id}`);
     }
   };
 
@@ -384,14 +368,15 @@ export default function TeamPage() {
     return date.toLocaleDateString();
   };
 
-  // AG Grid column definitions for Operators
-  const operatorColumnDefs: ColDef<OperatorWithEmail>[] = useMemo(
+  // AG Grid column definitions for Operators (now uses TeamMember like others)
+  const operatorColumnDefs: ColDef<TeamMember>[] = useMemo(
     () => [
       {
         field: 'name',
         headerName: 'Name',
         flex: 1,
         minWidth: 150,
+        valueFormatter: (params) => params.value || '—',
       },
       {
         field: 'email',
@@ -401,7 +386,7 @@ export default function TeamPage() {
         valueFormatter: (params) => params.value || '—',
       },
       {
-        field: 'last_login_at',
+        field: 'last_sign_in_at',
         headerName: 'Last Login',
         width: 130,
         valueFormatter: (params) => formatRelativeTime(params.value),
@@ -570,9 +555,9 @@ export default function TeamPage() {
                   enableClickSelection: false,
                   selectAll: 'all',
                 }}
-                onSelectionChanged={handleSelectionChanged as (event: SelectionChangedEvent<TeamMember>) => void}
-                onRowClicked={handleRowClicked as (event: RowClickedEvent<TeamMember>) => void}
-                onCellKeyDown={handleCellKeyDown as (event: CellKeyDownEvent<TeamMember>) => void}
+                onSelectionChanged={handleSelectionChanged}
+                onRowClicked={handleRowClicked}
+                onCellKeyDown={handleCellKeyDown}
                 pagination={true}
                 paginationPageSize={25}
                 paginationPageSizeSelector={[25, 50, 100]}
@@ -701,9 +686,9 @@ export default function TeamPage() {
                   enableClickSelection: false,
                   selectAll: 'all',
                 }}
-                onSelectionChanged={handleSelectionChanged as (event: SelectionChangedEvent<TeamMember>) => void}
-                onRowClicked={handleRowClicked as (event: RowClickedEvent<TeamMember>) => void}
-                onCellKeyDown={handleCellKeyDown as (event: CellKeyDownEvent<TeamMember>) => void}
+                onSelectionChanged={handleSelectionChanged}
+                onRowClicked={handleRowClicked}
+                onCellKeyDown={handleCellKeyDown}
                 pagination={true}
                 paginationPageSize={25}
                 paginationPageSizeSelector={[25, 50, 100]}
@@ -774,9 +759,7 @@ export default function TeamPage() {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() =>
-              router.push(`/dashboard/${companyId}/team/operators/new`)
-            }
+            onClick={() => router.push(`/dashboard/${companyId}/team/members/new?role=operator`)}
           >
             New Operator
           </Button>
@@ -799,7 +782,7 @@ export default function TeamPage() {
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() => router.push(`/dashboard/${companyId}/team/operators/new`)}
+                  onClick={() => router.push(`/dashboard/${companyId}/team/members/new?role=operator`)}
                 >
                   Add Operator
                 </Button>
@@ -821,7 +804,7 @@ export default function TeamPage() {
                 },
               }}
             >
-              <AgGridReact<OperatorWithEmail>
+              <AgGridReact<TeamMember>
                 ref={operatorsGridRef}
                 rowData={operators}
                 columnDefs={operatorColumnDefs}
@@ -834,9 +817,9 @@ export default function TeamPage() {
                   enableClickSelection: false,
                   selectAll: 'all',
                 }}
-                onSelectionChanged={handleSelectionChanged as unknown as (event: SelectionChangedEvent<OperatorWithEmail>) => void}
-                onRowClicked={handleRowClicked as (event: RowClickedEvent<OperatorWithEmail>) => void}
-                onCellKeyDown={handleCellKeyDown as (event: CellKeyDownEvent<OperatorWithEmail>) => void}
+                onSelectionChanged={handleSelectionChanged}
+                onRowClicked={handleRowClicked}
+                onCellKeyDown={handleCellKeyDown}
                 pagination={true}
                 paginationPageSize={25}
                 paginationPageSizeSelector={[25, 50, 100]}

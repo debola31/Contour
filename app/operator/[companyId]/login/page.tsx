@@ -46,14 +46,15 @@ export default function OperatorLoginPage() {
 
       if (session) {
         // User is logged in, verify they're an operator for this company
-        const { data: operator } = await supabase
-          .from('operators')
+        const { data: operatorAccess } = await supabase
+          .from('user_company_access')
           .select('id')
           .eq('user_id', session.user.id)
           .eq('company_id', companyId)
+          .eq('role', 'operator')
           .single();
 
-        if (operator) {
+        if (operatorAccess) {
           // Check if password change required
           if (session.user.user_metadata?.needs_password_change) {
             router.push(`/operator/${companyId}/change-password`);
@@ -97,31 +98,28 @@ export default function OperatorLoginPage() {
       }
 
       // 2. Validate user is an operator for this company
-      const { data: operator, error: opError } = await supabase
-        .from('operators')
+      const { data: operatorAccess, error: opError } = await supabase
+        .from('user_company_access')
         .select('id, name')
         .eq('user_id', data.user.id)
         .eq('company_id', companyId)
+        .eq('role', 'operator')
         .single();
 
-      if (opError || !operator) {
+      if (opError || !operatorAccess) {
         await supabase.auth.signOut();
         throw new Error('You are not registered as an operator for this company');
       }
 
-      // 3. Update last_login_at
-      await supabase
-        .from('operators')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', operator.id);
+      // Note: Supabase auth automatically tracks last_sign_in_at
 
-      // 4. Check if password change required
+      // 3. Check if password change required
       if (data.user.user_metadata?.needs_password_change) {
         router.push(`/operator/${companyId}/change-password`);
         return;
       }
 
-      // 5. Redirect to jobs
+      // 4. Redirect to jobs
       router.push(`/operator/${companyId}/jobs${stationId ? `?station=${stationId}` : ''}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');

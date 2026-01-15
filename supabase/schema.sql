@@ -1,6 +1,6 @@
 -- ============================================================
 -- Jigged Manufacturing ERP - Database Schema
--- Generated: 2026-01-14T07:24:06Z
+-- Generated: 2026-01-15T08:53:59Z
 -- Schemas: public, storage
 -- ============================================================
 
@@ -189,6 +189,7 @@ CREATE TABLE IF NOT EXISTS "public"."user_company_access"
     "company_id" uuid NOT NULL,
     "role" text DEFAULT 'operator'::text,
     "created_at" timestamp with time zone DEFAULT now(),
+    "name" text,
     CONSTRAINT "user_company_access_pkey" PRIMARY KEY (id),
     CONSTRAINT "user_company_access_user_id_company_id_key" UNIQUE (user_id, company_id),
     CONSTRAINT "user_company_access_role_check" CHECK ((role = ANY (ARRAY['owner'::text, 'admin'::text, 'operator'::text, 'bookkeeper'::text, 'engineer'::text, 'quality'::text, 'sales'::text])))
@@ -930,11 +931,43 @@ CREATE POLICY "Admins can delete company access"
     FOR DELETE
     USING (is_company_admin(company_id));
 
+DROP POLICY IF EXISTS "Admins can delete team members" ON "public"."user_company_access";
+CREATE POLICY "Admins can delete team members"
+    ON "public"."user_company_access"
+    FOR DELETE
+    USING ((company_id IN ( SELECT user_company_access_1.company_id
+   FROM user_company_access user_company_access_1
+  WHERE ((user_company_access_1.user_id = auth.uid()) AND (user_company_access_1.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
+DROP POLICY IF EXISTS "Admins can insert team members" ON "public"."user_company_access";
+CREATE POLICY "Admins can insert team members"
+    ON "public"."user_company_access"
+    FOR INSERT
+    WITH CHECK ((company_id IN ( SELECT user_company_access_1.company_id
+   FROM user_company_access user_company_access_1
+  WHERE ((user_company_access_1.user_id = auth.uid()) AND (user_company_access_1.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
+DROP POLICY IF EXISTS "Admins can read company access records" ON "public"."user_company_access";
+CREATE POLICY "Admins can read company access records"
+    ON "public"."user_company_access"
+    FOR SELECT
+    USING ((company_id IN ( SELECT user_company_access_1.company_id
+   FROM user_company_access user_company_access_1
+  WHERE ((user_company_access_1.user_id = auth.uid()) AND (user_company_access_1.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
+
 DROP POLICY IF EXISTS "Admins can update company access" ON "public"."user_company_access";
 CREATE POLICY "Admins can update company access"
     ON "public"."user_company_access"
     FOR UPDATE
     USING (is_company_admin(company_id));
+
+DROP POLICY IF EXISTS "Admins can update team members" ON "public"."user_company_access";
+CREATE POLICY "Admins can update team members"
+    ON "public"."user_company_access"
+    FOR UPDATE
+    USING ((company_id IN ( SELECT user_company_access_1.company_id
+   FROM user_company_access user_company_access_1
+  WHERE ((user_company_access_1.user_id = auth.uid()) AND (user_company_access_1.role = ANY (ARRAY['owner'::text, 'admin'::text]))))));
 
 DROP POLICY IF EXISTS "Admins can view company access" ON "public"."user_company_access";
 CREATE POLICY "Admins can view company access"
@@ -947,6 +980,19 @@ CREATE POLICY "Users can insert own access"
     ON "public"."user_company_access"
     FOR INSERT
     WITH CHECK (((user_id = auth.uid()) OR is_company_admin(company_id)));
+
+DROP POLICY IF EXISTS "Users can read own access record" ON "public"."user_company_access";
+CREATE POLICY "Users can read own access record"
+    ON "public"."user_company_access"
+    FOR SELECT
+    USING ((user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Users can update own name" ON "public"."user_company_access";
+CREATE POLICY "Users can update own name"
+    ON "public"."user_company_access"
+    FOR UPDATE
+    USING ((user_id = auth.uid()))
+    WITH CHECK ((user_id = auth.uid()));
 
 DROP POLICY IF EXISTS "Users can view own access" ON "public"."user_company_access";
 CREATE POLICY "Users can view own access"
@@ -1227,6 +1273,7 @@ CREATE INDEX IF NOT EXISTS idx_routings_company ON public.routings USING btree (
 CREATE INDEX IF NOT EXISTS idx_routings_default ON public.routings USING btree (part_id, is_default) WHERE (is_default = true);
 CREATE INDEX IF NOT EXISTS idx_routings_part ON public.routings USING btree (part_id);
 CREATE INDEX IF NOT EXISTS idx_user_company_access_company_id ON public.user_company_access USING btree (company_id);
+CREATE INDEX IF NOT EXISTS idx_user_company_access_name ON public.user_company_access USING btree (name);
 CREATE INDEX IF NOT EXISTS idx_user_company_access_user_id ON public.user_company_access USING btree (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON public.user_preferences USING btree (user_id);
 
@@ -1729,7 +1776,7 @@ COMMENT ON TABLE "public"."operator_sessions"
     IS 'Work sessions tracking when operators are working on jobs. Used for time tracking and job progress.';
 
 COMMENT ON TABLE "public"."operators"
-    IS 'Shop floor operator accounts. Authenticate via PIN (hashed) or QR badge. Separate from admin users.';
+    IS 'DEPRECATED: This table is being phased out. Use user_company_access with role=operator instead. Will be dropped in a future migration after confirming standardization works.';
 
 COMMENT ON TABLE "public"."parts"
     IS 'Parts catalog with customer-specific or generic parts. Each part has a part number, description, and flexible volume-based pricing stored as JSONB. Parts can belong to a specific customer or be generic (customer_id = NULL). Referenced by quotes, jobs, and routings.';
@@ -2263,10 +2310,13 @@ COMMENT ON COLUMN "public"."user_company_access"."company_id"
     IS 'FK to companies. Cascades on delete. The company user can access.';
 
 COMMENT ON COLUMN "public"."user_company_access"."role"
-    IS 'User role within this company. Values: owner, admin, operator. Default: operator. Controls permissions.';
+    IS 'Role in the company: admin (full access), user (can use all modules), operator (shop floor access only)';
 
 COMMENT ON COLUMN "public"."user_company_access"."created_at"
     IS 'Timestamp when access was granted.';
+
+COMMENT ON COLUMN "public"."user_company_access"."name"
+    IS 'Display name for the team member. Stored here for easy querying without service role access to auth.users.';
 
 COMMENT ON COLUMN "public"."user_preferences"."id"
     IS 'Primary key. UUID auto-generated.';

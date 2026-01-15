@@ -1,11 +1,16 @@
 /**
- * Team Members Edge Function
+ * Unified Team Edge Function
  *
- * Handles admin/user team member operations that require service role:
- * - GET /team-members?company_id=xxx&role=admin|user - List team members by role
- * - GET /team-members/:id - Get single team member with email
- * - POST /team-members - Create team member (auth user + user_company_access)
- * - POST /team-members/:id/reset-password - Reset password
+ * Handles all team member operations for all roles (admin, user, operator).
+ * All roles follow the same pattern: auth.users + user_company_access
+ *
+ * Endpoints:
+ * - GET /team?company_id=xxx              - List all team members
+ * - GET /team?company_id=xxx&role=xxx     - Filter by role
+ * - GET /team/:id                         - Get single member
+ * - POST /team                            - Create member (any role)
+ * - PATCH /team/:id                       - Update member (name, role)
+ * - POST /team/:id/reset-password         - Reset password
  */
 
 import {
@@ -20,8 +25,9 @@ interface TeamMember {
   user_id: string;
   company_id: string;
   role: string;
-  email: string | null;
   name: string | null;
+  email: string | null;
+  last_sign_in_at: string | null;
   created_at: string;
 }
 
@@ -32,12 +38,12 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const pathParts = url.pathname.split('/').filter(Boolean);
-  // Path: /team-members or /team-members/:id or /team-members/:id/reset-password
+  // Path: /team or /team/:id or /team/:id/reset-password
 
   try {
     const supabase = getServiceRoleClient();
 
-    // GET /team-members?company_id=xxx&role=admin|user - List team members
+    // GET /team?company_id=xxx&role=xxx - List team members
     if (req.method === 'GET' && pathParts.length === 1) {
       const companyId = url.searchParams.get('company_id');
       const role = url.searchParams.get('role');
@@ -49,18 +55,15 @@ Deno.serve(async (req) => {
       // Build query
       let query = supabase
         .from('user_company_access')
-        .select('id, user_id, company_id, role, created_at')
+        .select('id, user_id, company_id, role, name, created_at')
         .eq('company_id', companyId);
 
-      // Filter by role if specified (admin or user, not operator)
-      if (role && (role === 'admin' || role === 'user')) {
+      // Filter by role if specified
+      if (role && ['admin', 'user', 'operator'].includes(role)) {
         query = query.eq('role', role);
-      } else {
-        // Default: get both admin and user, exclude operator
-        query = query.in('role', ['admin', 'user']);
       }
 
-      const { data: accessRecords, error: accessError } = await query.order('created_at', { ascending: false });
+      const { data: accessRecords, error: accessError } = await query.order('name');
 
       if (accessError) {
         console.error('Error fetching team members:', accessError);
@@ -71,9 +74,9 @@ Deno.serve(async (req) => {
         return jsonResponse([]);
       }
 
-      // Build user info map from auth.users
+      // Build user info map from auth.users (for email and last_sign_in_at)
       const userIds = accessRecords.map((r) => r.user_id).filter(Boolean);
-      const userMap: Record<string, { email: string | null; name: string | null }> = {};
+      const userMap: Record<string, { email: string | null; last_sign_in_at: string | null }> = {};
 
       if (userIds.length > 0) {
         const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
@@ -82,7 +85,7 @@ Deno.serve(async (req) => {
             if (userIds.includes(user.id)) {
               userMap[user.id] = {
                 email: user.email || null,
-                name: user.user_metadata?.name || null,
+                last_sign_in_at: user.last_sign_in_at || null,
               };
             }
           }
@@ -95,21 +98,22 @@ Deno.serve(async (req) => {
         user_id: record.user_id,
         company_id: record.company_id,
         role: record.role,
+        name: record.name,
         email: userMap[record.user_id]?.email || null,
-        name: userMap[record.user_id]?.name || null,
+        last_sign_in_at: userMap[record.user_id]?.last_sign_in_at || null,
         created_at: record.created_at,
       }));
 
       return jsonResponse(result);
     }
 
-    // GET /team-members/:id - Get single team member
+    // GET /team/:id - Get single team member
     if (req.method === 'GET' && pathParts.length === 2) {
       const memberId = pathParts[1];
 
       const { data: record, error: recordError } = await supabase
         .from('user_company_access')
-        .select('id, user_id, company_id, role, created_at')
+        .select('id, user_id, company_id, role, name, created_at')
         .eq('id', memberId)
         .single();
 
@@ -119,11 +123,11 @@ Deno.serve(async (req) => {
 
       // Get user info
       let email = null;
-      let name = null;
+      let last_sign_in_at = null;
       if (record.user_id) {
         const { data: userData } = await supabase.auth.admin.getUserById(record.user_id);
         email = userData?.user?.email || null;
-        name = userData?.user?.user_metadata?.name || null;
+        last_sign_in_at = userData?.user?.last_sign_in_at || null;
       }
 
       return jsonResponse({
@@ -131,13 +135,14 @@ Deno.serve(async (req) => {
         user_id: record.user_id,
         company_id: record.company_id,
         role: record.role,
+        name: record.name,
         email,
-        name,
+        last_sign_in_at,
         created_at: record.created_at,
       });
     }
 
-    // POST /team-members - Create new team member
+    // POST /team - Create new team member (any role)
     if (req.method === 'POST' && pathParts.length === 1) {
       const body = await req.json();
       const { company_id, name, email, password, role } = body;
@@ -146,8 +151,8 @@ Deno.serve(async (req) => {
         return errorResponse('company_id, name, email, password, and role are required', 400);
       }
 
-      if (role !== 'admin' && role !== 'user') {
-        return errorResponse('role must be "admin" or "user"', 400);
+      if (!['admin', 'user', 'operator'].includes(role)) {
+        return errorResponse('role must be "admin", "user", or "operator"', 400);
       }
 
       if (password.length < 8) {
@@ -178,6 +183,7 @@ Deno.serve(async (req) => {
             user_id: existingUser.id,
             company_id,
             role,
+            name,
           })
           .select()
           .single();
@@ -220,6 +226,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           company_id,
           role,
+          name,
         })
         .select()
         .single();
@@ -239,7 +246,45 @@ Deno.serve(async (req) => {
       });
     }
 
-    // POST /team-members/:id/reset-password
+    // PATCH /team/:id - Update team member (name, role)
+    if (req.method === 'PATCH' && pathParts.length === 2) {
+      const memberId = pathParts[1];
+      const body = await req.json();
+      const { name, role } = body;
+
+      const updateData: Record<string, string> = {};
+      if (name !== undefined) updateData.name = name;
+      if (role !== undefined) {
+        if (!['admin', 'user', 'operator'].includes(role)) {
+          return errorResponse('role must be "admin", "user", or "operator"', 400);
+        }
+        updateData.role = role;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return errorResponse('No fields to update', 400);
+      }
+
+      const { data: updated, error: updateError } = await supabase
+        .from('user_company_access')
+        .update(updateData)
+        .eq('id', memberId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating team member:', updateError);
+        return errorResponse('Failed to update team member', 500);
+      }
+
+      return jsonResponse({
+        success: true,
+        id: updated.id,
+        message: 'Team member updated successfully',
+      });
+    }
+
+    // POST /team/:id/reset-password
     if (req.method === 'POST' && pathParts.length === 3 && pathParts[2] === 'reset-password') {
       const memberId = pathParts[1];
       const body = await req.json();
@@ -252,7 +297,7 @@ Deno.serve(async (req) => {
       // Get access record to find user_id
       const { data: record, error: recordError } = await supabase
         .from('user_company_access')
-        .select('user_id')
+        .select('user_id, name')
         .eq('id', memberId)
         .single();
 
@@ -263,10 +308,6 @@ Deno.serve(async (req) => {
       if (!record.user_id) {
         return errorResponse('Team member has no linked user account', 400);
       }
-
-      // Get user info for response message
-      const { data: userData } = await supabase.auth.admin.getUserById(record.user_id);
-      const userName = userData?.user?.user_metadata?.name || 'Team member';
 
       // Update password
       const { error: updateError } = await supabase.auth.admin.updateUserById(record.user_id, {
@@ -283,13 +324,13 @@ Deno.serve(async (req) => {
 
       return jsonResponse({
         success: true,
-        message: `Password reset for ${userName}. They will be required to change it on next login.`,
+        message: `Password reset for ${record.name || 'team member'}. They will be required to change it on next login.`,
       });
     }
 
     return errorResponse('Not found', 404);
   } catch (error) {
-    console.error('Team members function error:', error);
+    console.error('Team function error:', error);
     return errorResponse(`Internal server error: ${error.message}`, 500);
   }
 });

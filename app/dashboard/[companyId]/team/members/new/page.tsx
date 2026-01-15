@@ -22,14 +22,14 @@ import { getEdgeFunctionUrl } from '@/lib/supabase';
 import type { TeamMemberCreateResponse } from '@/types/team';
 
 /**
- * Get the Edge Function URL for team members.
+ * Get the Edge Function URL for unified team endpoint.
  */
-const getTeamMembersUrl = () => getEdgeFunctionUrl('team-members');
+const getTeamUrl = () => getEdgeFunctionUrl('team');
 
 /**
  * Create New Team Member Page.
  *
- * Creates an admin or user with Supabase Auth (email/password).
+ * Creates an admin, user, or operator with Supabase Auth (email/password).
  * Admin sets a temporary password; user must change on first login.
  */
 export default function NewTeamMemberPage() {
@@ -37,12 +37,12 @@ export default function NewTeamMemberPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const companyId = params.companyId as string;
-  const defaultRole = searchParams.get('role') as 'admin' | 'user' || 'user';
+  const defaultRole = searchParams.get('role') as 'admin' | 'user' | 'operator' || 'user';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'user'>(defaultRole);
+  const [role, setRole] = useState<'admin' | 'user' | 'operator'>(defaultRole);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export default function NewTeamMemberPage() {
 
     try {
       // Call Edge Function to create team member with Supabase user
-      const url = getTeamMembersUrl();
+      const url = getTeamUrl();
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,7 +101,7 @@ export default function NewTeamMemberPage() {
       }
 
       // Navigate back to team page with appropriate tab
-      const tabIndex = role === 'admin' ? 0 : 1;
+      const tabIndex = role === 'admin' ? 0 : role === 'user' ? 1 : 2;
       router.push(`/dashboard/${companyId}/team?tab=${tabIndex}`);
     } catch (err) {
       console.error('Error creating team member:', err);
@@ -161,10 +161,11 @@ export default function NewTeamMemberPage() {
             <Select
               value={role}
               label="Role"
-              onChange={(e) => setRole(e.target.value as 'admin' | 'user')}
+              onChange={(e) => setRole(e.target.value as 'admin' | 'user' | 'operator')}
             >
               <MenuItem value="admin">Admin - Full access, can manage team</MenuItem>
               <MenuItem value="user">User - Can use all modules, cannot manage team</MenuItem>
+              <MenuItem value="operator">Operator - Shop floor access only</MenuItem>
             </Select>
           </FormControl>
 

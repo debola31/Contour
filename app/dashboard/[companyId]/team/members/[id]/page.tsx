@@ -29,14 +29,14 @@ import { getSupabase, getEdgeFunctionUrl } from '@/lib/supabase';
 import type { TeamMember } from '@/types/team';
 
 /**
- * Get the Edge Function URL for team members.
+ * Get the Edge Function URL for unified team endpoint.
  */
-const getTeamMembersUrl = () => getEdgeFunctionUrl('team-members');
+const getTeamUrl = () => getEdgeFunctionUrl('team');
 
 /**
  * Edit Team Member Page.
  *
- * Allows viewing and editing team member role.
+ * Allows viewing and editing team member role for all roles (admin, user, operator).
  * Email and name are read-only (stored in auth.users).
  * Includes password reset functionality.
  */
@@ -47,7 +47,7 @@ export default function EditTeamMemberPage() {
   const memberId = params.id as string;
 
   const [member, setMember] = useState<TeamMember | null>(null);
-  const [role, setRole] = useState<'admin' | 'user'>('user');
+  const [role, setRole] = useState<'admin' | 'user' | 'operator'>('user');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export default function EditTeamMemberPage() {
   useEffect(() => {
     const loadMember = async () => {
       try {
-        const url = `${getTeamMembersUrl()}/${memberId}`;
+        const url = `${getTeamUrl()}/${memberId}`;
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -126,7 +126,7 @@ export default function EditTeamMemberPage() {
     setError(null);
 
     try {
-      const url = `${getTeamMembersUrl()}/${memberId}/reset-password`;
+      const url = `${getTeamUrl()}/${memberId}/reset-password`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,8 +163,8 @@ export default function EditTeamMemberPage() {
 
       if (deleteError) throw deleteError;
 
-      // Navigate back to team page
-      const tabIndex = member?.role === 'admin' ? 0 : 1;
+      // Navigate back to team page with appropriate tab
+      const tabIndex = member?.role === 'admin' ? 0 : member?.role === 'user' ? 1 : 2;
       router.push(`/dashboard/${companyId}/team?tab=${tabIndex}`);
     } catch (err) {
       console.error('Error deleting team member:', err);
@@ -249,10 +249,11 @@ export default function EditTeamMemberPage() {
           <Select
             value={role}
             label="Role"
-            onChange={(e) => setRole(e.target.value as 'admin' | 'user')}
+            onChange={(e) => setRole(e.target.value as 'admin' | 'user' | 'operator')}
           >
             <MenuItem value="admin">Admin - Full access, can manage team</MenuItem>
             <MenuItem value="user">User - Can use all modules, cannot manage team</MenuItem>
+            <MenuItem value="operator">Operator - Shop floor access only</MenuItem>
           </Select>
         </FormControl>
 

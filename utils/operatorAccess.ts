@@ -8,6 +8,9 @@
  * This file provides:
  * - Admin CRUD operations for operators (list, get, update, delete)
  * - Session helper utilities
+ *
+ * NOTE: Operators are now stored in user_company_access with role='operator'.
+ * The legacy 'operators' table is deprecated.
  */
 
 import { getSupabase } from '@/lib/supabase';
@@ -20,23 +23,32 @@ import type {
   JobStopRequest,
   JobCompleteRequest,
   JobCompleteResponse,
-  Operator,
-  OperatorUpdateRequest,
 } from '@/types/operator';
 
+// Operator type from user_company_access
+interface OperatorAccess {
+  id: string;
+  user_id: string;
+  company_id: string;
+  role: string;
+  name: string | null;
+  created_at: string;
+}
+
 // ============================================================================
-// ADMIN OPERATOR CRUD (uses Supabase directly)
+// ADMIN OPERATOR CRUD (uses user_company_access)
 // ============================================================================
 
 /**
  * List all operators for a company (admin).
  */
-export async function listOperators(companyId: string): Promise<Operator[]> {
+export async function listOperators(companyId: string): Promise<OperatorAccess[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('operators')
-    .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
+    .from('user_company_access')
+    .select('id, company_id, user_id, name, role, created_at')
     .eq('company_id', companyId)
+    .eq('role', 'operator')
     .order('name');
 
   if (error) throw new Error(error.message);
@@ -46,12 +58,13 @@ export async function listOperators(companyId: string): Promise<Operator[]> {
 /**
  * Get a single operator by ID (admin).
  */
-export async function getOperator(operatorId: string): Promise<Operator> {
+export async function getOperator(operatorId: string): Promise<OperatorAccess> {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('operators')
-    .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
+    .from('user_company_access')
+    .select('id, company_id, user_id, name, role, created_at')
     .eq('id', operatorId)
+    .eq('role', 'operator')
     .single();
 
   if (error) throw new Error(error.message);
@@ -64,18 +77,18 @@ export async function getOperator(operatorId: string): Promise<Operator> {
  */
 export async function updateOperator(
   operatorId: string,
-  request: OperatorUpdateRequest
-): Promise<Operator> {
+  request: { name?: string }
+): Promise<OperatorAccess> {
   const supabase = getSupabase();
 
   const updates: Record<string, unknown> = {};
   if (request.name !== undefined) updates.name = request.name;
 
   const { data, error } = await supabase
-    .from('operators')
+    .from('user_company_access')
     .update(updates)
     .eq('id', operatorId)
-    .select('id, company_id, user_id, name, last_login_at, created_at, updated_at')
+    .select('id, company_id, user_id, name, role, created_at')
     .single();
 
   if (error) throw new Error(error.message);
@@ -84,13 +97,13 @@ export async function updateOperator(
 
 /**
  * Delete an operator (admin).
- * Note: This only deletes the operator record. The Supabase auth user
+ * Note: This only deletes the user_company_access record. The Supabase auth user
  * may still exist and can be used for other roles.
  */
 export async function deleteOperator(operatorId: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase
-    .from('operators')
+    .from('user_company_access')
     .delete()
     .eq('id', operatorId);
 
@@ -107,7 +120,7 @@ export async function deleteOperator(operatorId: string): Promise<void> {
  */
 export async function getCurrentOperator(companyId: string): Promise<{
   id: string;
-  name: string;
+  name: string | null;
   user_id: string;
 } | null> {
   const supabase = getSupabase();
@@ -115,14 +128,15 @@ export async function getCurrentOperator(companyId: string): Promise<{
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: operator } = await supabase
-    .from('operators')
+  const { data: operatorAccess } = await supabase
+    .from('user_company_access')
     .select('id, name, user_id')
     .eq('user_id', session.user.id)
     .eq('company_id', companyId)
+    .eq('role', 'operator')
     .single();
 
-  return operator;
+  return operatorAccess;
 }
 
 /**
@@ -178,13 +192,19 @@ export async function getOperatorJobs(
     if (currentOp) {
       const { data: sessionData } = await supabase
         .from('operator_sessions')
-        .select('operators(name)')
+        .select('operator_id')
         .eq('job_operation_id', currentOp.id)
         .is('ended_at', null)
         .single();
 
-      if (sessionData?.operators) {
-        currentOperatorName = (sessionData.operators as { name: string }).name;
+      if (sessionData?.operator_id) {
+        // Look up operator name from user_company_access
+        const { data: opData } = await supabase
+          .from('user_company_access')
+          .select('name')
+          .eq('id', sessionData.operator_id)
+          .single();
+        currentOperatorName = opData?.name || null;
       }
     }
 
@@ -253,7 +273,7 @@ export async function getOperatorJobDetail(
   if (currentOp) {
     const { data: sessionData } = await supabase
       .from('operator_sessions')
-      .select('id, started_at, operator_id, operators(name)')
+      .select('id, started_at, operator_id')
       .eq('job_operation_id', currentOp.id)
       .is('ended_at', null)
       .single();
@@ -262,7 +282,16 @@ export async function getOperatorJobDetail(
       activeSessionId = sessionData.id;
       sessionStartedAt = sessionData.started_at;
       currentOperatorId = sessionData.operator_id;
-      currentOperatorName = (sessionData.operators as { name: string } | null)?.name || null;
+
+      // Look up operator name from user_company_access
+      if (sessionData.operator_id) {
+        const { data: opData } = await supabase
+          .from('user_company_access')
+          .select('name')
+          .eq('id', sessionData.operator_id)
+          .single();
+        currentOperatorName = opData?.name || null;
+      }
     }
   }
 
