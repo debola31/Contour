@@ -141,7 +141,7 @@ export async function getOperatorJobs(
     .select(`
       id, job_number, due_date, status, quantity_ordered, quantity_completed,
       customers(name),
-      parts(name, part_number)
+      parts(description, part_number)
     `)
     .eq('company_id', companyId)
     .in('status', ['pending', 'in_progress', 'released'])
@@ -192,8 +192,8 @@ export async function getOperatorJobs(
       id: job.id,
       job_number: job.job_number,
       customer_name: (job.customers as { name: string } | null)?.name || null,
-      part_name: (job.parts as { name: string; part_number: string } | null)?.name || null,
-      part_number: (job.parts as { name: string; part_number: string } | null)?.part_number || null,
+      part_name: (job.parts as { description: string; part_number: string } | null)?.description || null,
+      part_number: (job.parts as { description: string; part_number: string } | null)?.part_number || null,
       due_date: job.due_date,
       status: job.status,
       quantity_ordered: job.quantity_ordered,
@@ -223,7 +223,7 @@ export async function getOperatorJobDetail(
     .select(`
       id, job_number, due_date, status, quantity_ordered, quantity_completed,
       customers(name),
-      parts(name, part_number)
+      parts(description, part_number)
     `)
     .eq('id', jobId)
     .eq('company_id', companyId)
@@ -282,8 +282,8 @@ export async function getOperatorJobDetail(
     id: job.id,
     job_number: job.job_number,
     customer_name: (job.customers as { name: string } | null)?.name || null,
-    part_name: (job.parts as { name: string; part_number: string } | null)?.name || null,
-    part_number: (job.parts as { name: string; part_number: string } | null)?.part_number || null,
+    part_name: (job.parts as { description: string; part_number: string } | null)?.description || null,
+    part_number: (job.parts as { description: string; part_number: string } | null)?.part_number || null,
     due_date: job.due_date,
     status: job.status,
     quantity_ordered: job.quantity_ordered,
