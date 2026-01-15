@@ -10,8 +10,16 @@ import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { getSupabase } from '@/lib/supabase';
 import type { OperatorWithEmail } from '@/types/operator';
 
@@ -47,6 +55,14 @@ export default function EditOperatorPage() {
   const [resettingPassword, setResettingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Reset password dialog state
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   const supabase = getSupabase();
 
@@ -108,26 +124,63 @@ export default function EditOperatorPage() {
     }
   };
 
+  const handleOpenResetDialog = () => {
+    setNewPassword('');
+    setConfirmPassword('');
+    setResetError(null);
+    setResetDialogOpen(true);
+  };
+
+  const handleCloseResetDialog = () => {
+    if (!resettingPassword) {
+      setResetDialogOpen(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setResetError(null);
+    }
+  };
+
   const handleResetPassword = async () => {
-    if (!email) {
-      setError('Cannot reset password: email not found');
+    // Validation
+    if (!newPassword.trim()) {
+      setResetError('Please enter a new password');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setResetError('Password must be at least 8 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetError('Passwords do not match');
       return;
     }
 
     setResettingPassword(true);
+    setResetError(null);
     setError(null);
     setSuccess(null);
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/operator/${companyId}/change-password`,
+      const url = `${getOperatorApiUrl()}/${operatorId}/reset-password`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_password: newPassword }),
       });
 
-      if (resetError) throw new Error(resetError.message);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to reset password');
+      }
 
-      setSuccess(`Password reset email sent to ${email}`);
+      setResetDialogOpen(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setSuccess(
+        `Password has been reset. Please share the temporary password with ${operator?.name || 'the operator'}. They will be required to change it on their next login.`
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send reset email');
+      setResetError(err instanceof Error ? err.message : 'Failed to reset password');
     } finally {
       setResettingPassword(false);
     }
@@ -221,15 +274,15 @@ export default function EditOperatorPage() {
           <Button
             variant="outlined"
             startIcon={<LockResetIcon />}
-            onClick={handleResetPassword}
+            onClick={handleOpenResetDialog}
             disabled={resettingPassword}
             sx={{ mb: 3 }}
           >
-            {resettingPassword ? <CircularProgress size={20} /> : 'Reset Password'}
+            Reset Password
           </Button>
 
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3 }}>
-            Sends a password reset email to the operator
+            Set a temporary password that the operator must change on next login
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
@@ -252,6 +305,86 @@ export default function EditOperatorPage() {
           Last login: {new Date(operator.last_login_at).toLocaleString()}
         </Typography>
       )}
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetDialogOpen} onClose={handleCloseResetDialog} maxWidth="xs" fullWidth>
+        <DialogTitle>Reset Password</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Set a temporary password for {operator?.name || 'this operator'}. They will be required to
+            change it on their next login.
+          </Typography>
+
+          {resetError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {resetError}
+            </Alert>
+          )}
+
+          <TextField
+            label="New Password"
+            type={showNewPassword ? 'text' : 'password'}
+            fullWidth
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            disabled={resettingPassword}
+            sx={{ mb: 2 }}
+            helperText="Minimum 8 characters"
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      edge="end"
+                      size="small"
+                    >
+                      {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          <TextField
+            label="Confirm Password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            fullWidth
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={resettingPassword}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                      size="small"
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseResetDialog} disabled={resettingPassword}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleResetPassword}
+            variant="contained"
+            disabled={resettingPassword}
+            startIcon={resettingPassword ? <CircularProgress size={16} color="inherit" /> : null}
+          >
+            {resettingPassword ? 'Resetting...' : 'Reset Password'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -22,6 +22,8 @@ from models.operators_models import (
     OperatorCreateRequest,
     OperatorCreateResponse,
     OperatorResponse,
+    PasswordResetRequest,
+    PasswordResetResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -274,3 +276,59 @@ async def get_operator(operator_id: str):
     except Exception as e:
         logger.error(f"Error getting operator: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get operator: {str(e)}")
+
+
+# ============================================================================
+# OPERATOR PASSWORD RESET (Admin only - requires service role)
+# ============================================================================
+
+@admin_router.post("/{operator_id}/reset-password", response_model=PasswordResetResponse)
+async def reset_operator_password(operator_id: str, request: PasswordResetRequest):
+    """
+    Reset an operator's password (admin action).
+
+    Sets a new temporary password and marks needs_password_change = true,
+    requiring the operator to change their password on next login.
+
+    This is used when an operator has forgotten their password and cannot
+    use the email-based reset flow.
+    """
+    supabase = get_supabase()
+    service_client = get_supabase_service_role()
+
+    try:
+        # 1. Get operator to find user_id
+        result = supabase.table("operators").select("user_id, name").eq("id", operator_id).single().execute()
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Operator not found")
+
+        user_id = result.data.get("user_id")
+        operator_name = result.data.get("name", "Operator")
+
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Operator has no linked user account")
+
+        # 2. Update password and set needs_password_change flag
+        service_client.auth.admin.update_user_by_id(
+            user_id,
+            {
+                "password": request.new_password,
+                "user_metadata": {
+                    "needs_password_change": True
+                }
+            }
+        )
+
+        logger.info(f"Password reset for operator {operator_id} (user {user_id})")
+
+        return PasswordResetResponse(
+            success=True,
+            message=f"Password reset for {operator_name}. They will be required to change it on next login."
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting operator password: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")

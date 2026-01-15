@@ -58,6 +58,24 @@ class OperatorResponse(BaseModel):
     updated_at: datetime
 
 
+class PasswordResetRequest(BaseModel):
+    """Request body for resetting an operator's password (admin action)."""
+    new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        return v
+
+
+class PasswordResetResponse(BaseModel):
+    """Response after resetting an operator's password."""
+    success: bool
+    message: str
+
+
 # ============================================================================
 # JOB OPERATIONS
 # ============================================================================
