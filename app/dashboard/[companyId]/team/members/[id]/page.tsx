@@ -67,8 +67,19 @@ export default function EditTeamMemberPage() {
   useEffect(() => {
     const loadMember = async () => {
       try {
+        const supabase = getSupabase();
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          throw new Error('Not authenticated');
+        }
+
         const url = `${getTeamUrl()}/${memberId}`;
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
 
         if (!response.ok) {
           throw new Error('Failed to load team member');
@@ -126,10 +137,20 @@ export default function EditTeamMemberPage() {
     setError(null);
 
     try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       const url = `${getTeamUrl()}/${memberId}/reset-password`;
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ new_password: newPassword }),
       });
 

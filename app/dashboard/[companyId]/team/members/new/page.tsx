@@ -18,7 +18,7 @@ import MenuItem from '@mui/material/MenuItem';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import { getEdgeFunctionUrl } from '@/lib/supabase';
+import { getSupabase, getEdgeFunctionUrl } from '@/lib/supabase';
 import type { TeamMemberCreateResponse } from '@/types/team';
 
 /**
@@ -75,11 +75,22 @@ export default function NewTeamMemberPage() {
     setError(null);
 
     try {
+      // Get auth session for Edge Function authorization
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       // Call Edge Function to create team member with Supabase user
       const url = getTeamUrl();
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           company_id: companyId,
           name: name.trim(),
