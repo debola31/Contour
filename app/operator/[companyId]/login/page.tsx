@@ -93,11 +93,19 @@ export default function OperatorLoginPage() {
         throw new Error(authError.message);
       }
 
-      if (!data.user) {
+      if (!data.user || !data.session) {
         throw new Error('Login failed');
       }
 
-      // 2. Validate user is an operator for this company
+      // 2. Ensure session is synchronized before querying
+      // The signInWithPassword response includes the session, but we need to
+      // ensure the client's auth state is updated for RLS policies to work
+      await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+
+      // 3. Validate user is an operator for this company
       const { data: operatorAccess, error: opError } = await supabase
         .from('user_company_access')
         .select('id, name')
@@ -113,13 +121,13 @@ export default function OperatorLoginPage() {
 
       // Note: Supabase auth automatically tracks last_sign_in_at
 
-      // 3. Check if password change required
+      // 4. Check if password change required
       if (data.user.user_metadata?.needs_password_change) {
         router.push(`/operator/${companyId}/change-password`);
         return;
       }
 
-      // 4. Redirect to jobs
+      // 5. Redirect to jobs
       router.push(`/operator/${companyId}/jobs${stationId ? `?station=${stationId}` : ''}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
