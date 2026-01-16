@@ -42,6 +42,7 @@ ALLOWED_ORIGINS = [o.strip() for o in _origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"http://localhost:\d+$",  # Allow any localhost port
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -52,11 +53,13 @@ from routes.import_routes import router as import_router
 from routes.parts_import_routes import router as parts_import_router
 from routes.operations_import_routes import router as operations_import_router
 from routes.operators_routes import admin_router as operators_admin_router
+from routes.inventory_routes import router as inventory_router
 
 app.include_router(import_router)
 app.include_router(parts_import_router)
 app.include_router(operations_import_router)
 app.include_router(operators_admin_router)
+app.include_router(inventory_router)
 
 
 @app.get("/api/example_name")
