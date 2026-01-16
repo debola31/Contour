@@ -128,8 +128,19 @@ export default function TeamPage() {
   const loadOperators = useCallback(async () => {
     setOperatorsLoading(true);
     try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       const url = `${getTeamUrl()}?company_id=${companyId}&role=operator`;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch operators');
@@ -164,8 +175,19 @@ export default function TeamPage() {
   const loadAdmins = useCallback(async () => {
     setAdminsLoading(true);
     try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       const url = `${getTeamUrl()}?company_id=${companyId}&role=admin`;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch admins');
@@ -200,8 +222,19 @@ export default function TeamPage() {
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
     try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       const url = `${getTeamUrl()}?company_id=${companyId}&role=user`;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch users');
