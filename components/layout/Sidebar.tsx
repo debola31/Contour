@@ -16,6 +16,7 @@ import Inventory2Icon from '@mui/icons-material/Inventory2';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import BuildIcon from '@mui/icons-material/Build';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
+import GroupIcon from '@mui/icons-material/Group';
 import CompanySwitcher from './CompanySwitcher';
 
 const menuItems = [
@@ -27,6 +28,7 @@ const menuItems = [
   { name: 'Jobs', path: '/jobs', icon: WorkIcon },
   { name: 'Operations', path: '/operations', icon: BuildIcon },
   { name: 'Routings', path: '/routings', icon: AccountTreeIcon },
+  { name: 'Team', path: '/team', icon: GroupIcon },
 ];
 
 export default function Sidebar() {

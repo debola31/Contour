@@ -165,3 +165,23 @@ export async function getUserRole(userId: string, companyId: string): Promise<st
 
   return data?.role ?? null;
 }
+
+/**
+ * Get a company by ID
+ */
+export async function getCompany(companyId: string): Promise<Company | null> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('companies')
+    .select('id, name')
+    .eq('id', companyId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching company:', error);
+    return null;
+  }
+
+  return data;
+}

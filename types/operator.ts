@@ -1,0 +1,187 @@
+/**
+ * TypeScript types for the Operator View module.
+ *
+ * Authentication is handled via Supabase Auth (email/password).
+ * Operators authenticate the same way as admin users, but access
+ * a dedicated operator interface.
+ *
+ * NOTE: Operator records are now stored in user_company_access with role='operator'.
+ * The legacy 'operators' table is deprecated.
+ */
+
+// ============================================================================
+// OPERATOR TYPES
+// ============================================================================
+
+/**
+ * Operator record from the legacy operators table.
+ * @deprecated Use user_company_access with role='operator' instead.
+ */
+export interface Operator {
+  id: string;
+  company_id: string;
+  user_id: string;
+  name: string;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Team member record from user_company_access.
+ * This is the new unified approach for all team members including operators.
+ */
+export interface TeamMember {
+  id: string;
+  user_id: string;
+  company_id: string;
+  role: 'owner' | 'admin' | 'operator' | 'bookkeeper' | 'engineer' | 'quality' | 'sales';
+  name: string | null;
+  created_at: string;
+}
+
+/**
+ * Response from the operator creation API.
+ */
+export interface OperatorCreateResponse {
+  success: boolean;
+  message?: string;
+  operator_id?: string;
+  user_id?: string;
+}
+
+// ============================================================================
+// SESSION TYPES
+// ============================================================================
+
+/**
+ * Work session data.
+ */
+export interface OperatorSession {
+  id: string;
+  operator_id: string;
+  job_id: string;
+  job_operation_id: string | null;
+  operation_type_id: string;
+  started_at: string;
+  ended_at: string | null;
+  notes: string | null;
+  duration_seconds?: number;
+}
+
+/**
+ * Active session with additional job details.
+ */
+export interface ActiveSession {
+  id: string;
+  operator_id: string;
+  job_id: string;
+  job_number: string | null;
+  job_operation_id: string | null;
+  operation_name: string | null;
+  operation_type_id: string;
+  started_at: string;
+  notes: string | null;
+}
+
+// ============================================================================
+// JOB TYPES
+// ============================================================================
+
+/**
+ * Job data as seen by operators in the job list.
+ */
+export interface OperatorJob {
+  id: string;
+  job_number: string;
+  customer_name: string | null;
+  part_name: string | null;
+  part_number: string | null;
+  status: string;
+  // Current operation for this station
+  operation_id: string | null;
+  operation_name: string | null;
+  operation_status: string | null;
+  // Who is currently working on this operation
+  current_operator_name: string | null;
+}
+
+/**
+ * Detailed job data for active job view.
+ */
+export interface OperatorJobDetail {
+  id: string;
+  job_number: string;
+  customer_name: string | null;
+  part_name: string | null;
+  part_number: string | null;
+  status: string;
+  // Operation details
+  operation_id: string | null;
+  operation_name: string | null;
+  operation_status: string | null;
+  instructions: string | null;
+  estimated_hours: number | null;
+  // Active session info
+  active_session_id: string | null;
+  session_started_at: string | null;
+  current_operator_id: string | null;
+  current_operator_name: string | null;
+}
+
+// ============================================================================
+// REQUEST TYPES
+// ============================================================================
+
+/**
+ * Request body for starting work on a job.
+ */
+export interface JobStartRequest {
+  operation_type_id: string;
+}
+
+/**
+ * Request body for stopping work on a job.
+ */
+export interface JobStopRequest {
+  notes?: string;
+}
+
+/**
+ * Request body for completing a job operation.
+ */
+export interface JobCompleteRequest {
+  notes?: string;
+  quantity_completed?: number;
+  quantity_scrapped?: number;
+}
+
+/**
+ * Response from completing a job.
+ */
+export interface JobCompleteResponse {
+  success: boolean;
+  session_id: string;
+  duration_seconds: number;
+  job_completed: boolean;
+}
+
+// ============================================================================
+// UTILITY TYPES
+// ============================================================================
+
+/**
+ * Format duration in seconds to HH:MM:SS.
+ */
+export function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  return [
+    hours.toString().padStart(2, '0'),
+    minutes.toString().padStart(2, '0'),
+    secs.toString().padStart(2, '0'),
+  ].join(':');
+}

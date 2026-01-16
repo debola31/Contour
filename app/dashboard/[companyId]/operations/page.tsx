@@ -35,6 +35,7 @@ import type {
   GridReadyEvent,
   SelectionChangedEvent,
   SortChangedEvent,
+  RowClickedEvent,
   ICellRendererParams,
 } from 'ag-grid-community';
 
@@ -238,19 +239,15 @@ export default function OperationsPage() {
     setSelectedOperationIds(selectedData);
   };
 
-  const handleEditOperation = (e: React.MouseEvent, operation: OperationWithGroup) => {
-    e.stopPropagation();
-    router.push(`/dashboard/${companyId}/operations/${operation.id}/edit`);
-  };
-
-  const handleDeleteOperation = (e: React.MouseEvent, operation: OperationWithGroup) => {
-    e.stopPropagation();
-    setDeleteDialog({
-      open: true,
-      type: 'operation',
-      id: operation.id,
-      name: operation.name,
-    });
+  const handleRowClicked = (event: RowClickedEvent<OperationWithGroup>) => {
+    // Only navigate if clicking on a non-checkbox cell
+    if (event.data && event.event) {
+      const target = event.event.target as HTMLElement;
+      // Don't navigate if clicking on checkbox
+      if (!target.closest('.ag-checkbox-input-wrapper')) {
+        router.push(`/dashboard/${companyId}/operations/${event.data.id}`);
+      }
+    }
   };
 
   const handleBulkDeleteOperations = () => {
@@ -371,37 +368,6 @@ export default function OperationsPage() {
       headerName: 'Labor Rate',
       width: 150,
       valueFormatter: (p) => (p.value != null ? `$${Number(p.value).toFixed(2)}/hr` : '—'),
-    },
-    {
-      colId: 'actions',
-      headerName: '',
-      width: 100,
-      sortable: false,
-      cellRenderer: (params: ICellRendererParams<OperationWithGroup>) => {
-        if (!params.data) return null;
-        return (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={(e) => handleEditOperation(e, params.data!)}
-                sx={{ color: 'text.secondary' }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton
-                size="small"
-                onClick={(e) => handleDeleteOperation(e, params.data!)}
-                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        );
-      },
     },
   ];
 
@@ -582,6 +548,7 @@ export default function OperationsPage() {
                 defaultColDef={{ sortable: true, resizable: true }}
                 rowSelection={{ mode: 'multiRow', checkboxes: true, headerCheckbox: true, enableClickSelection: false, selectAll: 'all' }}
                 onSelectionChanged={handleOperationsSelectionChanged}
+                onRowClicked={handleRowClicked}
                 pagination={true}
                 paginationPageSize={25}
                 paginationPageSizeSelector={[25, 50, 100]}
