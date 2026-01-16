@@ -66,21 +66,22 @@ export default function OperatorLayout({
         return;
       }
 
-      // 3. Validate operator exists for this company
-      const { data: operator } = await supabase
-        .from('operators')
+      // 3. Validate operator exists for this company (now uses user_company_access)
+      const { data: operatorAccess } = await supabase
+        .from('user_company_access')
         .select('id, name')
         .eq('user_id', session.user.id)
         .eq('company_id', companyId)
+        .eq('role', 'operator')
         .single();
 
-      if (!operator) {
+      if (!operatorAccess) {
         await supabase.auth.signOut();
         router.push(`/operator/${companyId}/login`);
         return;
       }
 
-      setOperatorName(operator.name);
+      setOperatorName(operatorAccess.name || 'Operator');
       setIsLoading(false);
     };
 
